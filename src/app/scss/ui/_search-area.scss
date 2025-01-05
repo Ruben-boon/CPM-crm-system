@@ -1,0 +1,9 @@
+.search-area {
+  background-color: lightgray;
+  height:100vh;
+  width:fit-content;
+  padding:2em;
+  .search-container {
+    display: flex;
+  }
+}

@@ -1,0 +1,11 @@
+.menu-link-container {
+  padding: 1em;
+  border-radius: 2px;
+  cursor: pointer;
+  &:hover {
+    background-color: rgb(31, 31, 31);
+  }
+  &:active {
+    background-color: var(--accent-color);
+  }
+}

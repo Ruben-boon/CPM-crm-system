@@ -1,0 +1,12 @@
+header {
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1em;
+  width: fit-content;
+  gap:8px;
+  * {
+    color: white;
+  }
+}

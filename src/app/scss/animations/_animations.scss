@@ -1,0 +1,70 @@
+[data-animate] {
+  opacity: 0;
+  transform: translateZ(0);
+  transition-duration: 0.4s;
+  transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition-property: opacity, transform;
+}
+[data-animate^="fade"].animate {
+  opacity: 1;
+  transform: translateZ(0);
+}
+[data-animate^="zoom-in"].animate {
+  opacity: 1;
+  transform: translateZ(0) scale(1);
+}
+[data-animate="fade-up"] {
+  transform: translate3d(0, 12px, 0);
+  opacity: 0;
+}
+[data-animate="zoom-in"] {
+  transform: scale(0.98);
+  opacity: 0;
+}
+
+[data-animate-delay="50"].animate {
+  transition-delay: 50ms;
+}
+[data-animate-delay="100"].animate {
+  transition-delay: 100ms;
+}
+[data-animate-delay="150"].animate {
+  transition-delay: 150ms;
+}
+[data-animate-delay="200"].animate {
+  transition-delay: 200ms;
+}
+[data-animate-delay="250"].animate {
+  transition-delay: 250ms;
+}
+[data-animate-delay="300"].animate {
+  transition-delay: 300ms;
+}
+[data-animate-delay="350"].animate {
+  transition-delay: 350ms;
+}
+[data-animate-delay="400"].animate {
+  transition-delay: 400ms;
+}
+[data-animate-delay="450"].animate {
+  transition-delay: 450ms;
+}
+[data-animate-delay="500"].animate {
+  transition-delay: 500ms;
+}
+[data-animate-delay="600"].animate {
+  transition-delay: 500ms;
+}
+[data-animate-delay="700"].animate {
+  transition-delay: 500ms;
+}
+[data-animate-delay="800"].animate {
+  transition-delay: 500ms;
+}
+[data-animate-delay="900"].animate {
+  transition-delay: 500ms;
+}
+[data-animate-delay="1000"].animate {
+  transition-delay: 500ms;
+}
+

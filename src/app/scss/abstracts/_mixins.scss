@@ -1,0 +1,119 @@
+@use "sass:math";
+
+@mixin box-shadow($values) {
+  -webkit-box-shadow: $values;
+  -moz-box-shadow: $values;
+  box-shadow: $values;
+}
+
+@mixin border-radius($values) {
+  border-radius: $values;
+  -moz-border-radius: $values;
+  -webkit-border-radius: $values;
+}
+
+@mixin placeholder($color,$size) {
+  ::-webkit-input-placeholder { 
+    color: $color;
+    font-size: $size;
+  }
+  ::-moz-placeholder { 
+    color: $color;
+    font-size: $size;
+  }
+  :-ms-input-placeholder { 
+    color: $color;
+    font-size: $size;
+  }
+  :-moz-placeholder { 
+    color: $color;
+    font-size: $size;
+  }
+}
+
+ 
+@mixin center(){
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin ycenter(){
+  display: flex;
+  align-items: center;
+}
+
+@mixin xcenter(){
+  display: flex;
+  justify-content: center;
+}
+
+@mixin transition(){
+  transition: 230ms all cubic-bezier(.25,.8,.25,1);
+}
+
+@mixin fit(){
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+@mixin clearfix(){
+  clear: both;
+  display: table;
+  content: "";
+}
+
+@mixin fade-in($transition: true, $slide-in: true){
+  visibility: visible;
+  opacity: 1;
+
+  @if( $slide-in ){
+      transform: translateY(0%);
+  }
+
+  @if ($transition){
+      @include transition();
+  }
+   
+}
+
+@mixin fade-out($transition: false, $slide-in: true){
+  visibility: hidden;
+  opacity: 0;
+  
+
+  @if( $slide-in ){
+      transform: translateY(-10%);
+  }
+
+  @if ($transition){
+      @include transition();
+  }
+}
+
+@mixin font-awesome($icon){
+  content: $icon;
+  font-family: "Font Awesome 5 Pro";
+  // font-weight: 900;
+  // content: "\f007";
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+@mixin fluid-container-left($container-size, $overhang) {
+  $view-width: calc(100vw);
+  $margin: calc(
+      ($view-width - ($container-size)) / 2
+    );
+  margin-left: $margin!important;
+  max-width: calc(100% - ($margin) + $overhang) !important;
+  margin-right: 0!important;
+}

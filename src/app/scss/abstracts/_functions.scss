@@ -1,0 +1,9 @@
+@use "sass:math";
+@function get-contrast-color($color) {
+    $luminance: math.div((0.2126 * red($color) + 0.7152 * green($color) + 0.0722 * blue($color)), 255);
+    @if ($luminance > 0.5) {
+      @return $btn-text-dark; 
+    } @else {
+      @return $btn-text-light; 
+    }
+  }

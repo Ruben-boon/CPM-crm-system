@@ -1,0 +1,33 @@
+// ----------------------- MAIN COLORS ----------------------- //
+
+:root {
+  //colors
+--accent-color: #F17827;
+}
+
+// ----------------------- SIZES ----------------------- //
+
+$screen-xs-max: 576px;
+$screen-sm-max: 768px;
+$screen-md-max: 992px;
+$screen-lg-max: 1199px;
+$screen-xl-max: 1340px;
+$screen-xxl-max: 1400px;
+$screen-xxxl-max: 1536px;
+
+$container: 720px;
+$container-full: 1400px;
+.container-width {
+  max-width: $container;
+  margin-left: auto;
+  margin-right: auto;
+}
+.container-xl-width {
+  max-width: $screen-md-max;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.w-half {
+  width: 50%;
+}

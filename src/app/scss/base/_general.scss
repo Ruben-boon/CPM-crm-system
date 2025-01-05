@@ -1,0 +1,45 @@
+body {
+  background-color: #f6f6f8;
+  position: relative;
+  display: flex;
+}
+main {
+  display: flex;
+  width:100%;
+}
+
+.light-text {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    color: var(--title-light);
+  }
+  p,
+  a,
+  strong,
+  li,
+  ul,
+  i {
+    color: var(--paragraph-light);
+  }
+}
+
+.dark-text {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    color: var(--title-dark);
+  }
+  p,
+  a,
+  strong,
+  li,
+  ul,
+  i {
+    color: var(--paragraph-dark);
+  }
+}
