@@ -1,9 +1,7 @@
 "use client";
-import { useState} from "react";
+import { useState, useEffect } from "react";
 import InputField from "../fields/InputField";
 import { FormField } from "@/app/types";
-// import sampleData from "../../DUMMY_MONGO";
-
 
 interface ChangeRecord {
   fieldId: string;
@@ -22,11 +20,16 @@ export default function DetailsPanel({
   initialFormFields,
 }: DetailsPanelProps) {
   const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);
-  const [isBulkEditing, setIsBulkEditing] = useState(false);
-  const [changedFields, setChangedFields] = useState<
-    Record<string, ChangeRecord>
-  >({});
+  const [isBulkEditing, setIsBulkEditing] = useState(isNew);
+  const [changedFields, setChangedFields] = useState<Record<string, ChangeRecord>>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  useEffect(() => {
+    setFormFields(initialFormFields);
+    setChangedFields({});
+    setIsBulkEditing(isNew);
+    setShowConfirmation(false);
+  }, [initialFormFields, isNew]);
 
   const handleFieldChange = (
     fieldId: string,
@@ -44,7 +47,6 @@ export default function DetailsPanel({
       });
     }
 
-    // Update the form fields with the new value
     setFormFields((prev) =>
       prev.map((field) =>
         field.id === fieldId ? { ...field, value: newValue } : field
@@ -53,11 +55,17 @@ export default function DetailsPanel({
   };
 
   const handleDiscardChanges = () => {
-    // Reset form fields to initial values
     setFormFields(initialFormFields);
     setChangedFields({});
-    setIsBulkEditing(false);
+    if (!isNew) setIsBulkEditing(false);
     setShowConfirmation(false);
+  };
+
+  const handleSaveChanges = async () => {
+    console.log("Saving changes:", changedFields);
+    setChangedFields({});
+    if (!isNew) setShowConfirmation(false);
+    setIsBulkEditing(false);
   };
 
   return (
@@ -67,7 +75,7 @@ export default function DetailsPanel({
         <button
           onClick={() => setIsBulkEditing(!isBulkEditing)}
           className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-          disabled={Object.keys(changedFields).length > 0}
+          disabled={isNew || Object.keys(changedFields).length > 0}
         >
           {isBulkEditing ? "Beëindig Bewerken" : "Bewerk Alles"}
         </button>
@@ -81,7 +89,7 @@ export default function DetailsPanel({
               Wijzigingen Annuleren
             </button>
             <button
-              onClick={() => setShowConfirmation(true)}
+              onClick={isNew ? handleSaveChanges : () => setShowConfirmation(true)}
               className="rounded-md bg-green-500 px-4 py-2 text-white hover:bg-green-600"
             >
               Wijzigingen Opslaan
@@ -115,16 +123,13 @@ export default function DetailsPanel({
                   handleFieldChange(
                     field.id,
                     field.label,
-                    initialFormFields.find((f) => f.id === field.id)?.value ||
-                      "",
+                    initialFormFields.find((f) => f.id === field.id)?.value || "",
                     newValue
                   )
                 }
                 onCancel={() => {
-                  // Reset this specific field to its initial value
                   const initialValue =
-                    initialFormFields.find((f) => f.id === field.id)?.value ||
-                    "";
+                    initialFormFields.find((f) => f.id === field.id)?.value || "";
                   handleFieldChange(
                     field.id,
                     field.label,
@@ -138,7 +143,7 @@ export default function DetailsPanel({
         })}
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal (only for non-new entities) */}
       {showConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
@@ -167,13 +172,7 @@ export default function DetailsPanel({
                 Annuleren
               </button>
               <button
-                onClick={async () => {
-                  // Implement your save logic here
-                  console.log("Saving changes:", changedFields);
-                  setShowConfirmation(false);
-                  setIsBulkEditing(false);
-                  setChangedFields({});
-                }}
+                onClick={handleSaveChanges}
                 className="rounded-md bg-green-500 px-4 py-2 text-white hover:bg-green-600"
               >
                 Bevestig Wijzigingen

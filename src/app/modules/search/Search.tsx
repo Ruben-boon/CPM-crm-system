@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import sampleData from "../../DUMMY_MONGO";
+// import CreateDocument from "./CreateDocument";
 
 interface Contact {
   type: string[];
@@ -27,11 +28,13 @@ interface Contact {
   updatedAt: Date;
 }
 
-interface SearchProps {
-  onSelectContact: (contact: Contact) => void;
-}
-
-export default function Search({ onSelectContact }: SearchProps) {
+export default function Search({
+  onSelectContact,
+  onCreateContact,
+}: {
+  onSelectContact: (contact: any) => void;
+  onCreateContact: (contact: any) => void;
+}) {
   const [searchKey, setSearchKey] = useState<keyof Contact>("lastName"); // Default filter
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [results, setResults] = useState<Contact[]>([]);
@@ -40,14 +43,16 @@ export default function Search({ onSelectContact }: SearchProps) {
   const handleSearch = () => {
     setLoading(true);
     setTimeout(() => {
-      const filteredContacts = sampleData.contacts.filter((contact: Contact) => {
-        const value = searchKey.includes(".")
-          ? searchKey
-              .split(".")
-              .reduce((acc: any, key: string) => acc?.[key], contact)
-          : contact[searchKey];
-        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
-      });
+      const filteredContacts = sampleData.contacts.filter(
+        (contact: Contact) => {
+          const value = searchKey.includes(".")
+            ? searchKey
+                .split(".")
+                .reduce((acc: any, key: string) => acc?.[key], contact)
+            : contact[searchKey];
+          return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+        }
+      );
       setResults(filteredContacts);
       setLoading(false);
     }, 500); // Simulate a delay for loading
@@ -83,11 +88,16 @@ export default function Search({ onSelectContact }: SearchProps) {
           </select>
         </div>
       </div>
+      {/* Add contact */}
+
+      <div className="create-contact create-document">
+        <strong><p onClick={() => onCreateContact()}>create</p></strong>
+      </div>
 
       {/* Search Results */}
       <div className="search-results">
         {loading ? (
-          <p>Loading...</p> // Loading indicator
+          <p>Loading...</p>
         ) : results.length > 0 ? (
           <ul>
             {results.map((contact, index) => (
@@ -104,6 +114,14 @@ export default function Search({ onSelectContact }: SearchProps) {
                 <p>Email: {contact.email}</p>
                 <p>Phone: {contact.phone}</p>
                 <p>Company: {contact.company?.name}</p>
+                <strong>
+                  <p
+                    onClick={() => onCreateContact(contact)} // Send selected contact to parent
+                    style={{ cursor: "pointer" }}
+                  >
+                    Copy contact
+                  </p>
+                </strong>
               </li>
             ))}
           </ul>
