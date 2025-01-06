@@ -91,7 +91,9 @@ export default function Search({
       {/* Add contact */}
 
       <div className="create-contact create-document">
-        <strong><p onClick={() => onCreateContact()}>create</p></strong>
+        <strong>
+          <p onClick={() => onCreateContact()}>create</p>
+        </strong>
       </div>
 
       {/* Search Results */}

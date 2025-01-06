@@ -1,3 +1,6 @@
+// scss-docs-start
+// stylelint-disable annotation-no-unknown
+
 // abstracts
 @import "abstracts/variables";
 @import "abstracts/functions";
@@ -7,11 +10,10 @@
 @import "animations/animations";
 
 // base
-@import "base/typography"; //typography contains font variable load this first
+@import "base/typography"; 
 @import "base/reset";
 @import "base/general";
 @import "base/buttons";
-
 //form
 
 // modules
@@ -22,9 +24,6 @@
 @import "ui/menu-link";
 @import "ui/search-area";
 @import "ui/details-panel";
-
-
-
 
 // shame
 @import "shame";

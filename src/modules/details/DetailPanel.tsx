@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import InputField from "../fields/InputField";
-import { FormField } from "@/app/types";
+import { FormField } from "@/types";
 
 interface ChangeRecord {
   fieldId: string;
