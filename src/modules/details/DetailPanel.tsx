@@ -13,10 +13,12 @@ interface ChangeRecord {
 interface DetailsPanelProps {
   isNew?: boolean;
   initialFormFields: FormField[];
+  schemaLayout: any;
 }
 
 export default function DetailsPanel({
   isNew = false,
+  schemaLayout,
   initialFormFields,
 }: DetailsPanelProps) {
   const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);
@@ -24,6 +26,7 @@ export default function DetailsPanel({
   const [changedFields, setChangedFields] = useState<Record<string, ChangeRecord>>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  console.log( initialFormFields)
   useEffect(() => {
     setFormFields(initialFormFields);
     setChangedFields({});
