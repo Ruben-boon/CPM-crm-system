@@ -1,6 +1,8 @@
 import { MockMongoClient } from '@/lib/mockMongoDB';
 import { NextResponse } from 'next/server';
 
+//this currently fetches all contacts, but it should fetch depending on the search
+
 // Handle GET requests
 export async function GET(req: Request, context: { params: { collection: string } }) {
   const { collection } = await context.params; // Await the params object
