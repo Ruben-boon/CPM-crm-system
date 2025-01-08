@@ -1,16 +1,37 @@
-import React from "react";
-import sampleData from "../../DUMMY_MONGO";
+"use client"
+import React, { useEffect, useState } from "react";
 import SearchBar from "./SearchBar";
 
 interface SearchPanelProps {
-  type: keyof typeof sampleData; // Type from your dummy data
+  type: string; // Type from your API route (e.g., "contacts")
   onFilter: (data: any[]) => void; // Callback to pass filtered data to the parent
 }
 
 export default function SearchPanel({ type, onFilter }: SearchPanelProps) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/fields/${type}`);
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [type]);
+
   // Get searchable fields
   const getSearchableFields = () => {
-    const firstItem = sampleData[type][0];
+    const firstItem = data[0];
     if (!firstItem) return [];
 
     return Object.keys(firstItem).filter(
@@ -20,10 +41,8 @@ export default function SearchPanel({ type, onFilter }: SearchPanelProps) {
     );
   };
 
-  // Handle search and filter data (fetch from mongoDB)
+  // Handle search and filter data
   const handleSearch = (searchField: string, searchTerm: string) => {
-    const data = sampleData[type];
-
     const filteredData = data.filter((item) => {
       if (searchField.includes(".")) {
         const [parent, child] = searchField.split(".");
@@ -37,6 +56,10 @@ export default function SearchPanel({ type, onFilter }: SearchPanelProps) {
     });
     onFilter(filteredData); // Pass the filtered data upwards
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Render a loading state while data is fetched
+  }
 
   return (
     <div className="search-panel">

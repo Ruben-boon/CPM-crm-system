@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import InputField from "../fields/InputField";
-import { FormField } from "@/types";
+import { FormField } from "@/types/types";
+
+// this component needs to be split further
 
 interface ChangeRecord {
   fieldId: string;
@@ -117,6 +119,7 @@ export default function DetailsPanel({
                 label={field.label}
                 value={field.value}
                 type={field.type}
+                dropdownFields={field.dropdownFields}
                 onSave={async (value) => {
                   console.log("Saving:", value);
                 }}

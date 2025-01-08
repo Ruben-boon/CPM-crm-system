@@ -1,16 +1,13 @@
 "use client";
 import { useState } from "react";
-import DetailsPanel from "./details/DetailPanel";
-import Search from "./search/Search";
-import { FormField } from "@/types";
+import { FormField } from "@/types/types";
 import SearchPanel from "./search/SearchPanel";
-import CreateDocument from "./search/CreateDocument";
 import SearchResults from "./search/SearchResults";
 
 interface ExplorerProps {
   schemaLayout: FormField[];
   type: string;
-  onOpenDetail: (isNew: boolean, detailData: {}) => void; 
+  onOpenDetail: (isNew: boolean, detailData: {}) => void;
 }
 export default function Explorer({
   onOpenDetail,
@@ -32,8 +29,17 @@ export default function Explorer({
   return (
     <>
       <SearchPanel type="contacts" onFilter={handleFilterUpdate} />
-      <div className="create-document" onClick={() => handleDetailsToParent(true, [])}>Create document</div>
-      <SearchResults type="contacts" onOpenDetail={handleDetailsToParent} searchList={filteredData} />
+      <div
+        className="create-document"
+        onClick={() => handleDetailsToParent(true, [])}
+      >
+        Create document
+      </div>
+      <SearchResults
+        type="contacts"
+        onOpenDetail={handleDetailsToParent}
+        searchList={filteredData}
+      />
     </>
   );
 }

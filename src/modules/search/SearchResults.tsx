@@ -1,4 +1,4 @@
-import { FormField } from "@/types";
+import { FormField } from "@/types/types";
 import { useState } from "react";
 
 interface SearchResultProps {

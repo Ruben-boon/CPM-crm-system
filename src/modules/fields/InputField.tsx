@@ -1,20 +1,19 @@
-"use client"
+"use client";
 
-// InputField.tsx
 import React, { KeyboardEvent, ChangeEvent } from "react";
 
 interface InputFieldProps {
   label: string;
   value?: string;
-  isEditing: boolean;  // No longer optional, controlled by parent
-  type?: "text" | "email" | "tel" | "number" | "url";
+  isEditing: boolean;
+  type: "text" | "email" | "tel" | "number" | "url" | "dropdown";
+  dropdownFields?: string[];
   required?: boolean;
   disabled?: boolean;
-  onCancel?: () => void;  // New prop to handle cancellation
+  onCancel?: () => void;
   onChange?: (value: string) => void;
   onSave?: (value: string) => Promise<void>;
 }
-
 
 const InputField: React.FC<InputFieldProps> = ({
   label,
@@ -22,6 +21,7 @@ const InputField: React.FC<InputFieldProps> = ({
   onSave,
   isEditing,
   type = "text",
+  dropdownFields = [],
   required = false,
   disabled = false,
   onCancel,
@@ -30,14 +30,11 @@ const InputField: React.FC<InputFieldProps> = ({
   const [value, setValue] = React.useState<string>(initialValue);
   const [previousValue, setPreviousValue] = React.useState<string>(initialValue);
 
-  
-  // Update local value when prop changes
   React.useEffect(() => {
     setValue(initialValue);
     setPreviousValue(initialValue);
   }, [initialValue]);
 
-  // Update previousValue when edit mode is entered
   React.useEffect(() => {
     if (isEditing) {
       setPreviousValue(value);
@@ -62,7 +59,7 @@ const InputField: React.FC<InputFieldProps> = ({
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement | HTMLSelectElement>): void => {
     if (e.key === "Enter") {
       handleSave();
     } else if (e.key === "Escape") {
@@ -70,11 +67,49 @@ const InputField: React.FC<InputFieldProps> = ({
     }
   };
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ): void => {
     setValue(e.target.value);
     if (onChange) {
       onChange(e.target.value);
     }
+  };
+
+  const renderInput = () => {
+    if (type === "dropdown") {
+      return (
+        <select
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          required={required}
+          disabled={disabled}
+          autoFocus={isEditing}
+        >
+          <option value="">Select an option</option>
+          {dropdownFields.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type={type}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        required={required}
+        disabled={disabled}
+        autoFocus={isEditing}
+      />
+    );
   };
 
   return (
@@ -85,18 +120,7 @@ const InputField: React.FC<InputFieldProps> = ({
       </label>
       <div className="relative flex items-center">
         {isEditing ? (
-          <div className="flex w-full">
-            <input
-              type={type}
-              value={value}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              required={required}
-              disabled={disabled}
-              autoFocus
-            />
-          </div>
+          <div className="flex w-full">{renderInput()}</div>
         ) : (
           <div className="flex w-full items-center justify-between rounded-md border border-transparent p-2 hover:border-gray-300">
             <span className={`text-gray-900 ${disabled ? "text-gray-500" : ""}`}>
@@ -108,4 +132,5 @@ const InputField: React.FC<InputFieldProps> = ({
     </div>
   );
 };
+
 export default InputField;

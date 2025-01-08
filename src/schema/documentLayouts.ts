@@ -1,4 +1,4 @@
-import { FormField } from "./types";
+import { FormField } from "../types/types";
 
 export const contactsDocumentLayout: FormField[] = [
   {
@@ -21,7 +21,6 @@ export const contactsDocumentLayout: FormField[] = [
     value: "",
     type: "email",
     required: true,
-    type: "email",
 
   },
   {
