@@ -15,12 +15,10 @@ interface ChangeRecord {
 interface DetailsPanelProps {
   isNew?: boolean;
   initialFormFields: FormField[];
-  schemaLayout: any;
 }
 
 export default function DetailsPanel({
   isNew = false,
-  schemaLayout,
   initialFormFields,
 }: DetailsPanelProps) {
   const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);

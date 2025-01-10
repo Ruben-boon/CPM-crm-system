@@ -1,20 +1,22 @@
-// SearchBar.tsx
 "use client";
 import { useState } from "react";
 
 interface SearchBarProps {
   filterList: string[];
   onSearch: (searchField: string, searchTerm: string) => void;
+  isLoading?: boolean;
 }
 
-export default function SearchBar({ filterList, onSearch }: SearchBarProps) {
-  const [searchField, setSearchField] = useState(filterList[0] || '');
-  const [searchTerm, setSearchTerm] = useState('');
+export default function SearchBar({
+  filterList,
+  onSearch,
+  isLoading = false,
+}: SearchBarProps) {
+  const [searchField, setSearchField] = useState(filterList[0] || "");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearch = () => {
-    if (searchTerm.trim()) {
-      onSearch(searchField, searchTerm.trim());
-    }
+    onSearch(searchField, searchTerm.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -33,6 +35,7 @@ export default function SearchBar({ filterList, onSearch }: SearchBarProps) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={isLoading}
         />
       </div>
 
@@ -41,6 +44,7 @@ export default function SearchBar({ filterList, onSearch }: SearchBarProps) {
           className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={searchField}
           onChange={(e) => setSearchField(e.target.value)}
+          disabled={isLoading}
         >
           {filterList.map((field) => (
             <option key={field} value={field}>

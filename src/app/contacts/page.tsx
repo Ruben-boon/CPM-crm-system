@@ -1,34 +1,31 @@
 "use client";
 
-import Explorer from "@/modules/Explorer";
-import { contactsDocumentLayout } from "../../schema/documentLayouts";
 import { useState } from "react";
 import DetailsPanel from "@/modules/details/DetailPanel";
-import { FormField } from "@/types/types";
-import { fDetailDataToInputFields } from "@/lib/formatData";
+import { Contact } from "@/types/types";
+import { mapContactDetailsToFormFields } from "@/utils/mapFormFields.ts";
+import SearchContainer from "@/modules/search/SearchContainer";
 
 export default function ContactPage() {
-  const [panelData, setDetailData] = useState<any | null>(null);
+  const [contactData, setContactData] = useState<any | null>(null);
 
-  const handleOpenDetails = (isNew: boolean, detailData: any) => {
-    setDetailData({ isNew, detailData });
-    console.log("Detail Opened:", { isNew, detailData });
+  const handleOpenContact = (isNew: boolean, detailData: Contact) => {
+    setContactData({ isNew, detailData });
+    // console.log("Detail Opened:", { isNew, detailData });
   };
 
   return (
     <>
       <div className="search-area">
-        <Explorer
-          onOpenDetail={handleOpenDetails}
-          schemaLayout={contactsDocumentLayout}
-          type="contact"
+        <SearchContainer
+          onOpenDetail={handleOpenContact}
+          type="contacts"
         />
       </div>
-      {panelData && (
+      {contactData && (
         <DetailsPanel
-          isNew={panelData.isNew}
-          schemaLayout={contactsDocumentLayout}
-          initialFormFields={fDetailDataToInputFields(panelData.detailData)}
+          isNew={contactData.isNew}
+          initialFormFields={mapContactDetailsToFormFields(contactData.detailData)}
         />
       )}
     </>

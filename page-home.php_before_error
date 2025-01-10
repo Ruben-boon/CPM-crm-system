@@ -1,0 +1,299 @@
+<?php
+/**
+ * Template Name: Homepage
+ */
+
+get_header(); ?>
+
+<main class="home">
+  <div class="header-container">
+    <section class="slider-home <?php echo get_field("video") !== false ? 'video-container': ''; ?>">
+    <?php if (get_field("video") === false): ?>
+        <div class="slider">
+          <?php 
+          if (have_rows('slides')): 
+            while (have_rows('slides')): 
+              the_row();
+              $afb = get_sub_field('afbeelding');
+              if ($afb): ?>
+                <div class="slide">
+                  <div class="slider-overlay"></div>
+                  <img src="<?php echo esc_url($afb['sizes']['large']); ?>" alt="<?php echo esc_attr(get_sub_field('titel__alt_tekst')); ?>">
+                  <div class="caption">
+                    <h3><?php echo esc_html(get_sub_field('titel__alt_tekst')); ?></h3>
+                  </div>
+                </div>
+              <?php 
+              endif;
+            endwhile;
+          endif; ?>
+        </div>
+      <?php else: ?>
+        <div class="lds-dual-ring"></div>
+        <div class="video-header">
+          <?php
+          $iframe = get_field('header_video');
+          if ($iframe):
+            // Extract src
+            preg_match('/src="(.+?)"/', $iframe, $matches);
+            $src = $matches[1];
+
+            // Add parameters
+            $params = array(
+                'controls' => 0,
+                'muted' => 1,
+                'autoplay' => 1,
+                'loop' => 1
+            );
+            $new_src = add_query_arg($params, $src);
+            $iframe = str_replace($src, $new_src, $iframe);
+
+            // Add attributes
+            $attributes = 'frameborder="0"';
+            $iframe = str_replace('></iframe>', ' ' . $attributes . '></iframe>', $iframe);
+
+            echo wp_kses_post($iframe);
+          endif;
+          ?>
+        </div>
+      <?php endif; ?>
+    </section>
+  </div>
+
+  <section class="main-content">
+    <div class="container">
+      <div class="row">
+        <div class="col-xl-8 offset-xl-2 col-lg-10 offset-lg-1 col-md-12 col-12">
+          <h1><?php the_title(); ?></h1>
+          <?php the_content(); ?>
+          <?php 
+          $btnContent = get_field('link_onder_content');
+          if ($btnContent): ?>
+            <a href="<?php echo esc_url($btnContent['url']); ?>" 
+               class="btn" 
+               target="<?php echo esc_attr($btnContent['target']); ?>" 
+               title="<?php echo esc_attr($btnContent['title']); ?>">
+              <?php echo esc_html($btnContent['title']); ?>
+            </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>  
+  </section>
+
+  <section class="highlighed">
+    <div class="container-fluid">
+      <div class="row"> 
+        <?php
+        if (have_rows('uitgelichte_paginas_home')):
+          while (have_rows('uitgelichte_paginas_home')):
+            the_row();
+            $highPhoto = get_sub_field('achtergrond_afbeelding_highlighted');
+            if ($highPhoto): ?>
+              <div class="col-md-6 col-12">
+                <div class="highlight-item">
+                  <img src="<?php echo esc_url($highPhoto['sizes']['large']); ?>" 
+                       alt="<?php echo esc_attr(get_sub_field('titel_highlighted')); ?>" />
+                  <div class="title-block">
+                    <h3><?php echo esc_html(get_sub_field('titel_highlighted')); ?></h3>
+                  </div>
+                  <div class="highlight-content-container">
+                    <div class="highlight-content">
+                      <h3><?php echo esc_html(get_sub_field('titel_highlighted')); ?></h3>
+                      <?php echo wp_kses_post(get_sub_field('omschrijving_highlighted')); ?>
+                      <?php 
+                      $highBtn = get_sub_field('knop_highlighted');
+                      if ($highBtn): ?>
+                        <a href="<?php echo esc_url($highBtn['url']); ?>" 
+                           class="btn" 
+                           target="<?php echo esc_attr($highBtn['target']); ?>" 
+                           title="<?php echo esc_attr($highBtn['title']); ?>">
+                          <?php echo esc_html($highBtn['title']); ?>
+                        </a>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <?php
+            endif;
+          endwhile;
+        endif; ?>
+      </div>
+    </div>
+  </section>
+  
+  <section class="highlight-gallery">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <h2><?php echo esc_html(get_field('gallery_titel')); ?></h2>
+        </div>
+        <div class="col-12">
+          <?php 
+          $galleryPhoto = get_field('gallery_foto', '2');
+          if ($galleryPhoto): ?>
+            <img src="<?php echo esc_url($galleryPhoto['sizes']['slider']); ?>" 
+                 alt="<?php echo esc_attr(get_post_meta($galleryPhoto['ID'], '_wp_attachment_image_alt', true)); ?>"/>
+          <?php endif; ?>
+        </div>
+        <div class="col-12">
+          <a href="<?php echo esc_url(get_page_link(817)); ?>" 
+             class="btn" 
+             title="<?php esc_attr_e('Bekijk onze galerij', 'blt'); ?>">
+            <?php esc_html_e('Bekijk onze galerij', 'blt'); ?>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <?php
+  $imageNewsletter = get_field('afbeelding_nieuwsbrief_blok');
+  if ($imageNewsletter): ?>
+    <section class="newsletter" style="background-image: url('<?php echo esc_url($imageNewsletter['url']); ?>'); background-position: center center; background-size: cover; background-repeat: no-repeat;">
+      <div class="overlay"></div>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-12 col-lg-4 offset-1">
+            <div class="newsletter-img-container">
+              <img src="<?php echo esc_url($imageNewsletter['sizes']['medium_large']); ?>" 
+                   loading="lazy" 
+                   alt="<?php echo esc_attr(get_post_meta($imageNewsletter['ID'], '_wp_attachment_image_alt', true)); ?>" />
+            </div>
+          </div>
+          <div class="col-12 col-lg-5 offset-1">
+            <h2><?php esc_html_e('Schrijf u in voor onze nieuwsbrief', 'HTD'); ?>!</h2>
+            <a href="<?php echo esc_url(get_page_link(175)); ?>" 
+               class="btn" 
+               style="margin-bottom: 60px;" 
+               title="<?php esc_attr_e('Schrijf u in voor onze nieuwsbrief', 'HTD'); ?>">
+              <?php esc_html_e('aanmelden', 'HTD'); ?>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  <?php endif; ?>
+
+  <?php
+  $args = [
+    'post_type' => 'agenda', 
+    'posts_per_page' => -1, 
+    'orderby' => 'date', 
+    'order' => 'DESC',
+    'meta_query' => [
+      'relation' => 'AND',
+      [
+        'key' => 'event_eind_datum',
+        'value' => date("Ymd"),
+        'compare' => '>='
+      ],
+      [
+        'key' => 'event_start_datum',
+        'value' => date("Ymd"),
+        'compare' => '>='
+      ]
+    ]
+  ];
+  
+  $query1 = new WP_Query($args);
+  if ($query1->have_posts()): ?>
+    <section class="agenda-home">
+      <div class="container">
+        <div class="row">
+          <div class="col-12">
+            <h2><?php esc_html_e('Agenda', 'HTD'); ?></h2>
+          </div>
+        </div>
+      </div>
+      <div class="container">
+        <div class="row">
+          <div class="col-12">
+            <div class="agenda-slider owl-carousel owl-theme">
+              <?php
+              while ($query1->have_posts()):
+                $query1->the_post();
+                $dateToday = get_the_date('Ymd');
+                $startDate = get_field('event_start_datum');
+                $endDate = get_field('event_eind_datum');
+                $newStart = date_i18n("d M Y", strtotime($startDate));
+                $newEnd = date_i18n("d M Y", strtotime($endDate)); ?>
+                <div class="item">
+                  <div class="news-item">
+                    <div class="item-content <?php echo empty(get_the_post_thumbnail_url()) ? 'no-img' : ''; ?>">
+                      <a href="<?php echo esc_url(get_permalink()); ?>" title="<?php echo esc_attr(get_the_title()); ?>">
+                        <?php 
+                        $imgAgenda = get_the_post_thumbnail_url($post->ID, 'medium_large');
+                        if ($imgAgenda): ?>
+                          <img src="<?php echo esc_url($imgAgenda); ?>" 
+                               loading="lazy" 
+                               alt="<?php echo esc_attr(get_the_title()); ?>" />
+                        <?php endif; ?>
+                        <h3><?php echo esc_html(get_the_title()); ?></h3>
+                      </a>
+                      <span class="date">
+                        <?php echo esc_html($newStart); 
+                        if (!empty($endDate)): ?>
+                          <span>-</span> <?php echo esc_html($newEnd); 
+                        endif; ?>
+                      </span>
+                      <p><?php echo esc_html(substrwords(get_field('intro_tekst'), 100)); ?></p>
+                    </div>
+                  </div>
+                </div>
+              <?php endwhile; 
+              wp_reset_postdata(); ?>
+            </div>
+            <div class="container">
+              <div class="row">
+                <div class="col-12">
+                  <a href="<?php echo esc_url(get_page_link(102)); ?>" 
+                     class="btn btn-agenda" 
+                     title="<?php esc_attr_e('Bekijk agenda overzicht', 'HTD'); ?>">
+                    <?php esc_html_e('Bekijk agenda', 'HTD'); ?>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <hr class="small">
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
+
+  <section class="reviews">
+    <div class="container">
+      <div class="row">
+        <div class="col-xl-8 offset-xl-2 col-lg-10 offset-lg-1 col-md-12 col-12">
+          <div class="review-slider owl-carousel owl-theme">
+            <?php
+            if (have_rows('reviews', 'option')):
+              $reviews = get_field('reviews', 'option');
+              if ($reviews):
+                shuffle($reviews);
+                foreach ($reviews as $review): ?>
+                  <div class="slide">
+                    <p class="review-text"><?php echo esc_html($review['review']); ?></p>
+                    <p class="author"><?php echo esc_html($review['auteur']); ?></p>
+                  </div>
+                <?php 
+                endforeach;
+              endif;
+            endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<?php get_footer(); ?>
