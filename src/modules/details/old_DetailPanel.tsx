@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import InputField from "../fields/InputField";
 import { FormField } from "@/types/types";
+import { createDocument } from "@/app/actions/create";
 
 // this component needs to be split further
 
@@ -15,18 +16,22 @@ interface ChangeRecord {
 interface DetailsPanelProps {
   isNew?: boolean;
   initialFormFields: FormField[];
+  type: string;
 }
 
 export default function DetailsPanel({
   isNew = false,
   initialFormFields,
+  type,
 }: DetailsPanelProps) {
   const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);
   const [isBulkEditing, setIsBulkEditing] = useState(isNew);
-  const [changedFields, setChangedFields] = useState<Record<string, ChangeRecord>>({});
+  const [changedFields, setChangedFields] = useState<
+    Record<string, ChangeRecord>
+  >({});
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  console.log( initialFormFields)
+  console.log(initialFormFields);
   useEffect(() => {
     setFormFields(initialFormFields);
     setChangedFields({});
@@ -65,10 +70,20 @@ export default function DetailsPanel({
   };
 
   const handleSaveChanges = async () => {
-    console.log("Saving changes:", changedFields);
-    setChangedFields({});
-    if (!isNew) setShowConfirmation(false);
-    setIsBulkEditing(false);
+    try {
+      const result = await createDocument(type, formFields);
+      if (result.success) {
+        setChangedFields({});
+        if (!isNew) setShowConfirmation(false);
+        setIsBulkEditing(false);
+        // Handle success (maybe show a notification or redirect)
+      } else {
+        // Handle error
+        console.error(result.error);
+      }
+    } catch (error) {
+      console.error("Error saving:", error);
+    }
   };
 
   return (
@@ -92,7 +107,9 @@ export default function DetailsPanel({
               Wijzigingen Annuleren
             </button>
             <button
-              onClick={isNew ? handleSaveChanges : () => setShowConfirmation(true)}
+              onClick={
+                isNew ? handleSaveChanges : () => setShowConfirmation(true)
+              }
               className="rounded-md bg-green-500 px-4 py-2 text-white hover:bg-green-600"
             >
               Wijzigingen Opslaan
@@ -127,13 +144,15 @@ export default function DetailsPanel({
                   handleFieldChange(
                     field.id,
                     field.label,
-                    initialFormFields.find((f) => f.id === field.id)?.value || "",
+                    initialFormFields.find((f) => f.id === field.id)?.value ||
+                      "",
                     newValue
                   )
                 }
                 onCancel={() => {
                   const initialValue =
-                    initialFormFields.find((f) => f.id === field.id)?.value || "";
+                    initialFormFields.find((f) => f.id === field.id)?.value ||
+                    "";
                   handleFieldChange(
                     field.id,
                     field.label,

@@ -1,7 +1,13 @@
 // search.ts
+
+
 'use server';
 import clientPromise from "@/lib/mongoDB";
 import { serializeContact, type SerializedContact } from "@/utils/serializers";
+
+const databaseName = 'CRM';
+const searchResultLimit = 8;
+
 
 interface SearchResponse {
   success: boolean;
@@ -18,7 +24,7 @@ export async function searchData(
 ): Promise<SearchResponse> {
   try {
     const client = await clientPromise;
-    const db = client.db('CRM');
+    const db = client.db(databaseName);
     const coll = db.collection(collection);
 
     let query = {};
@@ -43,7 +49,7 @@ export async function searchData(
     }
 
     // Get the results and serialize them using the existing serializer to
-    const results = await coll.find(query).toArray();
+    const results = await coll.find(query).limit(searchResultLimit).toArray();
     const serializedResults = results.map(serializeContact);
 
     // Get searchable fields from the first document

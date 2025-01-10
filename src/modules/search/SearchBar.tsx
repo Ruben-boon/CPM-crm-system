@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface SearchBarProps {
   filterList: string[];
@@ -12,11 +12,18 @@ export default function SearchBar({
   onSearch,
   isLoading = false,
 }: SearchBarProps) {
-  const [searchField, setSearchField] = useState(filterList[0] || "");
+  const [searchField, setSearchField] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (filterList.length > 0) {
+      setSearchField(filterList[0]);
+    }
+  }, [filterList]);
 
   const handleSearch = () => {
     onSearch(searchField, searchTerm.trim());
+    console.log(searchField, searchTerm);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -43,14 +50,18 @@ export default function SearchBar({
         <select
           className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={searchField}
-          onChange={(e) => setSearchField(e.target.value)}
+          onChange={(e) => {
+            setSearchField(e.target.value);
+          }}
           disabled={isLoading}
         >
-          {filterList.map((field) => (
-            <option key={field} value={field}>
-              {field.replace(".", " ")}
-            </option>
-          ))}
+          {filterList.map((field) => {
+            return (
+              <option key={field} value={field}>
+                {field.replace(".", " ")}
+              </option>
+            );
+          })}
         </select>
       </div>
     </div>

@@ -34,7 +34,7 @@ export default function SearchHandler({ type, onFilter }: SearchPanelProps) {
     if (searchTerm.trim()) {
       setIsLoading(true);
       try {
-        const result = await searchData('Contacts', searchField, searchTerm.trim());
+        const result = await searchData(type, searchField, searchTerm.trim());
         if (result.success && result.results) {
           onFilter(result.results);
         } else {

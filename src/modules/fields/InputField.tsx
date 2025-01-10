@@ -1,19 +1,7 @@
 "use client";
 
+import { InputFieldProps } from "@/types/types";
 import React, { KeyboardEvent, ChangeEvent } from "react";
-
-interface InputFieldProps {
-  label: string;
-  value?: string;
-  isEditing: boolean;
-  type: "text" | "email" | "tel" | "number" | "url" | "dropdown";
-  dropdownFields?: string[];
-  required?: boolean;
-  disabled?: boolean;
-  onCancel?: () => void;
-  onChange?: (value: string) => void;
-  onSave?: (value: string) => Promise<void>;
-}
 
 const InputField: React.FC<InputFieldProps> = ({
   label,
@@ -28,7 +16,8 @@ const InputField: React.FC<InputFieldProps> = ({
   onChange,
 }) => {
   const [value, setValue] = React.useState<string>(initialValue);
-  const [previousValue, setPreviousValue] = React.useState<string>(initialValue);
+  const [previousValue, setPreviousValue] =
+    React.useState<string>(initialValue);
 
   React.useEffect(() => {
     setValue(initialValue);
@@ -59,7 +48,9 @@ const InputField: React.FC<InputFieldProps> = ({
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement | HTMLSelectElement>): void => {
+  const handleKeyDown = (
+    e: KeyboardEvent<HTMLInputElement | HTMLSelectElement>
+  ): void => {
     if (e.key === "Enter") {
       handleSave();
     } else if (e.key === "Escape") {
@@ -123,7 +114,9 @@ const InputField: React.FC<InputFieldProps> = ({
           <div className="flex w-full">{renderInput()}</div>
         ) : (
           <div className="flex w-full items-center justify-between rounded-md border border-transparent p-2 hover:border-gray-300">
-            <span className={`text-gray-900 ${disabled ? "text-gray-500" : ""}`}>
+            <span
+              className={`text-gray-900 ${disabled ? "text-gray-500" : ""}`}
+            >
               {value || "-"}
             </span>
           </div>

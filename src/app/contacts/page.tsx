@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import DetailsPanel from "@/modules/details/DetailPanel";
 import { Contact } from "@/types/types";
 import { mapContactDetailsToFormFields } from "@/utils/mapFormFields.ts";
 import SearchContainer from "@/modules/search/SearchContainer";
+import DetailContainer from "@/modules/details/DetailContainer";
 
 export default function ContactPage() {
   const [contactData, setContactData] = useState<any | null>(null);
@@ -17,15 +17,15 @@ export default function ContactPage() {
   return (
     <>
       <div className="search-area">
-        <SearchContainer
-          onOpenDetail={handleOpenContact}
-          type="contacts"
-        />
+        <SearchContainer onOpenDetail={handleOpenContact} type="contacts" />
       </div>
       {contactData && (
-        <DetailsPanel
+        <DetailContainer
           isNew={contactData.isNew}
-          initialFormFields={mapContactDetailsToFormFields(contactData.detailData)}
+          initialFormFields={mapContactDetailsToFormFields(
+            contactData.detailData
+          )}
+          type="contacts"
         />
       )}
     </>

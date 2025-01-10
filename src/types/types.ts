@@ -1,13 +1,9 @@
-export interface DetailsPanelProps {
-  isNew: boolean;
-  schemaLayout: any;
-  initialFormFields: FormField[];
-  onSubmit: (formData: FormField[]) => Promise<void>;
-  onDelete: () => Promise<void>;
-  isSubmitting: boolean;
-  onClose: () => void;
+
+interface BaseDocument {
+  id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
-//tf is this doing here?
 
 export interface FormField {
   id: string;
@@ -18,8 +14,38 @@ export interface FormField {
   required?: boolean;
 }
 
+export interface InputFieldProps extends Omit<FormField, 'id'> {
+  isEditing: boolean;
+  disabled?: boolean;
+  onCancel?: () => void;
+  onChange?: (value: string) => void;
+  onSave?: (value: string) => Promise<void>;
+}
+
+
+export interface ChangeRecord {
+  fieldId: string;
+  label: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface Contact extends BaseDocument {
+  type?: string[];
+  company?: CompanyDetail;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: Address;
+  birthday?: Date;
+  documents?: Document[];
+  position?: string;
+  preferences?: Preferences;
+}
+
 interface Document {
-  [key: string]: any;  // Temporary placeholder for document structure
+  [key: string]: any;
 }
 
 interface Preferences {
@@ -43,33 +69,14 @@ interface Address {
   country?: string;
 }
 
-export type Contact = {
-  type?: string[];
-  company?: CompanyDetail;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  address?: Address;
-  birthday?: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-  documents?: Document[];
-  id?: string;
-  position?: string;
-  preferences?: Preferences;
-}
-
-export type Booking = {
+export interface Booking extends BaseDocument {
   date: Date;
   customerName: string;
   service: string;
   status: string;
-};
+}
 
 export type DataTypes = {
   contacts: Contact[];
   bookings: Booking[];
 };
-
-//serializedContact type in serializers.ts

@@ -12,6 +12,7 @@ export default function SearchContainer({ onOpenDetail, type }: ExplorerProps) {
 
   const handleFilterUpdate = (data: any[]) => {
     setFilteredData(data);
+    console.log(data, "data with the filter applied");
   };
 
   const handleDetailsToParent = (isNew: boolean, detailData: any) => {
