@@ -1,9 +1,17 @@
 .search-area {
-  background-color: lightgray;
-  height:100vh;
-  width:fit-content;
-  padding:2em;
+  background-color: #f6f6f8;
+  height: 100vh;
+  width: fit-content;
+  padding: 1em;
+  overflow-y: scroll;
+  position: relative;
   .search-container {
     display: flex;
+  }
+  .button-container {
+    bottom: 0;
+    position: fixed;
+    z-index: 10;
+    width:284px;
   }
 }

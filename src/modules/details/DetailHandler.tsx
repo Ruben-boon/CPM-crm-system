@@ -1,96 +1,176 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import DetailForm from "./DetailForm";
 import DetailControls from "./DetailControls";
 import DetailConfirmation from "./DetailConfirmation";
 import { FormField, ChangeRecord } from "@/types/types";
 import { createDocument } from "@/app/actions/create";
+import { updateDocument } from "@/app/actions/update";
+import { toast } from "sonner";
 
 interface DetailHandlerProps {
   isNew: boolean;
   initialFormFields: FormField[];
-  type: string,
+  type: string;
+  documentId?: string;
+  onUpdateSuccess?: () => void;
+  onPendingChanges?: (
+    hasPending: boolean,
+    changes?: Record<string, ChangeRecord>
+  ) => void;
 }
 
-export default function DetailHandler({
-  isNew,
-  initialFormFields,
-  type
-}: DetailHandlerProps) {
-  const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);
-  const [isBulkEditing, setIsBulkEditing] = useState(isNew);
-  const [changedFields, setChangedFields] = useState<Record<string, ChangeRecord>>({});
-  const [showConfirmation, setShowConfirmation] = useState(false);
-
-  const handleFieldChange = (
-    fieldId: string,
-    label: string,
-    oldValue: string,
-    newValue: string
+const DetailHandler = forwardRef<
+  {
+    handleSave: () => Promise<void>;
+    handleDiscard: () => void;
+  },
+  DetailHandlerProps
+>(
+  (
+    { isNew, initialFormFields, type, onUpdateSuccess, onPendingChanges },
+    ref
   ) => {
-    if (oldValue === newValue) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { [fieldId]: _, ...rest } = changedFields;
-      setChangedFields(rest);
-    } else {
-      setChangedFields({
-        ...changedFields,
-        [fieldId]: { fieldId, label, oldValue, newValue },
-      });
-    }
+    const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);
+    const [isBulkEditing, setIsBulkEditing] = useState(isNew);
+    const [changedFields, setChangedFields] = useState<
+      Record<string, ChangeRecord>
+    >({});
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
-    setFormFields((prev) =>
-      prev.map((field) =>
-        field.id === fieldId ? { ...field, value: newValue } : field
-      )
-    );
-  };
+    useImperativeHandle(ref, () => ({
+      handleSave: async () => {
+        await executeSave();
+      },
+      handleDiscard: () => {
+        handleDiscard();
+      },
+    }));
 
-  const handleDiscard = () => {
-    setFormFields(initialFormFields);
-    setChangedFields({});
-    if (!isNew) setIsBulkEditing(false);
-    setShowConfirmation(false);
-  };
-
-  const handleSave = async () => {
-    try {
-      const result = await createDocument(type, formFields); 
-      if (result.success) {
-        setChangedFields({});
-        if (!isNew) setShowConfirmation(false);
-        setIsBulkEditing(false);
+    const handleFieldChange = (
+      fieldId: string,
+      label: string,
+      oldValue: string,
+      newValue: string
+    ) => {
+      if (oldValue === newValue) {
+        const { [fieldId]: _, ...rest } = changedFields;
+        setChangedFields(rest);
       } else {
-        console.error(result.error);
+        setChangedFields({
+          ...changedFields,
+          [fieldId]: { fieldId, label, oldValue, newValue },
+        });
       }
-    } catch (error) {
-      console.error("Error saving:", error);
-    }
-  };
 
-  return (
-    <div className="details-panel relative">
-      <DetailControls
-        isNew={isNew}
-        isBulkEditing={isBulkEditing}
-        hasChanges={Object.keys(changedFields).length > 0}
-        onEdit={() => setIsBulkEditing(true)}
-        onSave={handleSave}
-        onDiscard={handleDiscard}
-      />
+      setFormFields((prev) =>
+        prev.map((field) =>
+          field.id === fieldId ? { ...field, value: newValue } : field
+        )
+      );
 
-      <DetailForm
-        formFields={formFields}
-        isEditing={isBulkEditing}
-        onChange={handleFieldChange}
-      />
+      onPendingChanges?.(true, changedFields);
+    };
 
-      {showConfirmation && (
-        <DetailConfirmation
-          changes={changedFields}
-          onConfirm={handleSave}
-          onCancel={() => setShowConfirmation(false)}
+    const handleDiscard = () => {
+      setFormFields(initialFormFields);
+      setChangedFields({});
+      if (!isNew) setIsBulkEditing(false);
+      onPendingChanges?.(false);
+      toast.info('Changes discarded', {
+        description: 'All changes have been reset to original values.'
+      });
+    };
+
+    const handleSave = () => {
+      setShowConfirmation(true);
+    };
+
+    const executeSave = async () => {
+      toast.promise(
+        isNew
+          ? createDocument(type, formFields)
+          : updateDocument(type, formFields),
+        {
+          loading: 'Saving changes...',
+          success: (result) => {
+            if (result.success) {
+              setChangedFields({});
+              if (!isNew) {
+                setIsBulkEditing(false);
+              }
+              setShowConfirmation(false);
+              onPendingChanges?.(false);
+              onUpdateSuccess?.();
+              return isNew ? 'New entry created successfully!' : 'Changes saved successfully!';
+            }
+            throw new Error(result.error || 'Failed to save changes');
+          },
+          error: (error) => {
+            console.error("Error saving:", error);
+            return 'Failed to save changes. Please try again.';
+          }
+        }
+      );
+    };
+
+    const handleConfirmSave = async () => {
+      await executeSave();
+    };
+
+    const handleCancelSave = () => {
+      setShowConfirmation(false);
+      toast('Save operation cancelled');
+    };
+
+    const toggleEditing = () => {
+      if (Object.keys(changedFields).length === 0 && !isNew) {
+        setIsBulkEditing(!isBulkEditing);
+      } else if (Object.keys(changedFields).length > 0) {
+        toast.warning('Please save or discard your changes first', {
+          description: 'You have unsaved changes that need to be handled.'
+        });
+      }
+    };
+
+    return (
+      <div className="details-panel relative">
+        <DetailControls
+          isNew={isNew}
+          isBulkEditing={isBulkEditing}
+          hasChanges={Object.keys(changedFields).length > 0}
+          onEdit={toggleEditing}
+          onSave={handleSave}
+          onDiscard={handleDiscard}
         />
-      )}
-    </div>
-  );
-}
+
+        <DetailForm
+          formFields={formFields}
+          isEditing={isBulkEditing}
+          onChange={handleFieldChange}
+        />
+
+        {showConfirmation &&
+          (isNew ? (
+            <DetailConfirmation
+              title="Create New Entry"
+              message="Are you sure you want to create this new entry?"
+              confirm="Create"
+              cancel="Cancel"
+              onConfirm={handleConfirmSave}
+              onCancel={handleCancelSave}
+            />
+          ) : (
+            <DetailConfirmation
+              changes={changedFields}
+              onConfirm={handleConfirmSave}
+              onCancel={handleCancelSave}
+            />
+          ))}
+      </div>
+    );
+  }
+);
+
+DetailHandler.displayName = "DetailHandler";
+
+export default DetailHandler;

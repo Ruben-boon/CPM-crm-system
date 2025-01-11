@@ -18,7 +18,6 @@ export default function DetailForm({
 }: DetailFormProps) {
   return (
     <div className="detail-group">
-      <h4 className="detail-group__title">Klant informatie</h4>
       {formFields.map((field) => (
         <div key={field.id}>
           <InputField

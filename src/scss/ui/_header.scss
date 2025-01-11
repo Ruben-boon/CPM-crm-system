@@ -1,5 +1,5 @@
 nav {
-  background-color: black;
+  background-color: #202124;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -8,5 +8,8 @@ nav {
   gap:8px;
   * {
     color: white;
+  }
+  .color-picker {
+    margin-top: auto;
   }
 }

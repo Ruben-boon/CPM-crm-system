@@ -1,4 +1,3 @@
-
 interface BaseDocument {
   id?: string;
   createdAt?: Date;
@@ -7,21 +6,28 @@ interface BaseDocument {
 
 export interface FormField {
   id: string;
-  label: string;
-  value: string;
-  type: "text" | "email" | "tel" | "number" | "url" | "dropdown" | "date";
+  label?: string;
+  value?: string;
+  type?:
+    | "text"
+    | "email"
+    | "tel"
+    | "number"
+    | "url"
+    | "dropdown"
+    | "date"
+    | "hidden";
   dropdownFields?: string[];
   required?: boolean;
 }
 
-export interface InputFieldProps extends Omit<FormField, 'id'> {
+export interface InputFieldProps extends Omit<FormField, "id"> {
   isEditing: boolean;
   disabled?: boolean;
   onCancel?: () => void;
   onChange?: (value: string) => void;
   onSave?: (value: string) => Promise<void>;
 }
-
 
 export interface ChangeRecord {
   fieldId: string;
@@ -31,6 +37,7 @@ export interface ChangeRecord {
 }
 
 export interface Contact extends BaseDocument {
+  id?: string;
   type?: string[];
   company?: CompanyDetail;
   firstName?: string;

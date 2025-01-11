@@ -2,6 +2,8 @@
 import { useState } from "react";
 import SearchResults from "./SearchResults";
 import SearchHandler from "./SearchHandler";
+import { Plus } from "lucide-react";
+import Button from "../Button";
 
 interface ExplorerProps {
   type: string;
@@ -22,17 +24,17 @@ export default function SearchContainer({ onOpenDetail, type }: ExplorerProps) {
   return (
     <>
       <SearchHandler type={type} onFilter={handleFilterUpdate} />
-      <div
-        className="create-document"
-        onClick={() => handleDetailsToParent(true, [])}
-      >
-        Create document
-      </div>
+
       <SearchResults
         type={type}
         onOpenDetail={handleDetailsToParent}
         searchList={filteredData}
       />
+      <div className="button-container">
+        <Button icon={Plus} onClick={() => handleDetailsToParent(true, [])}>
+          Create new entry
+        </Button>
+      </div>
     </>
   );
 }

@@ -10,10 +10,9 @@
 // @import "animations/animations";
 
 // base
-@import "base/typography"; 
+@import "base/typography";
 @import "base/reset";
 @import "base/general";
-@import "base/buttons";
 //form
 
 // modules
@@ -23,7 +22,13 @@
 @import "ui/header";
 @import "ui/menu-link";
 @import "ui/search-area";
-@import "ui/details-panel";
+@import "ui/search-bar";
+@import "ui/search-results";
 
+
+@import "ui/details-panel";
+@import "ui/details/detail-confirmation";
+
+@import "ui/buttons";
 // shame
 @import "shame";

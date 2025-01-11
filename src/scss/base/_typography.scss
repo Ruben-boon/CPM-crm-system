@@ -1,14 +1,14 @@
-h1,
+--font1 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-pt-serif);
+  font-family: var(--font1);
   color: var(--title-color);
   font-weight: bold;
-  margin-bottom:22px;
-  font-weight: 600;
+  margin-bottom: 22px;
+  font-weight: 300;
   line-height: 1.2;
 
   @media (max-width: $screen-lg-max) {
@@ -43,24 +43,23 @@ h4 {
   font-size: clamp(16px, 2vw + 1rem, 20px);
 }
 
-p, label, input, button, ::placeholder, textarea {
-  font-family: var(--epilogue-variable);
-  color: var(--paragraph-color);
-  font-size: clamp(14px, 2vw, 18px);
-  font-weight: 400;
+* {
+  font-family: var(--font1);
+  font-size: var(--font-size);
+  font-weight: 300;
 }
 p {
-  margin-bottom:22px;
+  margin-bottom: 22px;
 }
 
 /* List styles */
 ul {
-  font-family: var(--epilogue-variable);
+  font-family: var(--font1);
   list-style: disc;
   font-size: clamp(14px, 2vw, 18px);
   color: var(--paragraph-color);
   li {
-    font-family: var(--epilogue-variable);
+    font-family: var(--font1);
     list-style-position: inside;
     margin-bottom: 0.5rem;
     color: var(--paragraph-color);
@@ -69,11 +68,9 @@ ul {
 
 /* Link styles */
 a {
-  font-family: var(--epilogue-variable);
+  font-family: var(--font1);
   color: var(--link-color);
 }
-
-
 
 /* Strong and emphasis styles */
 strong {

@@ -3,6 +3,9 @@ import { FormField } from "@/types/types";
 export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
   const fields: FormField[] = [
     // Personal Information
+    { id: "objectId", 
+      type:"hidden",
+      value: detailData.id },
     {
       id: "firstName",
       label: "First Name",
@@ -117,7 +120,7 @@ export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
       label: "Commission Details",
       value: detailData.commissionDetails || "",
       type: "text",
-    }
+    },
   ];
 
   return fields;

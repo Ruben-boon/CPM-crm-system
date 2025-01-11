@@ -3,10 +3,13 @@
   border-radius: 2px;
   cursor: pointer;
   text-decoration: none;
+  display: flex;
+  gap:16px;
+  width:100%;
   &:hover {
     background-color: rgb(31, 31, 31);
   }
-  &:active {
+  &.active {
     background-color: var(--accent-color);
   }
 }

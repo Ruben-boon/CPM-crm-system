@@ -17,18 +17,19 @@ export default function DetailControls({
 }: DetailControlsProps) {
   return (
     <div className="flex justify-between mb-4">
-      <button
-        onClick={onEdit}
-        className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-        disabled={isNew || hasChanges}
-      >
-        {isBulkEditing ? "Beëindig Bewerken" : "Bewerk Alles"}
-      </button>
-
+      {!isBulkEditing && !hasChanges && (
+        <button
+          onClick={onEdit}
+          className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          disabled={isNew || hasChanges}
+        >
+          {isBulkEditing ? "Cancel editing" : "Edit"}
+        </button>
+      )}
       {isBulkEditing && hasChanges && (
         <div className="flex gap-2">
-          <button onClick={onDiscard}>Wijzigingen Annuleren</button>
-          <button onClick={onSave}>Wijzigingen Opslaan</button>
+          <button onClick={onDiscard}>{isNew ? "Clear input fields" : "Discard changes"}</button>
+          <button onClick={onSave}>{isNew ? "Create database entry" : "Save changes"}</button>
         </div>
       )}
     </div>

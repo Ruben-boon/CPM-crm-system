@@ -19,6 +19,7 @@ const InputField: React.FC<InputFieldProps> = ({
   const [previousValue, setPreviousValue] =
     React.useState<string>(initialValue);
 
+    
   React.useEffect(() => {
     setValue(initialValue);
     setPreviousValue(initialValue);
@@ -29,6 +30,10 @@ const InputField: React.FC<InputFieldProps> = ({
       setPreviousValue(value);
     }
   }, [isEditing]);
+
+  if (type === "hidden") {
+    return;
+  }
 
   const handleSave = async (): Promise<void> => {
     try {
