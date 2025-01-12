@@ -23,15 +23,14 @@ export default function SearchResults({
           >
             <div className="search-results__header">
               <div className="search-results__header-name">
-                {singleResult.general.firstName}
-                {singleResult.general.LastName}
+                {`${singleResult.general.firstName} ${singleResult.general.lastName}`}
               </div>
 
               <button
                 className="search-results__header-copy-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onOpenDetail(true, singleResult.general);
+                  onOpenDetail(true, singleResult);
                 }}
               >
                 <Copy size={16} />

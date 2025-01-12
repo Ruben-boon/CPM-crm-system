@@ -12,7 +12,6 @@ export interface PopulatedData {
   value: string;
 }
 
-
 export interface ChangeRecord {
   fieldId: string;
   label: string;
@@ -69,7 +68,6 @@ export default function DetailForm({
     }
   };
 
-
   //use path property to group fields
   const groupFields = (fields: FormField[]): GroupedFields => {
     return fields.reduce((groups: GroupedFields, field) => {
@@ -79,38 +77,35 @@ export default function DetailForm({
           ungrouped: [...(groups.ungrouped || []), field],
         };
       }
-  
+
       const pathParts = field.path.split(".");
       const groupName = pathParts.length > 1 ? pathParts[0] : "ungrouped";
-  
+
       return {
         ...groups,
         [groupName]: [...(groups[groupName] || []), field],
       };
     }, {});
   };
-  
+
   const groupedFields = groupFields(fields);
-  
+
   return (
-    <div className="detail-form space-y-6">
+    <div className="detail-form">
       {Object.entries(groupedFields)
-        .sort(([a], [b]) => (a === "ungrouped" ? 1 : b === "ungrouped" ? -1 : a.localeCompare(b)))
+        .sort(([a], [b]) =>
+          a === "ungrouped" ? 1 : b === "ungrouped" ? -1 : a.localeCompare(b)
+        )
         .map(([groupName, groupFields]) => (
-          <div
-            key={groupName}
-            className={
-              groupName !== "ungrouped" ? "border rounded-lg p-4 bg-gray-50" : ""
-            }
-          >
+          <div key={groupName}>
             {groupName !== "ungrouped" && (
-              <p className="text-lg font-medium capitalize mb-4">
-                <strong>{groupName}</strong>
-              </p>
+              <div className="group-title">
+                {groupName}
+              </div>
             )}
-            <div className="space-y-4">
+            <div className="detail-form__grouped">
               {groupFields.map((field) => (
-                <React.Fragment key={field.id}>
+                <React.Fragment key={field.id} >
                   {getFieldComponent(field)}
                 </React.Fragment>
               ))}

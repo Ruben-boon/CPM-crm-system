@@ -1,3 +1,7 @@
+import React from 'react';
+import { Edit, Save, X } from 'lucide-react';
+import Button from '../Button';
+
 interface DetailControlsProps {
   isNew: boolean;
   isBulkEditing: boolean;
@@ -16,24 +20,40 @@ export default function DetailControls({
   onDiscard,
 }: DetailControlsProps) {
   return (
-    <div className="flex justify-between mb-4">
+    <div className="detail-controls">
       {!isBulkEditing && !hasChanges && (
-        <button
+        <Button
+          variant="md"
+          intent="ghost"
+          icon={Edit}
           onClick={onEdit}
-          className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
           disabled={isNew || hasChanges}
+          className="detail-controls__edit-button"
         >
           {isBulkEditing ? "Cancel editing" : "Edit"}
-        </button>
+        </Button>
       )}
+      
       {isBulkEditing && hasChanges && (
-        <div className="flex gap-2">
-          <button onClick={onDiscard}>
+        <div className="detail-controls__button-group">
+          <Button 
+            variant="md" 
+            intent="secondary"
+            icon={X}
+            onClick={onDiscard}
+            className="detail-controls__discard-button"
+          >
             {isNew ? "Clear input fields" : "Discard changes"}
-          </button>
-          <button onClick={onSave}>
+          </Button>
+          
+          <Button
+            variant="md"
+            icon={Save}
+            onClick={onSave}
+            className="detail-controls__save-button"
+          >
             {isNew ? "Create database entry" : "Save changes"}
-          </button>
+          </Button>
         </div>
       )}
     </div>

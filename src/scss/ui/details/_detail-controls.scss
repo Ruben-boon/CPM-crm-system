@@ -1,0 +1,23 @@
+.detail-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  
+  .detail-controls__button-group {
+    display: flex;
+    gap: 0.5rem;
+    height:36px;
+  }
+  
+  /* These classes are optional - use them if you want to style specific buttons differently */
+  .detail-controls__edit-button {
+    /* Custom styles for edit button if needed */
+  }
+  
+  .detail-controls__discard-button {
+  }
+  
+  .detail-controls__save-button {
+    /* Custom styles for save button if needed */
+  }

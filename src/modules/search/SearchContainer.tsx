@@ -44,15 +44,15 @@ export default function SearchContainer({
         projection={projection}
         query={query}
       />
+      <div className="button-container">
+        <Button intent="ghost" icon={Plus} onClick={() => handleDetailsToParent(true, [])}>
+          Create new entry
+        </Button>
+      </div>
       <SearchResults
         onOpenDetail={handleDetailsToParent}
         searchList={filteredData}
       />
-      <div className="button-container">
-        <Button icon={Plus} onClick={() => handleDetailsToParent(true, [])}>
-          Create new entry
-        </Button>
-      </div>
     </>
   );
 }

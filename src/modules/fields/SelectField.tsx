@@ -30,7 +30,7 @@ export default function SelectField({
         <select
           value={value}
           onChange={handleChange}
-          className="input-base"
+          className="input-base input-style"
           required={required}
           disabled={disabled}
         >

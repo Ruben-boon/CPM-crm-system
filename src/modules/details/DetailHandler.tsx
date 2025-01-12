@@ -147,7 +147,6 @@ const DetailHandler = forwardRef<
           onSave={handleSave}
           onDiscard={handleDiscard}
         />
-
         <DetailForm
           fields={formFields}
           isEditing={isBulkEditing}

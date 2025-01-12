@@ -42,7 +42,7 @@ export default function TextField({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          className="input-base"
+          className="input-base input-style"
           required={required}
           disabled={disabled}
           autoFocus={isEditing}

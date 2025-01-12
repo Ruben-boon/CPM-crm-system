@@ -1,5 +1,7 @@
 import React from "react";
 import { ChangeRecord } from "@/types/types";
+import Button from "../Button";
+import { Check, Cross, X } from "lucide-react";
 
 interface DetailConfirmationProps {
   changes?: Record<string, ChangeRecord>;
@@ -45,20 +47,12 @@ export default function DetailConfirmation({
         )}
 
         <div className="confirmation-actions">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="button button-secondary"
-          >
+          <Button icon={X} onClick={onCancel} intent="secondary">
             {cancel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="button button-danger"
-          >
+          </Button>
+          <Button icon={Check} onClick={onConfirm}>
             {confirm}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
