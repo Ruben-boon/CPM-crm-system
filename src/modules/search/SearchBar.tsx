@@ -1,26 +1,34 @@
 "use client";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useState } from "react";
+
+type SearchableField = {
+  label: string;
+  value: string;
+};
 
 interface SearchBarProps {
-  filterList: string[];
+  searchableFields: SearchableField[];
   onSearch: (searchField: string, searchTerm: string) => void;
   isLoading?: boolean;
 }
 
 export default function SearchBar({
-  filterList,
+  searchableFields,
   onSearch,
   isLoading = false,
 }: SearchBarProps) {
   const [searchField, setSearchField] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  //set the first field on initilise
   useEffect(() => {
-    if (filterList.length > 0) {
-      setSearchField(filterList[0]);
+    if (searchableFields.length > 0) {
+      setSearchField(searchableFields[0].value); 
     }
-  }, [filterList]);
+  }, [searchableFields]);
+
 
   const handleSearch = () => {
     onSearch(searchField, searchTerm.trim());
@@ -30,7 +38,7 @@ export default function SearchBar({
     if (e.key === "Enter") {
       handleSearch();
     }
-  };
+};
 
   return (
     <div className="search-container">
@@ -39,7 +47,7 @@ export default function SearchBar({
         <input
           type="text"
           className="search-bar__input"
-          placeholder={`Search by ${searchField.replace(".", " ")}`}
+          placeholder={`Search by ${searchField}`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -55,10 +63,10 @@ export default function SearchBar({
         }}
         disabled={isLoading}
       >
-        {filterList.map((field) => {
+        {searchableFields.map((field) => {
           return (
-            <option key={field} value={field}>
-              {field.replace(".", " ")}
+            <option key={field.value} value={field.value}>
+              {field.label}
             </option>
           );
         })}

@@ -1,8 +1,9 @@
-interface BaseDocument {
+export interface BaseDocument {
   id?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
+
 interface PopulatedData {
   label: string;
   value: string;
@@ -23,10 +24,10 @@ export interface FormField {
     | "hidden"
     | "reference-array"
     | "reference";
-
   dropdownFields?: string[];
   required?: boolean;
   populatedData?: PopulatedData | PopulatedData[];
+  path?: string;
 }
 
 export interface InputFieldProps extends Omit<FormField, "id"> {
@@ -44,48 +45,24 @@ export interface ChangeRecord {
   newValue: string;
 }
 
-export interface Contact extends BaseDocument {
-  id?: string;
-  type?: string[];
-  company?: CompanyDetail;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  address?: Address;
-  birthday?: Date;
-  documents?: Document[];
-  position?: string;
-  preferences?: Preferences;
-  //reference
-  bookingRef?: string;
-  booking?: BookingReference;
-}
+// export interface Contact extends BaseDocument {
+//   id?: string;
+//   type?: string[];
+//   company?: CompanyDetail;
+//   firstName?: string;
+//   lastName?: string;
+//   email?: string;
+//   phone?: string;
+//   address?: Address;
+//   birthday?: Date;
+//   documents?: Document[];
+//   position?: string;
+//   preferences?: Preferences;
+//   //reference
+//   bookingRef?: string;
+//   booking?: BookingReference;
+// }
 
-interface Document {
-  [key: string]: any;
-}
-
-interface Preferences {
-  language?: string;
-  communicationChannel?: string;
-}
-
-interface CompanyDetail {
-  buffer?: string | Buffer;
-  name?: string;
-  vatNumber?: string;
-  entity?: string;
-  entityAddress?: string;
-  currency?: string[];
-}
-
-interface Address {
-  street?: string;
-  houseNumber?: string;
-  zipCode?: string;
-  country?: string;
-}
 
 export interface Booking extends BaseDocument {
   date: Date;
@@ -94,10 +71,6 @@ export interface Booking extends BaseDocument {
   status: string;
 }
 
-export type DataTypes = {
-  contacts: Contact[];
-  bookings: Booking[];
-};
 
 //references
 export interface BookingReference {

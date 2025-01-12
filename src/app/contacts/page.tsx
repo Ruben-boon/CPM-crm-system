@@ -1,11 +1,11 @@
 "use client";
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import DetailContainer from "@/modules/details/DetailContainer";
-import { Contact, ChangeRecord } from "@/types/types";
+import { ChangeRecord } from "@/types/types";
 import SearchContainer from "@/modules/search/SearchContainer";
 import DetailConfirmation from "@/modules/details/DetailConfirmation";
 import { mapContactDetailsToFormFields } from "@/utils/docsToFields";
+import { buildContactQuery, Contact, contactFields, contactProjection, contactSearchableFields } from "@/lib/contacts";
 
 export default function ContactPage() {
   const [contactData, setContactData] = useState<any | null>(null);
@@ -89,14 +89,17 @@ export default function ContactPage() {
         <SearchContainer
           onOpenDetail={handleOpenContact}
           type="contacts"
+          searchableFields={contactSearchableFields}
+          projection={contactProjection}
+          query={buildContactQuery}
         />
       </div>
       
       {contactData && (
         <DetailContainer
-          key={contactData.key} // Add key to force re-render
+          key={contactData.key} 
           isNew={contactData.isNew}
-          initialFormFields={mapContactDetailsToFormFields(contactData.detailData)}
+          initialFormFields={contactFields(contactData.detailData)}
           type="contacts"
           onPendingChanges={handlePendingChanges}
           ref={detailHandlerRef}

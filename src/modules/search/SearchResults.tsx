@@ -1,9 +1,8 @@
-import { Contact } from "@/types/types";
 import { Copy } from "lucide-react";
 
 interface SearchResultProps {
-  searchList: Contact[];
-  onOpenDetail: (isNew: boolean, dataDetails: Contact) => void;
+  searchList: any;
+  onOpenDetail: (isNew: boolean, dataDetails: any) => void;
 }
 
 export default function SearchResults({
@@ -16,21 +15,23 @@ export default function SearchResults({
 
   return (
     <ul className="search-results">
-      {searchList.map((contact, index) => (
-        <li key={`${contact.email}-${index}`} className="search-results__item">
+      {searchList.map((singleResult: any) => (
+        <li key={singleResult._id} className="search-results__item">
           <div
             className="search-results__content"
-            onClick={() => onOpenDetail(false, contact)}
+            onClick={() => onOpenDetail(false, singleResult)}
           >
             <div className="search-results__header">
               <div className="search-results__header-name">
-                {contact.firstName} {contact.lastName}
+                {singleResult.general.firstName}
+                {singleResult.general.LastName}
               </div>
+
               <button
                 className="search-results__header-copy-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onOpenDetail(true, contact);
+                  onOpenDetail(true, singleResult.general);
                 }}
               >
                 <Copy size={16} />
@@ -38,19 +39,19 @@ export default function SearchResults({
             </div>
 
             <dl className="search-results__details">
-              {contact.email && (
+              {singleResult.general.email && (
                 <div className="search-results__details-section">
-                  <dd>{contact.email}</dd>
+                  <dd>{singleResult.general.email}</dd>
                 </div>
               )}
-              {contact.phone && (
+              {singleResult.general.phone && (
                 <div className="search-results__details-section">
-                  <dd>{contact.phone}</dd>
+                  <dd>{singleResult.general.phone}</dd>
                 </div>
               )}
-              {contact.company?.name && (
+              {singleResult.general.company?.name && (
                 <div className="search-results__details-section">
-                  <dd>{contact.company.name}</dd>
+                  <dd>{singleResult.general.company.name}</dd>
                 </div>
               )}
             </dl>

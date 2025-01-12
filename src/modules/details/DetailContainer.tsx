@@ -9,29 +9,31 @@ interface DetailContainerProps {
   onPendingChanges?: (hasPending: boolean) => void;
 }
 
-const DetailContainer = forwardRef((
-  {
-    isNew = false,
-    initialFormFields,
-    type,
-    onPendingChanges
-  }: DetailContainerProps,
-  ref: ForwardedRef<{
-    handleSave: () => Promise<void>;
-    handleDiscard: () => void;
-  }>
-) => {
-  return (
-    <DetailHandler
-      ref={ref}
-      isNew={isNew}
-      initialFormFields={initialFormFields}
-      type={type}
-      onPendingChanges={onPendingChanges}
-    />
-  );
-});
+const DetailContainer = forwardRef(
+  (
+    {
+      isNew = false,
+      initialFormFields,
+      type,
+      onPendingChanges,
+    }: DetailContainerProps,
+    ref: ForwardedRef<{
+      handleSave: () => Promise<void>;
+      handleDiscard: () => void;
+    }>
+  ) => {
+    return (
+      <DetailHandler
+        ref={ref}
+        isNew={isNew}
+        initialFormFields={initialFormFields}
+        type={type}
+        onPendingChanges={onPendingChanges}
+      />
+    );
+  }
+);
 
-DetailContainer.displayName = 'DetailContainer';
+DetailContainer.displayName = "DetailContainer";
 
 export default DetailContainer;

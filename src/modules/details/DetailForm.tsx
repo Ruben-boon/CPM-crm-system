@@ -16,6 +16,7 @@ export default function DetailForm({
   isEditing,
   onChange,
 }: DetailFormProps) {
+  // console.log(formFields);
   return (
     <div className="detail-group">
       {formFields.map((field) => (

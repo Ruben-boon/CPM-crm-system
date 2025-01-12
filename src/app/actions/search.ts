@@ -1,128 +1,63 @@
 "use server";
 import clientPromise from "@/lib/mongoDB";
-import { serializeContact } from "@/utils/serializers";
-import { ObjectId } from "mongodb";
+import { Contact, buildContactQuery } from "@/lib/contacts";
 
 const databaseName = "CRM";
 const searchResultLimit = 8;
 
-async function buildAggregationPipeline(
-  collection: string,
-  query: Record<string, any>
-): Promise<any[]> {
-  const pipeline: any[] = [{ $match: query }];
+// Helper function to serialize MongoDB documents (all types)
+function serializeDocument(doc: any): any {
+  return {
+    ...doc,
+    _id: doc._id.toString(),
+  };
+}
 
-  if (collection === 'contacts') {
-    pipeline.push(
-      {
-        $lookup: {
-          from: "bookings",
-          let: { 
-            bookingRefs: {
-              $cond: {
-                if: { $isArray: "$bookingRefs" },
-                then: {
-                  $map: {
-                    input: "$bookingRefs",
-                    as: "ref",
-                    in: { $toObjectId: "$$ref" }
-                  }
-                },
-                else: []
-              }
-            }
-          },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $in: ["$_id", "$$bookingRefs"]
-                }
-              }
-            },
-            {
-              $project: {
-                _id: 1,
-                confirmationNumber: 1,
-                status: 1
-              }
-            }
-          ],
-          as: "bookings"
-        }
-      }
-    );
-  }
-
-  return pipeline;
+interface SearchResponse {
+  success: boolean;
+  total?: number;
+  searchableFields?: string[];
+  results?: Contact[];
+  error?: string;
 }
 
 export async function searchData(
   collection: string,
+  projection: any,
   searchField?: string,
-  searchTerm?: string
+  searchTerm?: string,
 ): Promise<SearchResponse> {
   try {
     const client = await clientPromise;
     const db = client.db(databaseName);
     const coll = db.collection(collection);
 
-    // Build search query
+    console.log(searchField, searchTerm);
     let query = {};
     if (searchField && searchTerm) {
-      if (searchField.includes(".")) {
-        const [parent, child] = searchField.split(".");
-        query = {
-          [`${parent}.${child}`]: { $regex: searchTerm, $options: "i" }
-        };
-      } else {
-        query = {
-          [searchField]: { $regex: searchTerm, $options: "i" }
-        };
-      }
+      query = buildContactQuery(searchField, searchTerm);
     }
 
-    // Get pipeline for this collection
-    const pipeline = await buildAggregationPipeline(collection, query);
-    
-    // Add limit to pipeline
-    pipeline.push({ $limit: searchResultLimit });
+    // Simple find operation with projection
+    const results = await coll
+      .find(query)
+      .project(projection)
+      .limit(searchResultLimit)
+      .toArray();
 
-    // Execute aggregation
-    const results = await coll.aggregate(pipeline).toArray();
-
-    // Use the existing serializer for contacts
-    const serializedResults = collection === 'contacts' 
-      ? results.map(serializeContact)
-      : results;
-
-    // Get searchable fields
-    const searchableFields = await getSearchableFields(coll);
+    // Serialize the results
+    const serializedResults = results.map(serializeDocument);
 
     return {
       success: true,
       total: serializedResults.length,
-      searchableFields,
-      results: serializedResults
+      results: serializedResults,
     };
-
   } catch (error) {
     console.error("Search error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "An error occurred"
+      error: error instanceof Error ? error.message : "An error occurred",
     };
   }
-}
-
-async function getSearchableFields(collection: any): Promise<string[]> {
-  const sample = await collection.findOne({});
-  if (!sample) return [];
-
-  const blacklist = ['_id', 'createdAt', 'updatedAt', 'documents', 'preferences', 'bookings', 'bookingRefs'];
-  
-  return Object.keys(sample).filter(key => 
-    !blacklist.includes(key) && 
-    typeof sample[key] !== 'object'
-  );
 }

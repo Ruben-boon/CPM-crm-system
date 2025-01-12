@@ -30,7 +30,8 @@ const DetailHandler = forwardRef<
     { isNew, initialFormFields, type, onUpdateSuccess, onPendingChanges },
     ref
   ) => {
-    const [formFields, setFormFields] = useState<FormField[]>(initialFormFields);
+    const [formFields, setFormFields] =
+      useState<FormField[]>(initialFormFields);
     const [isBulkEditing, setIsBulkEditing] = useState(isNew);
     const [changedFields, setChangedFields] = useState<
       Record<string, ChangeRecord>
@@ -76,8 +77,8 @@ const DetailHandler = forwardRef<
       setChangedFields({});
       if (!isNew) setIsBulkEditing(false);
       onPendingChanges?.(false);
-      toast.info('Changes discarded', {
-        description: 'All changes have been reset to original values.'
+      toast.info("Changes discarded", {
+        description: "All changes have been reset to original values.",
       });
     };
 
@@ -91,7 +92,7 @@ const DetailHandler = forwardRef<
           ? createDocument(type, formFields)
           : updateDocument(type, formFields),
         {
-          loading: 'Saving changes...',
+          loading: "Saving changes...",
           success: (result) => {
             if (result.success) {
               setChangedFields({});
@@ -101,14 +102,16 @@ const DetailHandler = forwardRef<
               setShowConfirmation(false);
               onPendingChanges?.(false);
               onUpdateSuccess?.();
-              return isNew ? 'New entry created successfully!' : 'Changes saved successfully!';
+              return isNew
+                ? "New entry created successfully!"
+                : "Changes saved successfully!";
             }
-            throw new Error(result.error || 'Failed to save changes');
+            throw new Error(result.error || "Failed to save changes");
           },
           error: (error) => {
             console.error("Error saving:", error);
-            return 'Failed to save changes. Please try again.';
-          }
+            return "Failed to save changes. Please try again.";
+          },
         }
       );
     };
@@ -119,15 +122,15 @@ const DetailHandler = forwardRef<
 
     const handleCancelSave = () => {
       setShowConfirmation(false);
-      toast('Save operation cancelled');
+      toast("Save operation cancelled");
     };
 
     const toggleEditing = () => {
       if (Object.keys(changedFields).length === 0 && !isNew) {
         setIsBulkEditing(!isBulkEditing);
       } else if (Object.keys(changedFields).length > 0) {
-        toast.warning('Please save or discard your changes first', {
-          description: 'You have unsaved changes that need to be handled.'
+        toast.warning("Please save or discard your changes first", {
+          description: "You have unsaved changes that need to be handled.",
         });
       }
     };

@@ -2,29 +2,39 @@
 
 import clientPromise from "@/lib/mongoDB";
 import { FormField } from "@/types/types";
-import { formFieldsToDocument } from "@/utils/fieldsToDocs";
-import { serializeContact } from "@/utils/serializers";
 
 const databaseName = "CRM";
-
-interface CreateResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-}
-
 
 export async function createDocument(
   collection: string,
   formFields: FormField[]
-): Promise<CreateResponse> {
+): Promise<{ success: boolean; error?: string }> {
   try {
     const client = await clientPromise;
     const db = client.db(databaseName);
     const collectionRef = db.collection(collection);
 
-    // Convert form fields to document object
-    const documentData = formFieldsToDocument(formFields);
+    // Create nested document structure
+    const documentData: Record<string, any> = {};
+    formFields
+      .filter(field => field.path)
+      .forEach(field => {
+        if (field.path) {
+          const pathParts = field.path.split('.');
+          let current = documentData;
+          
+          for (let i = 0; i < pathParts.length - 1; i++) {
+            const part = pathParts[i];
+            if (!current[part]) {
+              current[part] = {};
+            }
+            current = current[part];
+          }
+          
+          const lastPart = pathParts[pathParts.length - 1];
+          current[lastPart] = field.value;
+        }
+      });
 
     // Add timestamps
     const now = new Date();
@@ -38,44 +48,15 @@ export async function createDocument(
     const result = await collectionRef.insertOne(documentWithTimestamps);
 
     if (!result.acknowledged) {
-      throw new Error(`Failed to create ${collection} document`);
+      return { success: false, error: `Failed to create ${collection} document` };
     }
 
-    // Fetch the created document
-    const createdDocument = await collectionRef.findOne({
-      _id: result.insertedId,
-    });
-
-    if (!createdDocument) {
-      throw new Error(`Failed to fetch created ${collection} document`);
-    }
-    console.log("✅ Document created successfully:", {
-      collection,
-      updatedAt: documentWithTimestamps.updatedAt,
-    });
-
-    let serializedDocument;
-    switch (collection) {
-      case "contacts":
-        serializedDocument = serializeContact(createdDocument);
-        break;
-      //add switch statement for different types
-      default:
-        serializedDocument = createdDocument;
-    }
-
-    return {
-      success: true,
-      data: serializedDocument,
-    };
+    return { success: true };
   } catch (error) {
     console.error(`Create ${collection} error:`, error);
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : `An error occurred while creating the ${collection} document`,
+      error: error instanceof Error ? error.message : `An error occurred while creating the ${collection} document`
     };
   }
 }

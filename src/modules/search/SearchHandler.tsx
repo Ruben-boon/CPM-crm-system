@@ -1,37 +1,36 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import SearchBar from "./SearchBar";
 import { searchData } from "@/app/actions/search";
-import { SerializedContact } from "@/utils/serializers";
+
+type SearchableField = {
+  label: string;
+  value: string;
+};
 
 interface SearchPanelProps {
   type: string;
-  onFilter: (data: SerializedContact[]) => void;
+  onFilter: any;
+  //type specefic fields used for search
+  searchableFields: SearchableField[];
+  projection: any;
+  //this is not used at the moment might fix this later?
+  query: any;
 }
 
-export default function SearchHandler({ type, onFilter }: SearchPanelProps) {
+export default function SearchHandler({
+  type,
+  onFilter,
+  searchableFields,
+  projection,
+}: SearchPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [searchableFields, setSearchableFields] = useState<string[]>([]);
-
-  useEffect(() => {
-    const initializeFields = async () => {
-      try {
-        const result = await searchData(type);
-        if (result.success && result.searchableFields) {
-          setSearchableFields(result.searchableFields);
-        }
-      } catch (error) {
-        console.error("Error fetching searchable fields:", error);
-      }
-    };
-    initializeFields();
-  }, [type]);
 
   const handleSearch = async (searchField: string, searchTerm: string) => {
     if (searchTerm.trim()) {
       setIsLoading(true);
       try {
-        const result = await searchData(type, searchField, searchTerm.trim());
+        const result = await searchData(type, projection, searchField, searchTerm.trim(),);
         if (result.success && result.results) {
           onFilter(result.results);
           console.log("Searched this in the DB:", result);
@@ -49,7 +48,7 @@ export default function SearchHandler({ type, onFilter }: SearchPanelProps) {
   return (
     <div className="search-panel">
       <SearchBar
-        filterList={searchableFields}
+        searchableFields={searchableFields}
         onSearch={handleSearch}
         isLoading={isLoading}
       />

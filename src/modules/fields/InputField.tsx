@@ -20,21 +20,25 @@ const InputField: React.FC<InputFieldProps> = ({
   const convertToArray = (value: any): string[] => {
     if (!value) return [];
     if (Array.isArray(value)) return value;
-    return typeof value === 'string' ? value.split(',').filter(Boolean) : [];
+    return typeof value === "string" ? value.split(",").filter(Boolean) : [];
   };
 
   // Handle both string and array values
   const [value, setValue] = React.useState<string | string[]>(
     type === "reference-array" ? convertToArray(initialValue) : initialValue
   );
-  
+
   const [previousValue, setPreviousValue] = React.useState<string | string[]>(
     type === "reference-array" ? convertToArray(initialValue) : initialValue
   );
 
   React.useEffect(() => {
-    setValue(type === "reference-array" ? convertToArray(initialValue) : initialValue);
-    setPreviousValue(type === "reference-array" ? convertToArray(initialValue) : initialValue);
+    setValue(
+      type === "reference-array" ? convertToArray(initialValue) : initialValue
+    );
+    setPreviousValue(
+      type === "reference-array" ? convertToArray(initialValue) : initialValue
+    );
   }, [initialValue, type]);
 
   React.useEffect(() => {
@@ -50,7 +54,7 @@ const InputField: React.FC<InputFieldProps> = ({
   const handleSave = async (): Promise<void> => {
     try {
       if (onSave) {
-        await onSave(Array.isArray(value) ? value.join(',') : value);
+        await onSave(Array.isArray(value) ? value.join(",") : value);
       }
     } catch (error) {
       console.error("Error saving:", error);
@@ -79,12 +83,12 @@ const InputField: React.FC<InputFieldProps> = ({
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     index?: number
   ): void => {
-    if (type === "reference-array" && typeof index === 'number') {
+    if (type === "reference-array" && typeof index === "number") {
       const newValues = Array.isArray(value) ? [...value] : [];
       newValues[index] = e.target.value;
       setValue(newValues);
       if (onChange) {
-        onChange(newValues.join(','));
+        onChange(newValues.join(","));
       }
     } else {
       setValue(e.target.value);
@@ -96,7 +100,7 @@ const InputField: React.FC<InputFieldProps> = ({
 
   const addReference = () => {
     if (type === "reference-array") {
-      setValue(prev => Array.isArray(prev) ? [...prev, ''] : ['']);
+      setValue((prev) => (Array.isArray(prev) ? [...prev, ""] : [""]));
     }
   };
 
@@ -105,7 +109,7 @@ const InputField: React.FC<InputFieldProps> = ({
       const newValues = value.filter((_, i) => i !== index);
       setValue(newValues);
       if (onChange) {
-        onChange(newValues.join(','));
+        onChange(newValues.join(","));
       }
     }
   };
@@ -123,7 +127,7 @@ const InputField: React.FC<InputFieldProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">Reference ID:</span>
                 <span className="font-mono text-sm">
-                  {Array.isArray(value) ? value[index] : '-'}
+                  {Array.isArray(value) ? value[index] : "-"}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm">
@@ -162,34 +166,35 @@ const InputField: React.FC<InputFieldProps> = ({
       case "reference-array":
         return (
           <div className="flex flex-col gap-2">
-            {Array.isArray(value) && value.map((refValue, index) => (
-              <div key={index} className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={refValue}
-                    onChange={(e) => handleChange(e, index)}
-                    onKeyDown={handleKeyDown}
-                    className="w-full rounded-md border border-gray-300 p-2 pr-10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
-                    required={required}
-                    disabled={disabled}
-                    autoFocus={isEditing && index === 0}
-                    placeholder="Enter reference ID..."
-                  />
-                  <Search 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-blue-500" 
-                    size={18}
-                  />
+            {Array.isArray(value) &&
+              value.map((refValue, index) => (
+                <div key={index} className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={refValue}
+                      onChange={(e) => handleChange(e, index)}
+                      onKeyDown={handleKeyDown}
+                      className="w-full rounded-md border border-gray-300 p-2 pr-10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
+                      required={required}
+                      disabled={disabled}
+                      autoFocus={isEditing && index === 0}
+                      placeholder="Enter reference ID..."
+                    />
+                    <Search
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-blue-500"
+                      size={18}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeReference(index)}
+                    className="p-1 text-gray-400 hover:text-red-500"
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeReference(index)}
-                  className="p-1 text-gray-400 hover:text-red-500"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            ))}
+              ))}
             <button
               type="button"
               onClick={addReference}
@@ -235,8 +240,8 @@ const InputField: React.FC<InputFieldProps> = ({
               autoFocus={isEditing}
               placeholder="Enter reference ID..."
             />
-            <Search 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-blue-500" 
+            <Search
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-blue-500"
               size={18}
             />
           </div>
@@ -269,10 +274,12 @@ const InputField: React.FC<InputFieldProps> = ({
           <div className="flex w-full">{renderInput()}</div>
         ) : (
           <div className="flex w-full rounded-md border border-transparent p-2 hover:border-gray-300 bg-gray-50">
-            {(type === "reference" || type === "reference-array") ? (
+            {type === "reference" || type === "reference-array" ? (
               renderReferenceDisplay()
             ) : (
-              <span className={`text-gray-900 ${disabled ? "text-gray-500" : ""}`}>
+              <span
+                className={`text-gray-900 ${disabled ? "text-gray-500" : ""}`}
+              >
                 {value || "-"}
               </span>
             )}
