@@ -1,20 +1,60 @@
-// search.ts
-
-
-'use server';
+"use server";
 import clientPromise from "@/lib/mongoDB";
-import { serializeContact, type SerializedContact } from "@/utils/serializers";
+import { serializeContact } from "@/utils/serializers";
+import { ObjectId } from "mongodb";
 
-const databaseName = 'CRM';
+const databaseName = "CRM";
 const searchResultLimit = 8;
 
+async function buildAggregationPipeline(
+  collection: string,
+  query: Record<string, any>
+): Promise<any[]> {
+  const pipeline: any[] = [{ $match: query }];
 
-interface SearchResponse {
-  success: boolean;
-  total?: number;
-  searchableFields?: string[];
-  results?: SerializedContact[];
-  error?: string;
+  if (collection === 'contacts') {
+    pipeline.push(
+      {
+        $lookup: {
+          from: "bookings",
+          let: { 
+            bookingRefs: {
+              $cond: {
+                if: { $isArray: "$bookingRefs" },
+                then: {
+                  $map: {
+                    input: "$bookingRefs",
+                    as: "ref",
+                    in: { $toObjectId: "$$ref" }
+                  }
+                },
+                else: []
+              }
+            }
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ["$_id", "$$bookingRefs"]
+                }
+              }
+            },
+            {
+              $project: {
+                _id: 1,
+                confirmationNumber: 1,
+                status: 1
+              }
+            }
+          ],
+          as: "bookings"
+        }
+      }
+    );
+  }
+
+  return pipeline;
 }
 
 export async function searchData(
@@ -27,34 +67,37 @@ export async function searchData(
     const db = client.db(databaseName);
     const coll = db.collection(collection);
 
+    // Build search query
     let query = {};
-    
     if (searchField && searchTerm) {
-      if (searchField.includes('.')) {
-        const [parent, child] = searchField.split('.');
+      if (searchField.includes(".")) {
+        const [parent, child] = searchField.split(".");
         query = {
-          [`${parent}.${child}`]: { 
-            $regex: searchTerm, 
-            $options: 'i' 
-          }
+          [`${parent}.${child}`]: { $regex: searchTerm, $options: "i" }
         };
       } else {
         query = {
-          [searchField]: { 
-            $regex: searchTerm, 
-            $options: 'i' 
-          }
+          [searchField]: { $regex: searchTerm, $options: "i" }
         };
       }
     }
 
-    // Get the results and serialize them using the existing serializer to
-    const results = await coll.find(query).limit(searchResultLimit).toArray();
-    const serializedResults = results.map(serializeContact);
+    // Get pipeline for this collection
+    const pipeline = await buildAggregationPipeline(collection, query);
+    
+    // Add limit to pipeline
+    pipeline.push({ $limit: searchResultLimit });
 
-    // Get searchable fields from the first document
-    const firstDoc = await coll.findOne({});
-    const searchableFields = firstDoc ? getSearchableFields(firstDoc) : [];
+    // Execute aggregation
+    const results = await coll.aggregate(pipeline).toArray();
+
+    // Use the existing serializer for contacts
+    const serializedResults = collection === 'contacts' 
+      ? results.map(serializeContact)
+      : results;
+
+    // Get searchable fields
+    const searchableFields = await getSearchableFields(coll);
 
     return {
       success: true,
@@ -64,27 +107,22 @@ export async function searchData(
     };
 
   } catch (error) {
-    console.error('Search error:', error);
+    console.error("Search error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An error occurred'
+      error: error instanceof Error ? error.message : "An error occurred"
     };
   }
 }
 
-function getSearchableFields(doc: any, prefix = ''): string[] {
-  return Object.entries(doc).reduce((fields: string[], [key, value]) => {
-    if (key === '_id' || value === null) return fields;
+async function getSearchableFields(collection: any): Promise<string[]> {
+  const sample = await collection.findOne({});
+  if (!sample) return [];
 
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const nestedFields = getSearchableFields(value, `${prefix}${key}.`);
-      return [...fields, ...nestedFields];
-    }
-
-    if (typeof value === 'string') {
-      return [...fields, `${prefix}${key}`];
-    }
-
-    return fields;
-  }, []);
+  const blacklist = ['_id', 'createdAt', 'updatedAt', 'documents', 'preferences', 'bookings', 'bookingRefs'];
+  
+  return Object.keys(sample).filter(key => 
+    !blacklist.includes(key) && 
+    typeof sample[key] !== 'object'
+  );
 }

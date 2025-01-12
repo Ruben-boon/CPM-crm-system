@@ -5,7 +5,7 @@ import DetailContainer from "@/modules/details/DetailContainer";
 import { Contact, ChangeRecord } from "@/types/types";
 import SearchContainer from "@/modules/search/SearchContainer";
 import DetailConfirmation from "@/modules/details/DetailConfirmation";
-import { mapContactDetailsToFormFields } from "@/utils/fieldsToDocuments";
+import { mapContactDetailsToFormFields } from "@/utils/docsToFields";
 
 export default function ContactPage() {
   const [contactData, setContactData] = useState<any | null>(null);
@@ -31,6 +31,7 @@ export default function ContactPage() {
     });
     setHasPendingChanges(false);
     setPendingChanges({});
+
   }, []);
 
   const handleOpenContact = useCallback((isNew: boolean, detailData: Contact) => {
@@ -40,6 +41,7 @@ export default function ContactPage() {
     } else {
       updateContactData(isNew, detailData);
     }
+    console.log("Opening this object:", detailData);
   }, [hasPendingChanges, updateContactData]);
 
   const handlePendingChanges = useCallback((hasPending: boolean, changes?: Record<string, ChangeRecord>) => {

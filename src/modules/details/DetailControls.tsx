@@ -28,8 +28,12 @@ export default function DetailControls({
       )}
       {isBulkEditing && hasChanges && (
         <div className="flex gap-2">
-          <button onClick={onDiscard}>{isNew ? "Clear input fields" : "Discard changes"}</button>
-          <button onClick={onSave}>{isNew ? "Create database entry" : "Save changes"}</button>
+          <button onClick={onDiscard}>
+            {isNew ? "Clear input fields" : "Discard changes"}
+          </button>
+          <button onClick={onSave}>
+            {isNew ? "Create database entry" : "Save changes"}
+          </button>
         </div>
       )}
     </div>

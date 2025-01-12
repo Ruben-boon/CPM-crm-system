@@ -3,6 +3,10 @@ interface BaseDocument {
   createdAt?: Date;
   updatedAt?: Date;
 }
+interface PopulatedData {
+  label: string;
+  value: string;
+}
 
 export interface FormField {
   id: string;
@@ -16,9 +20,13 @@ export interface FormField {
     | "url"
     | "dropdown"
     | "date"
-    | "hidden";
+    | "hidden"
+    | "reference-array"
+    | "reference";
+
   dropdownFields?: string[];
   required?: boolean;
+  populatedData?: PopulatedData | PopulatedData[];
 }
 
 export interface InputFieldProps extends Omit<FormField, "id"> {
@@ -49,6 +57,9 @@ export interface Contact extends BaseDocument {
   documents?: Document[];
   position?: string;
   preferences?: Preferences;
+  //reference
+  bookingRef?: string;
+  booking?: BookingReference;
 }
 
 interface Document {
@@ -87,3 +98,10 @@ export type DataTypes = {
   contacts: Contact[];
   bookings: Booking[];
 };
+
+//references
+export interface BookingReference {
+  _id: string;
+  confirmationNumber: string;
+  status: string;
+}

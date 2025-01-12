@@ -1,6 +1,4 @@
-// SearchPanel.tsx
 "use client";
-
 import { useState, useEffect } from "react";
 import SearchBar from "./SearchBar";
 import { searchData } from "@/app/actions/search";
@@ -18,13 +16,12 @@ export default function SearchHandler({ type, onFilter }: SearchPanelProps) {
   useEffect(() => {
     const initializeFields = async () => {
       try {
-        const result = await searchData(type
-        );
+        const result = await searchData(type);
         if (result.success && result.searchableFields) {
           setSearchableFields(result.searchableFields);
         }
       } catch (error) {
-        console.error('Error fetching searchable fields:', error);
+        console.error("Error fetching searchable fields:", error);
       }
     };
     initializeFields();
@@ -37,11 +34,12 @@ export default function SearchHandler({ type, onFilter }: SearchPanelProps) {
         const result = await searchData(type, searchField, searchTerm.trim());
         if (result.success && result.results) {
           onFilter(result.results);
+          console.log("Searched this in the DB:", result);
         } else {
-          console.error('Search failed:', result.error);
+          console.error("Search failed:", result.error);
         }
       } catch (error) {
-        console.error('Error during search:', error);
+        console.error("Error during search:", error);
       } finally {
         setIsLoading(false);
       }
@@ -50,8 +48,8 @@ export default function SearchHandler({ type, onFilter }: SearchPanelProps) {
 
   return (
     <div className="search-panel">
-      <SearchBar 
-        filterList={searchableFields} 
+      <SearchBar
+        filterList={searchableFields}
         onSearch={handleSearch}
         isLoading={isLoading}
       />

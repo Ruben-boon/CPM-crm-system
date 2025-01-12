@@ -26,6 +26,7 @@ export default function DetailForm({
             type={field.type}
             dropdownFields={field.dropdownFields}
             isEditing={isEditing}
+            populatedData={field.populatedData}
             required={field.required}
             onChange={(newValue) =>
               onChange(field.id, field.label, field.value, newValue)

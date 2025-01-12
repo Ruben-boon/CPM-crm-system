@@ -1,6 +1,6 @@
 .search-results {
   display: grid;
-  gap: 0.5rem;
+  gap: 4px;
   margin-top: 24px;
   &__no-results {
     text-align: center;
@@ -24,8 +24,7 @@
   // Clickable area for opening details
   &__content {
     cursor: pointer;
-    padding: 1rem;
-    padding-bottom: 0;
+    padding: 0.5rem 1rem;
     display: flex;
     flex-direction: column;
   }

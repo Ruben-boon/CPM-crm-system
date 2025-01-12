@@ -2,10 +2,7 @@ import { FormField } from "@/types/types";
 
 export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
   const fields: FormField[] = [
-    // Personal Information
-    { id: "objectId", 
-      type:"hidden",
-      value: detailData.id },
+    { id: "objectId", type: "hidden", value: detailData.id },
     {
       id: "firstName",
       label: "First Name",
@@ -41,8 +38,6 @@ export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
         : "",
       type: "date",
     },
-
-    // Company Information
     {
       id: "company.name",
       label: "Company Name",
@@ -55,8 +50,6 @@ export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
       value: detailData.company?.vatNumber || "",
       type: "text",
     },
-
-    // Address Information
     {
       id: "address.street",
       label: "Street Name",
@@ -81,8 +74,6 @@ export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
       value: detailData.address?.country || "",
       type: "text",
     },
-
-    // Business Details
     {
       id: "entity",
       label: "Entity Name",
@@ -120,6 +111,19 @@ export const mapContactDetailsToFormFields = (detailData: any): FormField[] => {
       label: "Commission Details",
       value: detailData.commissionDetails || "",
       type: "text",
+    },
+    //reference
+    {
+      id: "bookingRefs",
+      label: "Bookings",
+      value: detailData.bookingRefs || "",
+      type: "reference-array",
+      populatedData: detailData.bookings
+        ? detailData.bookings.map((booking: any) => ({
+            label: "Booking Confirmation",
+            value: `${booking.confirmationNumber} (${booking.status})`,
+          }))
+        : undefined,
     },
   ];
 

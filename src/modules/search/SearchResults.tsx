@@ -17,11 +17,8 @@ export default function SearchResults({
   return (
     <ul className="search-results">
       {searchList.map((contact, index) => (
-        <li 
-          key={`${contact.email}-${index}`} 
-          className="search-results__item"
-        >
-          <div 
+        <li key={`${contact.email}-${index}`} className="search-results__item">
+          <div
             className="search-results__content"
             onClick={() => onOpenDetail(false, contact)}
           >
@@ -36,7 +33,7 @@ export default function SearchResults({
                   onOpenDetail(true, contact);
                 }}
               >
-                <Copy size={16}/>
+                <Copy size={16} />
               </button>
             </div>
 

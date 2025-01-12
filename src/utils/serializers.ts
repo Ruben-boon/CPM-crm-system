@@ -5,11 +5,24 @@ export interface SerializedContact {
   email: string;
   phone?: string;
   position?: string;
-  company?: any; // Keep as any since it's a complex object
+  company?: any; 
   preferences?: any;
   documents?: any[];
   createdAt?: string;
   updatedAt?: string;
+  // Updated reference fields
+  bookingRefs?: string[];
+  bookings?: Array<{
+    id: string;
+    confirmationNumber: string;
+    status: string;
+  }>;
+  // Keep old fields for backward compatibility
+  bookingRef?: string;
+  booking?: {
+    confirmationNumber: string;
+    status: string;
+  };
 }
 
 // Helper function to handle Buffer objects
@@ -48,5 +61,21 @@ export const serializeContact = (doc: any): SerializedContact => {
     documents: serializeBufferValues(doc.documents),
     createdAt: doc.createdAt?.toISOString(),
     updatedAt: doc.updatedAt?.toISOString(),
+    // Handle array of bookingRefs
+    bookingRefs: doc.bookingRefs?.map((ref: any) => 
+      ref.toString()
+    ) || undefined,
+    // Handle array of bookings
+    bookings: doc.bookings?.map((booking: any) => ({
+      id: booking._id.toString(),
+      confirmationNumber: booking.confirmationNumber,
+      status: booking.status
+    })) || undefined,
+    // Keep old reference fields for backward compatibility
+    bookingRef: doc.bookingRef?.toString(),
+    booking: doc.booking ? {
+      confirmationNumber: doc.booking.confirmationNumber,
+      status: doc.booking.status
+    } : undefined,
   };
 };

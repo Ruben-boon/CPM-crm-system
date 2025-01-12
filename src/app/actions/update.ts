@@ -4,7 +4,7 @@ import clientPromise from "@/lib/mongoDB";
 import { FormField } from "@/types/types";
 import { ObjectId } from "mongodb";
 import { serializeContact } from "@/utils/serializers";
-import { formFieldsToDocument } from "@/utils/documentToFields";
+import { formFieldsToDocument } from "@/utils/fieldsToDocs";
 
 const databaseName = "CRM";
 

@@ -24,7 +24,6 @@ export default function SearchBar({
 
   const handleSearch = () => {
     onSearch(searchField, searchTerm.trim());
-    console.log(searchField, searchTerm);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

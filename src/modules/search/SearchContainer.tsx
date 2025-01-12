@@ -14,7 +14,7 @@ export default function SearchContainer({ onOpenDetail, type }: ExplorerProps) {
 
   const handleFilterUpdate = (data: any[]) => {
     setFilteredData(data);
-    console.log(data, "data with the filter applied");
+    console.log("Searchresults:", data);
   };
 
   const handleDetailsToParent = (isNew: boolean, detailData: any) => {
@@ -26,7 +26,6 @@ export default function SearchContainer({ onOpenDetail, type }: ExplorerProps) {
       <SearchHandler type={type} onFilter={handleFilterUpdate} />
 
       <SearchResults
-        type={type}
         onOpenDetail={handleDetailsToParent}
         searchList={filteredData}
       />
