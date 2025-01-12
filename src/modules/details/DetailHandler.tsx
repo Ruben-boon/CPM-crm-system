@@ -135,6 +135,8 @@ const DetailHandler = forwardRef<
       }
     };
 
+    console.log("creating the following fields:", formFields);
+
     return (
       <div className="details-panel relative">
         <DetailControls
@@ -147,7 +149,7 @@ const DetailHandler = forwardRef<
         />
 
         <DetailForm
-          formFields={formFields}
+          fields={formFields}
           isEditing={isBulkEditing}
           onChange={handleFieldChange}
         />

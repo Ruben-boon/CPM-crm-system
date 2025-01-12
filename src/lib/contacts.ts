@@ -48,20 +48,22 @@ export function buildContactQuery(
   searchTerm: string
 ): Record<string, any> {
   // Find the field configuration
-  const fieldConfig = contactSearchableFields.find(f => f.value === searchField);
+  const fieldConfig = contactSearchableFields.find(
+    (f) => f.value === searchField
+  );
   if (!fieldConfig) {
     throw new Error(`Invalid search field: ${searchField}`);
   }
   // Use the path if specified, otherwise use the value directly
   const queryField = fieldConfig.path || fieldConfig.value;
   return {
-    [queryField]: { $regex: searchTerm, $options: "i" }
+    [queryField]: { $regex: searchTerm, $options: "i" },
   };
 }
 
 // Implement a function to get nested value from an object using dot notation
 export function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+  return path.split(".").reduce((current, key) => current?.[key], obj);
 }
 // Updated contact fields function
 export const contactFields = (detailData: any): FormField[] => {
@@ -73,7 +75,7 @@ export const contactFields = (detailData: any): FormField[] => {
       value: getNestedValue(detailData, "general.firstName") || "",
       required: true,
       type: "text",
-      path: "general.firstName"
+      path: "general.firstName",
     },
     {
       id: "lastName",
@@ -81,7 +83,7 @@ export const contactFields = (detailData: any): FormField[] => {
       value: getNestedValue(detailData, "general.lastName") || "",
       required: true,
       type: "text",
-      path: "general.lastName"
+      path: "general.lastName",
     },
     {
       id: "email",
@@ -89,7 +91,7 @@ export const contactFields = (detailData: any): FormField[] => {
       value: getNestedValue(detailData, "general.email") || "",
       required: true,
       type: "text",
-      path: "general.email"
+      path: "general.email",
     },
     {
       id: "phone",
@@ -97,7 +99,7 @@ export const contactFields = (detailData: any): FormField[] => {
       value: getNestedValue(detailData, "general.phone") || "",
       required: true,
       type: "text",
-      path: "general.phone"
+      path: "general.phone",
     },
     {
       id: "currency",
@@ -106,7 +108,7 @@ export const contactFields = (detailData: any): FormField[] => {
       required: true,
       type: "dropdown",
       dropdownFields: ["EUR", "USD", "GBP"],
-      path: "currency"
+      path: "currency",
     },
   ];
 

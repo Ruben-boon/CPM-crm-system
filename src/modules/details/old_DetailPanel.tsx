@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import InputField from "../fields/InputField";
+import InputField from "./InputField";
 import { FormField } from "@/types/types";
 import { createDocument } from "@/app/actions/create";
 

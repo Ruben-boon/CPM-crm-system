@@ -17,7 +17,12 @@ const eslintConfig = [
       "@typescript-eslint/no-unsafe-assignment": "off", // Allow assignments involving 'any'
       "@typescript-eslint/no-unsafe-member-access": "off", // Allow accessing properties on 'any'
       "@typescript-eslint/no-unsafe-call": "off", // Allow calling functions with 'any'
-      "@typescript-eslint/no-unsafe-return": "off" // Allow returning 'any'
+      "@typescript-eslint/no-unsafe-return": "off", // Allow returning 'any'
+      "@typescript-eslint/no-unused-vars": ["error", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }]
     }
   }
 ];
