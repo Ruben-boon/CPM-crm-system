@@ -84,6 +84,7 @@ const DetailHandler = forwardRef<
 
     const handleSave = () => {
       setShowConfirmation(true);
+      //pass a signal to search area to do a refresh
     };
 
     const executeSave = async () => {
