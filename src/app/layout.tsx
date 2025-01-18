@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "../scss/main.scss";
-import Header from "@/modules/header/Header";
+import Header from "@/components/header/Header";
 import { Toaster } from "sonner";
 import { Inter } from "next/font/google";
 
@@ -21,13 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-       <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} antialiased`}>
         <Header />
         <main>{children}</main>
-        <Toaster 
-          position="bottom-right" 
-          expand={false} 
-          richColors 
+        <Toaster
+          position="bottom-right"
+          expand={false}
+          richColors
           closeButton
         />
       </body>

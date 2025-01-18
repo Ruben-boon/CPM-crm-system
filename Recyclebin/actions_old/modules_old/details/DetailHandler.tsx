@@ -3,8 +3,8 @@ import DetailForm from "./DetailForm";
 import DetailControls from "./DetailControls";
 import DetailConfirmation from "./DetailConfirmation";
 import { FormField, ChangeRecord } from "@/types/types";
-import { createDocument } from "@/app/actions/create";
-import { updateDocument } from "@/app/actions/update";
+import { createDocument } from "../../../Recyclebin/actions_old/create";
+import { updateDocument } from "../../../Recyclebin/actions_old/update";
 import { toast } from "sonner";
 
 interface DetailHandlerProps {

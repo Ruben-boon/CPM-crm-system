@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import SearchBar from "./SearchBar";
-import { searchData } from "@/app/actions/search";
+import { searchData } from "../../../Recyclebin/actions_old/search";
 
 type SearchableField = {
   label: string;

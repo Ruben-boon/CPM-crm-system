@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import InputField from "./InputField";
 import { FormField } from "@/types/types";
-import { createDocument } from "@/app/actions/create";
+import { createDocument } from "../../../Recyclebin/actions_old/create";
 
 // this component needs to be split further
 

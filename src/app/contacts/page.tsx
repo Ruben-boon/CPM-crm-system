@@ -1,122 +1,148 @@
+// page.tsx
 "use client";
-import { useState, useCallback, useRef, useEffect } from "react";
-import DetailContainer from "@/modules/details/DetailContainer";
-import { ChangeRecord } from "@/types/types";
-import SearchContainer from "@/modules/search/SearchContainer";
-import DetailConfirmation from "@/modules/details/DetailConfirmation";
-import { mapContactDetailsToFormFields } from "@/utils/docsToFields";
-import { buildContactQuery, Contact, contactFields, contactProjection, contactSearchableFields } from "@/lib/contacts";
+import { useState } from "react";
+import { Contact } from "@/domain/contacts/contactModel";
+import { useContactStore } from "@/store/contactsStore";
+import { X } from "lucide-react";
+import Button from "@/components/common/Button";
+import { ContactSearch } from "@/components/search/ContactSearch";
+import { ContactForm } from "@/domain/contacts/ContactForm";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
+import { useContactForm } from "@/hooks/useContactForm";
 
-export default function ContactPage() {
-  const [contactData, setContactData] = useState<any | null>(null);
-  const [hasPendingChanges, setHasPendingChanges] = useState(false);
-  const [pendingOperation, setPendingOperation] = useState<{
-    isNew: boolean;
-    detailData: Contact;
+export default function ContactsPage() {
+  const {
+    selectedContact,
+    setSelectedContact,
+    searchContacts,
+    searchField,
+    searchTerm,
+  } = useContactStore();
+  const [isFormDirty, setIsFormDirty] = useState(false);
+  const [changedFields, setChangedFields] = useState<
+    Array<{ label: string; oldValue: string; newValue: string }>
+  >([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: "select" | "create" | "close" | "cancel-edit";
+    contact?: Contact | null;
   } | null>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [pendingChanges, setPendingChanges] = useState<Record<string, ChangeRecord>>({});
-  const detailHandlerRef = useRef<{
-    handleSave: () => Promise<void>;
-    handleDiscard: () => void;
-  }>();
 
-  // Function to safely update contact data
-  const updateContactData = useCallback((isNew: boolean, detailData: Contact) => {
-    setContactData({
-      isNew,
-      detailData,
-      // Add a key to force re-render of DetailContainer
-      key: Date.now()
-    });
-    setHasPendingChanges(false);
-    setPendingChanges({});
+  const { handleSubmit, resetForm, ...formProps } =
+    useContactForm(selectedContact);
 
-  }, []);
+  const handleSave = async () => {
+    try {
+      await handleSubmit();
+      await searchContacts(searchField, searchTerm);
 
-  const handleOpenContact = useCallback((isNew: boolean, detailData: Contact) => {
-    if (hasPendingChanges) {
-      setPendingOperation({ isNew, detailData });
-      setShowConfirmation(true);
+      handleCloseDialog();
+      setIsFormDirty(false);
+      setChangedFields([]);
+    } catch (error) {
+      console.error("Error saving contact:", error);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setShowSaveDialog(false);
+    if (pendingAction) {
+      executePendingAction(pendingAction);
+    }
+    setPendingAction(null);
+  };
+
+  const executePendingAction = (action: NonNullable<typeof pendingAction>) => {
+    switch (action.type) {
+      case "select":
+        setSelectedContact(action.contact);
+        break;
+      case "create":
+        setSelectedContact({
+          _id: "",
+          general: { firstName: "", lastName: "", email: "", phone: "" },
+          currency: "EUR",
+        });
+        break;
+      case "close":
+        setSelectedContact(null);
+        break;
+      case "close":
+        setSelectedContact(null);
+        break;
+    }
+    setPendingAction(null);
+    resetForm();
+  };
+
+  const handleContactAction = (
+    action: typeof pendingAction,
+    skipDirtyCheck = false
+  ) => {
+    if (isFormDirty && !skipDirtyCheck) {
+      setPendingAction(action);
+      setShowSaveDialog(true);
     } else {
-      updateContactData(isNew, detailData);
+      executePendingAction(action!);
     }
-    console.log("Opening this object:", detailData);
-  }, [hasPendingChanges, updateContactData]);
-
-  const handlePendingChanges = useCallback((hasPending: boolean, changes?: Record<string, ChangeRecord>) => {
-    setHasPendingChanges(hasPending);
-    if (changes) {
-      setPendingChanges(changes);
-    }
-  }, []);
-
-  const handleConfirmNavigation = async () => {
-    if (pendingOperation) {
-      if (detailHandlerRef.current?.handleSave) {
-        await detailHandlerRef.current.handleSave();
-      }
-      updateContactData(pendingOperation.isNew, pendingOperation.detailData);
-      setPendingOperation(null);
-    }
-    setShowConfirmation(false);
   };
-
-  const handleCancelNavigation = () => {
-    if (pendingOperation) {
-      if (detailHandlerRef.current?.handleDiscard) {
-        detailHandlerRef.current.handleDiscard();
-      }
-      updateContactData(pendingOperation.isNew, pendingOperation.detailData);
-      setPendingOperation(null);
-    }
-    setShowConfirmation(false);
-  };
-
-  // Reset state when contactData changes
-  useEffect(() => {
-    if (contactData === null) {
-      setHasPendingChanges(false);
-      setPendingChanges({});
-      setPendingOperation(null);
-      setShowConfirmation(false);
-    }
-  }, [contactData]);
 
   return (
-    <>
+    <div className="contacts-page">
       <div className="search-area">
-        <SearchContainer
-          onOpenDetail={handleOpenContact}
-          type="contacts"
-          searchableFields={contactSearchableFields}
-          projection={contactProjection}
-          query={buildContactQuery}
+        <ContactSearch
+          handleSelectContact={(contact) => {
+            handleContactAction({ type: "select", contact });
+          }}
+          handleCopyContact={(contact) => {
+            const newContact = {
+              ...contact,
+              _id: "",
+              createdAt: undefined,
+              updatedAt: undefined,
+            };
+            handleContactAction({ type: "select", contact: newContact }, true);
+          }}
+          handleCreateContact={() => {
+            handleContactAction({ type: "create" });
+          }}
         />
       </div>
-      
-      {contactData && (
-        <DetailContainer
-          key={contactData.key} 
-          isNew={contactData.isNew}
-          initialFormFields={contactFields(contactData.detailData)}
-          type="contacts"
-          onPendingChanges={handlePendingChanges}
-          ref={detailHandlerRef}
-        />
+
+      {selectedContact && (
+        <div className="details-panel">
+          <div className="details-panel__close">
+            <Button
+              icon={X}
+              intent="secondary"
+              variant="sm"
+              onClick={() => handleContactAction({ type: "close" })}
+            >
+              Close
+            </Button>
+          </div>
+          <ContactForm
+            {...formProps}
+            onDirtyChange={setIsFormDirty}
+            onChangedFieldsUpdate={setChangedFields}
+            onSave={handleSave}
+            onCancel={() => {
+              resetForm();
+            }}
+          />
+        </div>
       )}
 
-      {showConfirmation && (
-        <DetailConfirmation
-          title="Unsaved Changes"
-          message="You have unsaved changes. Would you like to save them before continuing?"
-          confirm="Save and Continue"
-          cancel="Discard Changes"
-          changes={pendingChanges}
-          onConfirm={handleConfirmNavigation}
-          onCancel={handleCancelNavigation}
+      {showSaveDialog && (
+        <ConfirmationDialog
+          isOpen={showSaveDialog}
+          title="Save Changes"
+          message="You have unsaved changes. Do you want to save them?"
+          changes={changedFields}
+          onConfirm={handleSave}
+          onCancel={handleCloseDialog}
         />
       )}
-    </>
+    </div>
   );
 }

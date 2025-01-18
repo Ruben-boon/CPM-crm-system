@@ -1,6 +1,6 @@
 "use server";
 import clientPromise from "@/lib/mongoDB";
-import { Contact, buildContactQuery } from "@/lib/contacts";
+import { Contact, buildContactQuery } from "./contacts_old";
 
 const databaseName = "CRM";
 const searchResultLimit = 8;

@@ -1,3 +1,3 @@
 export default function HomePage() {
-  return <div>Dashboard?</div>;
+  return <div>Hey welcome to this Custom CRM</div>;
 }
