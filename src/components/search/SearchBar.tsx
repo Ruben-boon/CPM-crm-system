@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
-import { SearchableField } from '@/domain/contacts/contactModel';
-import { useContactStore } from '@/store/contactsStore';
+import React, { useState, useEffect } from "react";
+import { Search } from "lucide-react";
+import { SearchableField } from "@/domain/contacts/contactModel";
+import { useContactStore } from "@/store/contactsStore";
 
 interface SearchBarProps {
   searchableFields: SearchableField[];
@@ -9,8 +9,8 @@ interface SearchBarProps {
 
 export function SearchBar({ searchableFields }: SearchBarProps) {
   const { searchContacts, isLoading } = useContactStore();
-  const [searchField, setSearchField] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchField, setSearchField] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Initialize with first searchable field
   useEffect(() => {
@@ -22,7 +22,7 @@ export function SearchBar({ searchableFields }: SearchBarProps) {
   // Initial search on mount
   useEffect(() => {
     if (searchField) {
-      searchContacts(searchField, '');
+      searchContacts(searchField, "");
     }
   }, [searchField]); // Dependency on searchField since we need it to be set first
 
@@ -32,7 +32,7 @@ export function SearchBar({ searchableFields }: SearchBarProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };

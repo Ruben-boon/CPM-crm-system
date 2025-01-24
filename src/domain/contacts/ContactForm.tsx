@@ -1,4 +1,3 @@
-
 import Button from "@/components/common/Button";
 import { contactFormFields } from "@/store/contactSchema";
 import { useContactStore } from "@/store/contactsStore";
@@ -83,6 +82,7 @@ export function ContactForm({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSave();
+    setIsEditMode(false);
   };
 
   const handleEdit = () => {
@@ -132,7 +132,7 @@ export function ContactForm({
           <div key={id} className="form-field">
             <label className="field-label">
               {field.label}
-              {field.required && <span className="required-mark">*</span>}
+              {field.required && <span className="required-mark"> *</span>}
             </label>
             <input
               type={field.type}
@@ -180,7 +180,7 @@ export function ContactForm({
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
-                {isDirty ? "Discard changes" : "Cancel"}
+                Cancel
               </Button>
             </>
           )}

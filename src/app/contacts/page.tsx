@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Contact } from "@/domain/contacts/contactModel";
 import { useContactStore } from "@/store/contactsStore";
 import { X } from "lucide-react";
-import Button from "@/components/common/Button";
 import { ContactSearch } from "@/components/search/ContactSearch";
 import { ContactForm } from "@/domain/contacts/ContactForm";
-import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import { useContactForm } from "@/hooks/useContactForm";
+import Button from "@/components/common/Button";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 export default function ContactsPage() {
   const {
@@ -127,6 +127,7 @@ export default function ContactsPage() {
             onChangedFieldsUpdate={setChangedFields}
             onSave={handleSave}
             onCancel={() => {
+              // todo fix the cancel bug after saving
               resetForm();
             }}
           />

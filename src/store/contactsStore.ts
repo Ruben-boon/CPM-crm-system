@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { searchData } from '@/app/api/endpoints/contacts';
-import { handleApiRequest } from '@/utils/errorHandling';
+import { handleApiRequest } from '../utils/errorHandling';
 import { Contact } from '@/domain/contacts/contactModel';
 
 interface ContactState {

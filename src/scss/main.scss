@@ -6,33 +6,15 @@
 @use "abstracts/functions";
 @use "abstracts/mixins";
 
-// animations
-// @import "animations/animations";
-
 // base
 @use "base/typography";
 @use "base/reset";
 @use "base/general";
-//form
-
-// modules
 
 //ui
-@use "ui/footer";
 @use "ui/header";
-@use "ui/menu-link";
-@use "ui/search-area";
-@use "ui/search-bar";
-@use "ui/search-results";
-
-
-@use "ui/details-panel";
-@use "ui/details/detail-confirmation";
-@use "ui/details/detail-form";
-@use "ui/details/detail-controls";
-
-
-@use "ui/fields/input";
+@use "ui/search";
+@use "ui/details";
+@use "ui/inputs";
 @use "ui/buttons";
-// shame
-@use "shame";
+

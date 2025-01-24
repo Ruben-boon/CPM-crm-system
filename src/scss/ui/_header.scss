@@ -5,11 +5,26 @@ nav {
   height: 100vh;
   padding: 1em;
   width: fit-content;
-  gap:8px;
+  gap: 8px;
   * {
     color: white;
   }
   .color-picker {
     margin-top: auto;
+  }
+  .menu-link-container {
+    padding: 1em;
+    border-radius: 2px;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    &:hover {
+      background-color: rgb(31, 31, 31);
+    }
+    &.active {
+      background-color: var(--accent-color);
+    }
   }
 }
