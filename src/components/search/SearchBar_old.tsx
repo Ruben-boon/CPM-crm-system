@@ -1,34 +1,34 @@
-"use client";
+import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { SearchableField } from "@/domain_old/contacts/contactModel";
+import { useContactStore } from "@/store/contactsStore";
 
 interface SearchBarProps {
-  onSearch: (searchTerm: string, searchField: string) => void;
-  isLoading?: boolean;
+  searchableFields: SearchableField[];
 }
 
-export default function SearchBar({
-  onSearch,
-  isLoading = false,
-}: SearchBarProps) {
-  const searchableFields = [
-    { value: "general.firstName", label: "First Name" },
-    { value: "general.lastName", label: "Last Name" },
-    { value: "general.email", label: "Email" },
-    { value: "general.phone", label: "Phone" },
-    { value: "currency", label: "Currency" },
-    { value: "createdAt", label: "Created Date" },
-  ] as const;
-
-  const [searchField, setSearchField] = useState(searchableFields[0].value);
+export function SearchBar({ searchableFields }: SearchBarProps) {
+  const { searchContacts, isLoading } = useContactStore();
+  const [searchField, setSearchField] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Initialize with first searchable field
   useEffect(() => {
-    onSearch("", searchField);
-  }, []);
+    if (searchableFields.length > 0) {
+      setSearchField(searchableFields[0].value);
+    }
+  }, [searchableFields]);
+
+  // Initial search on mount
+  useEffect(() => {
+    if (searchField) {
+      searchContacts(searchField, "");
+    }
+  }, [searchField]); // Dependency on searchField since we need it to be set first
 
   const handleSearch = () => {
-    onSearch(searchTerm.trim(), searchField);
+    // Removed the trim check to allow empty searches
+    searchContacts(searchField, searchTerm.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -38,19 +38,20 @@ export default function SearchBar({
   };
 
   return (
-    <div className="search-group">
+    <div className="search-container">
       <div className="search-bar">
         <Search className="search-bar__icon" size={20} strokeWidth={1.5} />
         <input
           type="text"
           className="search-bar__input"
-          placeholder={`Search by ${searchableFields.find(f => f.value === searchField)?.label}`}
+          placeholder={`Search by ${searchField}`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
         />
       </div>
+
       <select
         className="search-filter"
         value={searchField}

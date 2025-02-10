@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { searchData } from '@/app/api/endpoints/contacts';
+import { searchData } from '@/app/api_old/endpoints/contacts';
 import { handleApiRequest } from '../utils/errorHandling';
-import { Contact } from '@/domain/contacts/contactModel';
+import { Contact } from '@/domain_old/contacts/contactModel';
 
 interface ContactState {
   contacts: Contact[];

@@ -1,8 +1,8 @@
 "use server";
 import clientPromise from "@/lib/mongoDB";
-import { Contact } from "@/domain/contacts/contactModel";
+import { Contact } from "@/domain_old/contacts/contactModel";
 import { ObjectId } from "mongodb";
-import { contactProjection } from "@/domain/contacts/contactModel";
+import { contactProjection } from "@/domain_old/contacts/contactModel";
 
 const databaseName = "CRM";
 const collectionName = "contacts";

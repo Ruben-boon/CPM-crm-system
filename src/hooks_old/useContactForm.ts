@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
-import { Contact } from "@/domain/contacts/contactModel";
+import { Contact } from "@/domain_old/contacts/contactModel";
 import { toast } from "sonner";
 import {
   contactSchema,
   transformFormToContact,
   transformContactToForm,
 } from "@/store/contactSchema";
-import { createContact, updateContact } from "@/app/api/endpoints/contacts";
+import { createContact, updateContact } from "@/app/api_old/endpoints/contacts";
 import { z } from "zod";
 
 interface FormState {

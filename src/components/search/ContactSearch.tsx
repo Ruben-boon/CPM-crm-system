@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import { SearchBar } from "./SearchBar";
 import { SearchResults } from "./SearchResults";
-import { contactSearchableFields } from "@/domain/contacts/contactModel";
+import { contactSearchableFields } from "@/domain_old/contacts/contactModel";
 import Button from "../common/Button";
 
 interface contactSearchProps {

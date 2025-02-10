@@ -6,9 +6,16 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
+// const options = {
+//   maxPoolSize: 10,
+//   minPoolSize: 5,
+// };
 const options = {
   maxPoolSize: 10,
   minPoolSize: 5,
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true, // For testing only
 };
 
 let client: MongoClient;
