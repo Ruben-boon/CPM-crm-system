@@ -4,254 +4,278 @@ import { Save, X, Edit } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useContactsData } from "@/context/DataContext";
 import { toast } from "sonner";
+import { TextField } from "../fields/TextField";
+import { DropdownField } from "../fields/DropdownField";
+import { RefField } from "../fields/RefFields";
+import { searchDocuments } from "@/app/actions/crudActions";
 
-// Define exact form structure
+interface SearchResult {
+ _id: string;
+ [key: string]: any;
+}
+
 interface ContactFormData {
-  general: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  };
-  currency: string;
+ general: {
+   firstName: string;
+   lastName: string;
+   email: string;
+   phone: string;
+   type: string;
+   bookerId: string;
+   bookerName: string;
+ };
 }
 
 const INITIAL_FORM_STATE: ContactFormData = {
-  general: {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: ''
-  },
-  currency: 'EUR'
+ general: {
+   firstName: "",
+   lastName: "",
+   email: "",
+   phone: "",
+   type: "",
+   bookerId: "",
+   bookerName: "",
+ },
 };
 
-const CURRENCY_OPTIONS = ['EUR', 'USD', 'GBP'] as const;
+const TYPE_OPTIONS = [
+ { value: "a", label: "A" },
+ { value: "b", label: "B" },
+ { value: "c", label: "C" },
+];
 
 export function ContactForm() {
-  const {
-    selectedItem,
-    updateItem,
-    createItem,
-    setIsEditing,
-    isEditing,
-    pendingChanges,
-    setPendingChanges
-  } = useContactsData();
+ const {
+   selectedItem,
+   updateItem,
+   createItem,
+   setIsEditing,
+   isEditing,
+   pendingChanges,
+   setPendingChanges,
+ } = useContactsData();
 
-  const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
-  const [errors, setErrors] = useState<Partial<Record<keyof ContactFormData, string>>>({});
-  const [touched, setTouched] = useState<Set<string>>(new Set());
-  const [isSubmitting, setIsSubmitting] = useState(false);
+ const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
+ const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Map MongoDB data to form structure
-  useEffect(() => {
-    if (selectedItem) {
-      setFormData({
-        general: {
-          firstName: selectedItem.general?.firstName || '',
-          lastName: selectedItem.general?.lastName || '',
-          email: selectedItem.general?.email || '',
-          phone: selectedItem.general?.phone || ''
-        },
-        currency: selectedItem.currency || 'EUR'
-      });
-      setTouched(new Set());
-      setErrors({});
-    }
-  }, [selectedItem]);
+ const handleChange = (
+   section: keyof ContactFormData,
+   field: string,
+   value: string,
+   displayValue?: string
+ ) => {
+   if (section === "general") {
+     setFormData((prev) => ({
+       ...prev,
+       general: {
+         ...prev.general,
+         [field]: value,
+         ...(displayValue && field === "bookerId" ? { bookerName: displayValue } : {}),
+       },
+     }));
+   }
 
-  const handleChange = (section: keyof ContactFormData, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: section === 'general' 
-        ? { ...prev.general, [field]: value }
-        : value
-    }));
+   setPendingChanges((prev) => ({
+     ...prev,
+     [`${section}.${field}`]: {
+       oldValue: selectedItem?.[section]?.[field] || "",
+       newValue: value,
+     },
+   }));
+ };
 
-    setPendingChanges(prev => ({
-      ...prev,
-      [`${section}.${field}`]: {
-        oldValue: selectedItem?.[section]?.[field] || '',
-        newValue: value
-      }
-    }));
-  };
+ useEffect(() => {
+   if (selectedItem) {
+     const loadBookerDetails = async () => {
+       if (selectedItem.general?.bookerId) {
+         try {
+           const results = await searchDocuments<SearchResult>(
+             'bookings',
+             selectedItem.general.bookerId,
+             '_id'
+           );
+           if (results.length > 0) {
+             setFormData(prev => ({
+               general: {
+                 ...prev.general,
+                 bookerName: results[0].name
+               }
+             }));
+           }
+         } catch (error) {
+           console.error('Failed to load booking details:', error);
+         }
+       }
+     };
 
-  const handleBlur = (fieldPath: string) => {
-    setTouched(prev => new Set(prev).add(fieldPath));
-  };
+     setFormData({
+       general: {
+         firstName: selectedItem.general?.firstName || "",
+         lastName: selectedItem.general?.lastName || "",
+         email: selectedItem.general?.email || "",
+         phone: selectedItem.general?.phone || "",
+         type: selectedItem.general?.type || "",
+         bookerId: selectedItem.general?.bookerId || "",
+         bookerName: selectedItem.general?.bookerName || "",
+       },
+     });
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      const itemData = {
-        ...selectedItem,
-        ...formData
-      };
+     if (selectedItem.general?.bookerId) {
+       loadBookerDetails();
+     }
+   }
+ }, [selectedItem]);
 
-      if (selectedItem?._id) {
-        const result = await updateItem(itemData);
-        if (result) {
-          toast.success('Contact updated successfully');
-        } else {
-          toast.error('Failed to update contact');
-        }
-      } else {
-        const result = await createItem(itemData);
-        if (result) {
-          toast.success('Contact created successfully');
-        } else {
-          toast.error('Failed to create contact');
-        }
-      }
-      setIsEditing(false);
-      setPendingChanges({});
-    } catch (error) {
-      toast.error('An unexpected error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+ const handleSave = async (e: React.FormEvent) => {
+   e.preventDefault();
+   setIsSubmitting(true);
 
-  const handleCancel = () => {
-    if (selectedItem) {
-      setFormData({
-        general: {
-          firstName: selectedItem.general?.firstName || '',
-          lastName: selectedItem.general?.lastName || '',
-          email: selectedItem.general?.email || '',
-          phone: selectedItem.general?.phone || ''
-        },
-        currency: selectedItem.currency || 'EUR'
-      });
-    } else {
-      setFormData(INITIAL_FORM_STATE);
-    }
-    setPendingChanges({});
-    setIsEditing(false);
-  };
+   try {
+     const itemData = {
+       ...selectedItem,
+       general: {
+         ...formData.general,
+         bookerName: undefined
+       }
+     };
 
-  return (
-    <form onSubmit={handleSave} className="contact-form">
-      <div className="form-header">
-        <h2 className="form-title">
-          {selectedItem?._id ? "Contact Details" : "New Contact"}
-        </h2>
-        <div className="form-actions">
-          {!isEditing && selectedItem?._id && (
-            <Button icon={Edit} onClick={() => setIsEditing(true)}>
-              Edit
-            </Button>
-          )}
+     const success = selectedItem?._id
+       ? await updateItem(itemData)
+       : await createItem(itemData);
 
-          {isEditing && (
-            <>
-              <Button
-                icon={Save}
-                type="submit"
-                disabled={isSubmitting || Object.keys(pendingChanges).length === 0}
-              >
-                Save
-              </Button>
-              <Button
-                intent="secondary"
-                icon={X}
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+     if (success) {
+       toast.success(
+         `Contact ${selectedItem?._id ? "updated" : "created"} successfully`
+       );
+       setIsEditing(false);
+       setPendingChanges({});
+     } else {
+       toast.error(
+         `Failed to ${selectedItem?._id ? "update" : "create"} contact`
+       );
+     }
+   } catch (error) {
+     toast.error("An unexpected error occurred");
+   } finally {
+     setIsSubmitting(false);
+   }
+ };
 
-      <div className="form-sections">
-        <div className="form-section">
-          <h3 className="section-title">General Information</h3>
-          <div className="section-fields">
-            <div className="form-field">
-              <label className="field-label">
-                First Name
-              </label>
-              <input
-                type="text"
-                className="input-base input-style"
-                value={formData.general.firstName}
-                onChange={(e) => handleChange('general', 'firstName', e.target.value)}
-                onBlur={() => handleBlur('general.firstName')}
-                disabled={!isEditing}
-                required
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">
-                Last Name
-              </label>
-              <input
-                type="text"
-                className="input-base input-style"
-                value={formData.general.lastName}
-                onChange={(e) => handleChange('general', 'lastName', e.target.value)}
-                onBlur={() => handleBlur('general.lastName')}
-                disabled={!isEditing}
-                required
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">Email</label>
-              <input
-                type="email"
-                className="input-base input-style"
-                value={formData.general.email}
-                onChange={(e) => handleChange('general', 'email', e.target.value)}
-                onBlur={() => handleBlur('general.email')}
-                disabled={!isEditing}
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">Phone</label>
-              <input
-                type="tel"
-                className="input-base input-style"
-                value={formData.general.phone}
-                onChange={(e) => handleChange('general', 'phone', e.target.value)}
-                onBlur={() => handleBlur('general.phone')}
-                disabled={!isEditing}
-              />
-            </div>
-          </div>
-        </div>
+ const handleCancel = () => {
+   if (selectedItem) {
+     setFormData({
+       general: {
+         firstName: selectedItem.general?.firstName || "",
+         lastName: selectedItem.general?.lastName || "",
+         email: selectedItem.general?.email || "",
+         phone: selectedItem.general?.phone || "",
+         type: selectedItem.general?.type || "",
+         bookerId: selectedItem.general?.bookerId || "",
+         bookerName: selectedItem.general?.bookerName || "",
+       },
+     });
+   } else {
+     setFormData(INITIAL_FORM_STATE);
+   }
+   setPendingChanges({});
+   setIsEditing(false);
+ };
 
-        <div className="form-section">
-          <h3 className="section-title">Additional Information</h3>
-          <div className="section-fields">
-            <div className="form-field">
-              <label className="field-label">
-                Currency
-                <span className="required-mark">*</span>
-              </label>
-              <select
-                className="input-base input-style"
-                value={formData.currency}
-                onChange={(e) => handleChange('currency', '', e.target.value)}
-                onBlur={() => handleBlur('currency')}
-                disabled={!isEditing}
-                required
-              >
-                {CURRENCY_OPTIONS.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </form>
-  );
+ return (
+   <form onSubmit={handleSave} className="contact-form">
+     <div className="form-header">
+       <p className="form-title">
+         {selectedItem?._id ? "Contact Details" : "New Contact"}
+       </p>
+       <div className="form-actions">
+         {!isEditing && selectedItem?._id && (
+           <Button icon={Edit} onClick={() => setIsEditing(true)}>
+             Edit
+           </Button>
+         )}
+
+         {isEditing && (
+           <>
+             <Button
+               icon={Save}
+               type="submit"
+               disabled={isSubmitting || Object.keys(pendingChanges).length === 0}
+             >
+               Save
+             </Button>
+             <Button
+               intent="secondary"
+               icon={X}
+               onClick={handleCancel}
+               disabled={isSubmitting}
+             >
+               Cancel
+             </Button>
+           </>
+         )}
+       </div>
+     </div>
+
+     <div className="form-sections">
+       <div className="form-section">
+         <div className="section-fields">
+           <TextField
+             label="First Name"
+             value={formData.general.firstName}
+             onChange={(value) => handleChange("general", "firstName", value)}
+             required
+             isEditing={isEditing}
+             className={pendingChanges[`general.firstName`] ? "field-changed" : ""}
+           />
+           <RefField
+             label="Booking"
+             value={formData.general.bookerId}
+             onChange={(value, displayValue) => 
+               handleChange("general", "bookerId", value, displayValue)
+             }
+             required
+             isEditing={isEditing}
+             className={pendingChanges[`general.bookerId`] ? "field-changed" : ""}
+             collectionName="bookings"
+             displayField="name"
+             selectedLabel={formData.general.bookerName}
+           />
+           <TextField
+             label="Last Name"
+             value={formData.general.lastName}
+             onChange={(value) => handleChange("general", "lastName", value)}
+             required
+             isEditing={isEditing}
+             className={pendingChanges[`general.lastName`] ? "field-changed" : ""}
+           />
+           <TextField
+             label="Email"
+             value={formData.general.email}
+             onChange={(value) => handleChange("general", "email", value)}
+             type="email"
+             isEditing={isEditing}
+             className={pendingChanges[`general.email`] ? "field-changed" : ""}
+           />
+           <TextField
+             label="Phone"
+             value={formData.general.phone}
+             onChange={(value) => handleChange("general", "phone", value)}
+             type="tel"
+             isEditing={isEditing}
+             className={pendingChanges[`general.phone`] ? "field-changed" : ""}
+           />
+           <DropdownField
+             label="type"
+             value={formData.general.type}
+             onChange={(value) => handleChange("general", "type", value)}
+             options={TYPE_OPTIONS}
+             required
+             isEditing={isEditing}
+             className={pendingChanges[`general.type`] ? "field-changed" : ""}
+           />
+         </div>
+       </div>
+     </div>
+   </form>
+ );
 }
