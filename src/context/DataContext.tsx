@@ -129,6 +129,9 @@ function createDataContext(collectionName: string) {
 export const { DataProvider: ContactsProvider, useData: useContactsData } =
   createDataContext("contacts");
 
+  export const { DataProvider: CompaniesProvider, useData: useCopaniesData } =
+  createDataContext("companies");
+
 // export const { DataProvider: VariableProvider, useData: useVariableData } =
 //   createDataContext("variables");
 

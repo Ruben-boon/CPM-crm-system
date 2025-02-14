@@ -140,7 +140,7 @@ export function RefField({
     const display = formatDisplayValue(result);
     setDisplayValue(display);
     onChange(result._id, display);
-    setSearchTerm(display);
+    setSearchTerm("");
     setIsSearching(false);
   };
 
@@ -151,37 +151,38 @@ export function RefField({
         {isEditing && required && <span className="required-mark">*</span>}
       </label>
       <div className="ref-field-container" ref={dropdownRef}>
-        {isEditing ? (
-          <div className="search-container">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className={`search-input ${className}`}
-              placeholder="Search..."
-              disabled={disabled}
-            />
-            <Search className="search-icon" />
-            {isSearching && results.length > 0 && (
-              <div className="search-results">
-                {results.map((result) => (
-                  <div
-                    key={result._id}
-                    className="result-item"
-                    onClick={() => handleSelect(result)}
-                  >
-                    <span className="result-name">{formatDisplayValue(result)}</span>
-                    <span className="result-id">{result._id}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={`read-only ${className}`}>
+        <div className="ref-field-single">
+          <div className={`read-only flex-1 ${className}`}>
             {displayValue || <span className="empty-reference">-</span>}
           </div>
-        )}
+          {isEditing && (
+            <div className="search-container flex-1">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className={`search-input ${className}`}
+                placeholder="Search..."
+                disabled={disabled}
+              />
+              <Search className="search-icon" />
+              {isSearching && results.length > 0 && (
+                <div className="search-results">
+                  {results.map((result) => (
+                    <div
+                      key={result._id}
+                      className="result-item"
+                      onClick={() => handleSelect(result)}
+                    >
+                      <span className="result-name">{formatDisplayValue(result)}</span>
+                      <span className="result-id">{result._id}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

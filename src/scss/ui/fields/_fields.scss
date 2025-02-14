@@ -20,6 +20,10 @@
     width: 100%;
   }
 
+  .ref-field-single {
+    display: flex;
+    flex-direction: column;
+  }
   // Base input styles (only for editable state)
   .input-base,
   .search-input {

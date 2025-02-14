@@ -11,6 +11,8 @@ export default function SearchBar({
   onSearch,
   isLoading = false,
 }: SearchBarProps) {
+
+  
   const searchableFields = [
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },

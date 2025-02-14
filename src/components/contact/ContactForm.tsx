@@ -46,9 +46,9 @@ const INITIAL_FORM_STATE: ContactFormData = {
 };
 
 const TYPE_OPTIONS = [
-  { value: "a", label: "A" },
-  { value: "b", label: "B" },
-  { value: "c", label: "C" },
+  { value: "a", label: "Contact" },
+  { value: "b", label: "Client" },
+  { value: "c", label: "Booker?" },
 ];
 
 const BOOKING_DISPLAY_FIELDS = ["name", "lastName"];
@@ -236,7 +236,9 @@ export function ContactForm() {
                 handleChange("general", "companyId", value, displayValue)
               }
               isEditing={isEditing}
-              className={pendingChanges[`general.companyId`] ? "field-changed" : ""}
+              className={
+                pendingChanges[`general.companyId`] ? "field-changed" : ""
+              }
               collectionName="companies"
               displayFields={["name"]}
               selectedLabel={formData.general.companyName}
@@ -262,7 +264,7 @@ export function ContactForm() {
               }
             />
             <TextField
-              label="Email"
+              label="E-mail"
               value={formData.general.email}
               onChange={(value) => handleChange("general", "email", value)}
               type="email"
@@ -278,26 +280,14 @@ export function ContactForm() {
               className={pendingChanges[`general.phone`] ? "field-changed" : ""}
             />
             <DropdownField
-              label="type"
+              label="Type"
               value={formData.general.type}
               onChange={(value) => handleChange("general", "type", value)}
               options={TYPE_OPTIONS}
               required
               isEditing={isEditing}
             />
-            <RefField
-              label="Booking"
-              value={formData.general.bookerId}
-              onChange={(value, displayValue) =>
-                handleChange("general", "bookerId", value, displayValue)
-              }
-              required
-              isEditing={isEditing}
-              className={pendingChanges[`general.bookerId`] ? "field-changed" : ""}
-              collectionName="bookings"
-              displayFields={BOOKING_DISPLAY_FIELDS}
-              selectedLabel={formData.general.bookerName}
-            />
+
             <MultiRefField
               label="Related contacts"
               value={formData.general.contactIds}
@@ -306,10 +296,28 @@ export function ContactForm() {
               }
               required
               isEditing={isEditing}
-              className={pendingChanges[`general.contactIds`] ? "field-changed" : ""}
+              className={
+                pendingChanges[`general.contactIds`] ? "field-changed" : ""
+              }
               collectionName="contacts"
               displayFields={["general.firstName", "general.lastName"]}
               selectedLabels={formData.general.relatedContacts}
+            />
+            <p>Bookings work in progress should fetch the other way around*</p>
+            <MultiRefField
+              label="Bookings"
+              value={formData.general.bookingIds}
+              onChange={(values, displayValues) =>
+                handleChange("general", "bookingIds", values, displayValues)
+              }
+              required
+              isEditing={isEditing}
+              className={
+                pendingChanges[`general.bookingIds`] ? "field-changed" : ""
+              }
+              collectionName="bookings"
+              displayFields={BOOKING_DISPLAY_FIELDS}
+              selectedLabels={formData.general.bookingNames}
             />
           </div>
           <div className="col"></div>
