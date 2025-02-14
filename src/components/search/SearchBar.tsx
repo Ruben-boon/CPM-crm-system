@@ -5,22 +5,29 @@ import { useEffect, useState } from "react";
 interface SearchBarProps {
   onSearch: (searchTerm: string, searchField: string) => void;
   isLoading?: boolean;
+  type?: "contacts" | "companies";
 }
 
 export default function SearchBar({
   onSearch,
   isLoading = false,
+  type = "contacts"
 }: SearchBarProps) {
-
-  
-  const searchableFields = [
+  const contactFields = [
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },
     { value: "general.email", label: "Email" },
     { value: "general.phone", label: "Phone" },
-    { value: "currency", label: "Currency" },
-    { value: "createdAt", label: "Created Date" },
   ] as const;
+
+  const companyFields = [
+    { value: "supplierName", label: "Supplier Name" },
+    { value: "entityName", label: "Entity Name" },
+    { value: "vatNo", label: "VAT No." },
+    { value: "invoicingEmail", label: "Invoicing Email" },
+  ] as const;
+
+  const searchableFields = type === "contacts" ? contactFields : companyFields;
 
   const [searchField, setSearchField] = useState(searchableFields[0].value);
   const [searchTerm, setSearchTerm] = useState("");

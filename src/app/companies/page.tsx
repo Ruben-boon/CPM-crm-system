@@ -1,10 +1,10 @@
 "use client";
 
 import Button from "@/components/Button";
-import { ContactForm } from "@/components/contact/ContactForm";
+import { CompanyForm } from "@/components/company/CompanyForm";
 import SearchBar from "@/components/search/SearchBar";
 import SearchResults from "@/components/search/SearchResults";
-import { CompaniesProvider, useContactsData } from "@/context/DataContext";
+import { CompaniesProvider, useCompaniesData } from "@/context/DataContext";
 import { Plus } from "lucide-react";
 
 function PageContent() {
@@ -12,26 +12,25 @@ function PageContent() {
     selectItem,
     items,
     isLoading,
-
     searchItems,
-  } = useContactsData();
+  } = useCompaniesData();
 
   return (
     <>
       <div className="search-area">
         <div className="search-panel">
-          <SearchBar onSearch={searchItems} isLoading={isLoading} />
+          <SearchBar onSearch={searchItems} isLoading={isLoading} type="companies" />
           <div className="button-container">
             <Button icon={Plus} onClick={() => selectItem({}, true)}>
-              New Contact
+              New Company
             </Button>
           </div>
-          <SearchResults items={items} onSelect={selectItem} />
+          <SearchResults items={items} onSelect={selectItem} type="companies" />
         </div>
       </div>
 
       <div className="details-panel">
-        <ContactForm></ContactForm>
+        <CompanyForm />
       </div>
     </>
   );

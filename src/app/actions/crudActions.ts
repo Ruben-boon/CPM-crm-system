@@ -17,10 +17,24 @@ export async function searchDocuments<T>(
   const db = client.db("CRM");
 
   let query = {};
+  
   if (searchTerm && searchField) {
-    query = searchField === "_id" 
-      ? { _id: new ObjectId(searchTerm) }
-      : { [searchField]: { $regex: searchTerm, $options: "i" } };
+    if (searchField === "_id") {
+      // Only attempt to create ObjectId if the searchTerm matches MongoDB ObjectId format
+      if (/^[0-9a-fA-F]{24}$/.test(searchTerm)) {
+        try {
+          query = { _id: new ObjectId(searchTerm) };
+        } catch (error) {
+          console.error("Invalid ObjectId format:", error);
+          return [];
+        }
+      } else {
+        // Return empty array if ID format is invalid
+        return [];
+      }
+    } else {
+      query = { [searchField]: { $regex: searchTerm, $options: "i" } };
+    }
   }
 
   try {
@@ -75,18 +89,34 @@ export async function updateDocument<T extends { _id: string }>(
     const collection = client.db("CRM").collection(collectionName);
 
     const { _id, ...updateData } = document;
-    const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
-    );
+    
+    // Validate ObjectId format before attempting update
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return { 
+        success: false, 
+        error: "Invalid document ID format" 
+      };
+    }
 
-    if (result.modifiedCount === 1) {
-      return { success: true, data: document };
+    try {
+      const result = await collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateData }
+      );
+
+      if (result.modifiedCount === 1) {
+        return { success: true, data: document };
+      }
+      if (result.matchedCount === 0) {
+        return { success: false, error: "Document not found" };
+      }
+      return { success: false, error: "Document found but not modified" };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("ObjectId")) {
+        return { success: false, error: "Invalid document ID format" };
+      }
+      throw error;
     }
-    if (result.matchedCount === 0) {
-      return { success: false, error: "Document not found" };
-    }
-    return { success: false, error: "Document found but not modified" };
   } catch (error) {
     console.error(`Update error in ${collectionName}:`, error);
     return {
