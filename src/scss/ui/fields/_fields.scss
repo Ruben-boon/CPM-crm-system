@@ -4,17 +4,20 @@
   gap: 8px;
   width: 100%;
   margin-bottom: 14px;
+
   .field-label {
     color: #1a1a1a;
     font-weight: 500;
     width: 80%;
+    
     .required-mark {
       color: #dc2626;
       margin-left: 2px;
     }
   }
-  .ref-field-container{
-    width:100%;
+
+  .ref-field-container {
+    width: 100%;
   }
 
   // Base input styles (only for editable state)
@@ -22,7 +25,7 @@
   .search-input {
     width: 100%;
     height: 40px;
-    padding: 8px 12px;
+    padding: 8px 8px;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     background-color: #f9fafb;
@@ -47,26 +50,33 @@
 
   // Read-only state styling (no input appearance)
   .input-read-only,
-  .read-only {
+  .read-only, .selected-item-readonly {
     width: 100%;
     min-height: 24px;
     padding: 4px 0;
     color: #1a1a1a;
-    background: none;
-    border: none;
+    background-color: transparent!important;
+    border:0px solid transparent!important;
   }
 
-  // Empty state styling
   .empty-reference {
     color: #9ca3af;
   }
 }
 
+.form-field {
+  .field-changed {
+    border-color: var(--accent-color) !important;
+    background-color: transparent !important;
+  }
+}
+
 // Specific ref-field styling
 .ref-field {
-    padding:12px;
-    border:1px solid rgb(230, 230, 230);
-    border-radius:8px;
+  padding: 12px;
+  border: 1px solid rgb(230, 230, 230);
+  border-radius: 8px;
+
   .search-container {
     position: relative;
   }
@@ -139,17 +149,15 @@
     background-color: #f3f4f6;
     border: 1px solid #e5e7eb;
     border-radius: 4px;
-
     color: #4b5563;
 
     .remove-button {
+      padding: 0;
+      border: 0px solid transparent;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 2px;
-      color: #6b7280;
       cursor: pointer;
-      border-radius: 4px;
       transition: all 0.2s ease;
 
       &:hover {
@@ -160,8 +168,17 @@
   }
 }
 
-// Changed field styles
-.field-changed {
-  background-color: #eff6ff !important;
-  border-color: #3b82f6 !important;
+.multi-ref-field {
+  display: flex;
+  flex-direction: column;
+
+  .selected-items {
+    display: flex;
+    flex-direction: column;
+
+    .selected-item {
+      display: flex;
+      justify-content: space-between;
+    }
+  }
 }

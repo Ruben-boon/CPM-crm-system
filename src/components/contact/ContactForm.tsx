@@ -6,14 +6,8 @@ import { useContactsData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
-import { RefField } from "../fields/RefFields";
 import { MultiRefField } from "../fields/MultiRefField";
-import { searchDocuments } from "@/app/actions/crudActions";
-
-interface SearchResult {
-  _id: string;
-  [key: string]: any;
-}
+import { RefField } from "../fields/RefField";
 
 interface ContactFormData {
   general: {
@@ -22,12 +16,14 @@ interface ContactFormData {
     email: string;
     phone: string;
     type: string;
+    companyId: string;
+    companyName: string;
     bookerId: string;
-    bookerName: string; // UI only
-    bookingIds: string[]; // Saved to DB
-    bookingNames: string[]; // UI only
-    contactIds: string[]; // Saved to DB
-    relatedContacts: string[]; // UI only
+    bookerName: string;
+    bookingIds: string[];
+    bookingNames: string[];
+    contactIds: string[];
+    relatedContacts: string[];
   };
 }
 
@@ -38,6 +34,8 @@ const INITIAL_FORM_STATE: ContactFormData = {
     email: "",
     phone: "",
     type: "",
+    companyId: "",
+    companyName: "",
     bookerId: "",
     bookerName: "",
     bookingIds: [],
@@ -69,21 +67,6 @@ export function ContactForm() {
   const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getNestedValue = (obj: any, path: string) => {
-    const parts = path.split(".");
-    let value = obj;
-    for (const part of parts) {
-      value = value?.[part];
-    }
-    return value;
-  };
-
-  const formatDisplayValue = (result: SearchResult) => {
-    return BOOKING_DISPLAY_FIELDS.map((field) => result[field])
-      .filter(Boolean)
-      .join(" ");
-  };
-
   const handleChange = (
     section: keyof ContactFormData,
     field: string,
@@ -96,6 +79,9 @@ export function ContactForm() {
         general: {
           ...prev.general,
           [field]: value,
+          ...(displayValue && field === "companyId"
+            ? { companyName: displayValue }
+            : {}),
           ...(displayValue && field === "bookerId"
             ? { bookerName: displayValue }
             : {}),
@@ -120,73 +106,6 @@ export function ContactForm() {
 
   useEffect(() => {
     if (selectedItem) {
-      const loadReferenceDetails = async () => {
-        const updates: Partial<typeof formData.general> = {};
-
-        // Load single booking details
-        if (selectedItem.general?.bookerId) {
-          try {
-            const results = await searchDocuments<SearchResult>(
-              "bookings",
-              selectedItem.general.bookerId,
-              "_id"
-            );
-            if (results.length > 0) {
-              updates.bookerName = formatDisplayValue(results[0]);
-            }
-          } catch (error) {
-            console.error("Failed to load booking details:", error);
-          }
-        }
-
-        // Load multiple bookings details
-        if (selectedItem.general?.bookingIds?.length) {
-          try {
-            const loadPromises = selectedItem.general.bookingIds.map((id) =>
-              searchDocuments<SearchResult>("bookings", id, "_id")
-            );
-            const results = await Promise.all(loadPromises);
-            updates.bookingNames = results
-              .map((result) => result[0])
-              .filter(Boolean)
-              .map((booking) => formatDisplayValue(booking));
-          } catch (error) {
-            console.error("Failed to load bookings details:", error);
-          }
-        }
-
-        // Load related contacts details
-        if (selectedItem.general?.contactIds?.length) {
-          try {
-            const loadPromises = selectedItem.general.contactIds.map((id) =>
-              searchDocuments<SearchResult>("contacts", id, "_id")
-            );
-            const results = await Promise.all(loadPromises);
-            updates.relatedContacts = results
-              .map((result) => result[0])
-              .filter(Boolean)
-              .map((contact) =>
-                ["general.firstName", "general.lastName"]
-                  .map((field) => getNestedValue(contact, field))
-                  .filter(Boolean)
-                  .join(" ")
-              );
-          } catch (error) {
-            console.error("Failed to load contact details:", error);
-          }
-        }
-
-        if (Object.keys(updates).length) {
-          setFormData((prev) => ({
-            ...prev,
-            general: {
-              ...prev.general,
-              ...updates,
-            },
-          }));
-        }
-      };
-
       setFormData({
         general: {
           firstName: selectedItem.general?.firstName || "",
@@ -194,6 +113,8 @@ export function ContactForm() {
           email: selectedItem.general?.email || "",
           phone: selectedItem.general?.phone || "",
           type: selectedItem.general?.type || "",
+          companyId: selectedItem.general?.companyId || "",
+          companyName: "",
           bookerId: selectedItem.general?.bookerId || "",
           bookerName: "",
           bookingIds: selectedItem.general?.bookingIds || [],
@@ -202,8 +123,6 @@ export function ContactForm() {
           relatedContacts: [],
         },
       });
-
-      loadReferenceDetails();
     }
   }, [selectedItem]);
 
@@ -216,6 +135,7 @@ export function ContactForm() {
         ...selectedItem,
         general: {
           ...formData.general,
+          companyName: undefined,
           bookerName: undefined,
           bookingNames: undefined,
           relatedContacts: undefined,
@@ -253,6 +173,8 @@ export function ContactForm() {
           email: selectedItem.general?.email || "",
           phone: selectedItem.general?.phone || "",
           type: selectedItem.general?.type || "",
+          companyId: selectedItem.general?.companyId || "",
+          companyName: selectedItem.general?.companyName || "",
           bookerId: selectedItem.general?.bookerId || "",
           bookerName: selectedItem.general?.bookerName || "",
           bookingIds: selectedItem.general?.bookingIds || [],
@@ -307,6 +229,18 @@ export function ContactForm() {
         </div>
         <div className="flex">
           <div className="col">
+            <RefField
+              label="Company"
+              value={formData.general.companyId}
+              onChange={(value, displayValue) =>
+                handleChange("general", "companyId", value, displayValue)
+              }
+              isEditing={isEditing}
+              className={pendingChanges[`general.companyId`] ? "field-changed" : ""}
+              collectionName="companies"
+              displayFields={["name"]}
+              selectedLabel={formData.general.companyName}
+            />
             <TextField
               label="First Name"
               value={formData.general.firstName}
@@ -317,7 +251,6 @@ export function ContactForm() {
                 pendingChanges[`general.firstName`] ? "field-changed" : ""
               }
             />
-
             <TextField
               label="Last Name"
               value={formData.general.lastName}
@@ -351,7 +284,6 @@ export function ContactForm() {
               options={TYPE_OPTIONS}
               required
               isEditing={isEditing}
-              className={pendingChanges[`general.type`] ? "field-changed" : ""}
             />
             <RefField
               label="Booking"
@@ -361,27 +293,10 @@ export function ContactForm() {
               }
               required
               isEditing={isEditing}
-              className={
-                pendingChanges[`general.bookerId`] ? "field-changed" : ""
-              }
+              className={pendingChanges[`general.bookerId`] ? "field-changed" : ""}
               collectionName="bookings"
               displayFields={BOOKING_DISPLAY_FIELDS}
               selectedLabel={formData.general.bookerName}
-            />
-            <MultiRefField
-              label="Bookings"
-              value={formData.general.bookingIds}
-              onChange={(values, displayValues) =>
-                handleChange("general", "bookingIds", values, displayValues)
-              }
-              required
-              isEditing={isEditing}
-              className={
-                pendingChanges[`general.bookingIds`] ? "field-changed" : ""
-              }
-              collectionName="bookings"
-              displayFields={BOOKING_DISPLAY_FIELDS}
-              selectedLabels={formData.general.bookingNames}
             />
             <MultiRefField
               label="Related contacts"
@@ -391,9 +306,7 @@ export function ContactForm() {
               }
               required
               isEditing={isEditing}
-              className={
-                pendingChanges[`general.contactIds`] ? "field-changed" : ""
-              }
+              className={pendingChanges[`general.contactIds`] ? "field-changed" : ""}
               collectionName="contacts"
               displayFields={["general.firstName", "general.lastName"]}
               selectedLabels={formData.general.relatedContacts}

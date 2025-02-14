@@ -1,4 +1,3 @@
-// MultiRefField.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
@@ -36,7 +35,41 @@ export function MultiRefField({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [displayValues, setDisplayValues] = useState<string[]>(selectedLabels);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load reference details when value changes or component mounts
+  useEffect(() => {
+    const loadReferenceDetails = async () => {
+      if (value.length > 0) {
+        try {
+          const loadPromises = value.map(id =>
+            searchDocuments<SearchResult>(collectionName, id, "_id")
+          );
+          
+          const results = await Promise.all(loadPromises);
+          const newDisplayValues = results
+            .map(result => result[0])
+            .filter(Boolean)
+            .map(item => formatDisplayValue(item));
+
+          setDisplayValues(newDisplayValues);
+          // Only call onChange if we have new display values and they're different
+          if (newDisplayValues.length > 0 && JSON.stringify(newDisplayValues) !== JSON.stringify(selectedLabels)) {
+            onChange(value, newDisplayValues);
+          }
+        } catch (error) {
+          console.error(`Failed to load ${collectionName} details:`, error);
+        }
+      }
+    };
+
+    if (value.length > 0 && (!selectedLabels.length || selectedLabels.length !== value.length)) {
+      loadReferenceDetails();
+    } else {
+      setDisplayValues(selectedLabels);
+    }
+  }, [value, selectedLabels, collectionName]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -68,7 +101,6 @@ export function MultiRefField({
     setSearchTerm(term);
     if (term.length > 0) {
       try {
-        // Search in all display fields
         const searchPromises = displayFields.map((field) =>
           searchDocuments<SearchResult>(
             collectionName,
@@ -79,7 +111,6 @@ export function MultiRefField({
         
         const results = await Promise.all(searchPromises);
         
-        // Combine results and remove duplicates based on _id
         const filteredResults = Array.from(
           new Map(
             results
@@ -103,7 +134,8 @@ export function MultiRefField({
 
   const handleSelect = (result: SearchResult) => {
     const newValue = [...value, result._id];
-    const newDisplayValues = [...selectedLabels, formatDisplayValue(result)];
+    const newDisplayValues = [...displayValues, formatDisplayValue(result)];
+    setDisplayValues(newDisplayValues);
     onChange(newValue, newDisplayValues);
     setSearchTerm("");
     setIsSearching(false);
@@ -111,12 +143,13 @@ export function MultiRefField({
 
   const handleRemove = (index: number) => {
     const newValue = value.filter((_, i) => i !== index);
-    const newDisplayValues = selectedLabels.filter((_, i) => i !== index);
+    const newDisplayValues = displayValues.filter((_, i) => i !== index);
+    setDisplayValues(newDisplayValues);
     onChange(newValue, newDisplayValues);
   };
 
   return (
-    <div className="ref-field">
+    <div className="ref-field multi-ref-field">
       <label className="field-label">
         {label}
         {isEditing && required && <span className="required-mark">*</span>}
@@ -125,7 +158,7 @@ export function MultiRefField({
         {isEditing ? (
           <>
             <div className="selected-items">
-              {selectedLabels.map((label, index) => (
+              {displayValues.map((label, index) => (
                 <div key={`${value[index]}-${index}`} className="selected-item">
                   <span>{label}</span>
                   <button
@@ -166,9 +199,9 @@ export function MultiRefField({
           </>
         ) : (
           <div className={`read-only ${className}`}>
-            {selectedLabels.length > 0 ? (
-              <div className="selected-items-readonly">
-                {selectedLabels.map((label, index) => (
+            {displayValues.length > 0 ? (
+              <div className="selected-items-readonly selected-items">
+                {displayValues.map((label, index) => (
                   <div key={`${value[index]}-${index}`} className="selected-item-readonly">
                     {label}
                   </div>

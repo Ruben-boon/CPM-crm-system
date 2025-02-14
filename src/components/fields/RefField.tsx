@@ -1,4 +1,3 @@
-// RefField.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
@@ -36,7 +35,40 @@ export function RefField({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [displayValue, setDisplayValue] = useState(selectedLabel);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadReferenceDetails = async () => {
+      if (value) {
+        try {
+          const response = await searchDocuments<SearchResult>(
+            collectionName,
+            value,
+            "_id"
+          );
+          const results = typeof response === 'string' 
+            ? JSON.parse(response) 
+            : Array.isArray(response) 
+              ? response 
+              : [];
+          if (results.length > 0) {
+            const display = formatDisplayValue(results[0]);
+            setDisplayValue(display);
+            onChange(value, display);
+          }
+        } catch (error) {
+          console.error(`Failed to load ${collectionName} details:`, error);
+        }
+      }
+    };
+
+    if (value && !selectedLabel) {
+      loadReferenceDetails();
+    } else {
+      setDisplayValue(selectedLabel);
+    }
+  }, [value, selectedLabel, collectionName]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -63,22 +95,27 @@ export function RefField({
       .filter(Boolean)
       .join(" ");
   };
+
   const handleSearch = async (term: string) => {
     setSearchTerm(term);
     if (term.length > 0) {
       try {
-        // Search in all display fields
         const searchPromises = displayFields.map((field) =>
           searchDocuments<SearchResult>(
             collectionName,
             term,
             field
-          )
+          ).then(response => {
+            return typeof response === 'string' 
+              ? JSON.parse(response) 
+              : Array.isArray(response) 
+                ? response 
+                : [];
+          })
         );
         
         const results = await Promise.all(searchPromises);
         
-        // Combine results and remove duplicates based on _id
         const uniqueResults = Array.from(
           new Map(
             results
@@ -100,9 +137,10 @@ export function RefField({
   };
 
   const handleSelect = (result: SearchResult) => {
-    const displayValue = formatDisplayValue(result);
-    onChange(result._id, displayValue);
-    setSearchTerm(displayValue);
+    const display = formatDisplayValue(result);
+    setDisplayValue(display);
+    onChange(result._id, display);
+    setSearchTerm(display);
     setIsSearching(false);
   };
 
@@ -141,7 +179,7 @@ export function RefField({
           </div>
         ) : (
           <div className={`read-only ${className}`}>
-            {selectedLabel || <span className="empty-reference">-</span>}
+            {displayValue || <span className="empty-reference">-</span>}
           </div>
         )}
       </div>

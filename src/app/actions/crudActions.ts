@@ -28,14 +28,13 @@ export async function searchDocuments<T>(
       .find(query)
       .toArray();
 
+    // Convert to plain objects and ensure all fields are serializable
     return results.map(doc => {
-      const { bookings, _id, ...rest } = doc;
-      return {
-        ...rest,
-        _id: _id.toString(),
-        bookings: bookings ? bookings.toString() : undefined
-      };
-    }) as T[];
+      const plainDoc = JSON.parse(JSON.stringify(doc, (key, value) => 
+        value instanceof ObjectId ? value.toString() : value
+      ));
+      return plainDoc as T;
+    });
   } catch (error) {
     console.error(`Search error in ${collectionName}:`, error);
     throw error;
