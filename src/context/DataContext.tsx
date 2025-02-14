@@ -36,10 +36,19 @@ function createDataContext(collectionName: string) {
     >({});
 
     const searchItems = async (searchTerm?: string, searchField?: string) => {
-      console.log("searchItems fired searchTerm:",searchTerm,"searchField:", searchField);
+      console.log(
+        "searchItems fired searchTerm:",
+        searchTerm,
+        "searchField:",
+        searchField
+      );
       setIsLoading(true);
       try {
-        const results = await searchDocuments(collectionName, searchTerm ,searchField);
+        const results = await searchDocuments(
+          collectionName,
+          searchTerm,
+          searchField
+        );
         setItems(results);
         setError(null);
       } catch (error) {
@@ -129,8 +138,11 @@ function createDataContext(collectionName: string) {
 export const { DataProvider: ContactsProvider, useData: useContactsData } =
   createDataContext("contacts");
 
-  export const { DataProvider: CompaniesProvider, useData: useCompaniesData } =
+export const { DataProvider: CompaniesProvider, useData: useCompaniesData } =
   createDataContext("companies");
+  
+export const { DataProvider: BookingsProvider, useData: useBookingsData } =
+  createDataContext("bookings");
 
 // export const { DataProvider: VariableProvider, useData: useVariableData } =
 //   createDataContext("variables");
