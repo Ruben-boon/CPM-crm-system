@@ -1,19 +1,21 @@
+// RefField.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 
 interface RefFieldProps {
-    label: string;
-    value: string;
-    onChange: (value: string, displayValue?: string) => void;  // Updated
-    required?: boolean;
-    disabled?: boolean;
-    isEditing?: boolean;
-    className?: string;
-    collectionName: string;
-    displayField?: string;
-    selectedLabel?: string;
-  }
+  label: string;
+  value: string;
+  onChange: (value: string, displayValue?: string) => void;
+  required?: boolean;
+  disabled?: boolean;
+  isEditing?: boolean;
+  className?: string;
+  collectionName: string;
+  displayFields?: string[];
+  selectedLabel?: string;
+}
+
 interface SearchResult {
   _id: string;
   [key: string]: any;
@@ -28,7 +30,7 @@ export function RefField({
   isEditing,
   className = "",
   collectionName,
-  displayField = "name",
+  displayFields = ["name"],
   selectedLabel = "",
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,16 +48,46 @@ export function RefField({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const getNestedValue = (obj: any, path: string) => {
+    const parts = path.split('.');
+    let value = obj;
+    for (const part of parts) {
+      value = value?.[part];
+    }
+    return value;
+  };
+
+  const formatDisplayValue = (result: SearchResult) => {
+    return displayFields
+      .map(field => getNestedValue(result, field))
+      .filter(Boolean)
+      .join(" ");
+  };
   const handleSearch = async (term: string) => {
     setSearchTerm(term);
     if (term.length > 0) {
       try {
-        const searchResults = await searchDocuments<SearchResult>(
-          collectionName,
-          term,
-          displayField
+        // Search in all display fields
+        const searchPromises = displayFields.map((field) =>
+          searchDocuments<SearchResult>(
+            collectionName,
+            term,
+            field
+          )
         );
-        setResults(searchResults);
+        
+        const results = await Promise.all(searchPromises);
+        
+        // Combine results and remove duplicates based on _id
+        const uniqueResults = Array.from(
+          new Map(
+            results
+              .flat()
+              .map(item => [item._id, item])
+          ).values()
+        );
+        
+        setResults(uniqueResults);
         setIsSearching(true);
       } catch (error) {
         console.error("Search failed:", error);
@@ -68,8 +100,9 @@ export function RefField({
   };
 
   const handleSelect = (result: SearchResult) => {
-    onChange(result._id, result[displayField]); // Add the displayValue parameter
-    setSearchTerm(result[displayField]);
+    const displayValue = formatDisplayValue(result);
+    onChange(result._id, displayValue);
+    setSearchTerm(displayValue);
     setIsSearching(false);
   };
 
@@ -99,7 +132,7 @@ export function RefField({
                     className="result-item"
                     onClick={() => handleSelect(result)}
                   >
-                    <span className="result-name">{result[displayField]}</span>
+                    <span className="result-name">{formatDisplayValue(result)}</span>
                     <span className="result-id">{result._id}</span>
                   </div>
                 ))}
