@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface SearchBarProps {
   onSearch: (searchTerm: string, searchField: string) => void;
   isLoading?: boolean;
-  type?: "contacts" | "companies";
+  type?: "contacts" | "companies" | "bookings";
 }
 
 export default function SearchBar({
@@ -17,17 +17,31 @@ export default function SearchBar({
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },
     { value: "general.email", label: "Email" },
-    { value: "general.phone", label: "Phone" },
+    { value: "general.role", label: "Role" },
   ] as const;
 
   const companyFields = [
-    { value: "supplierName", label: "Supplier Name" },
-    { value: "entityName", label: "Entity Name" },
-    { value: "vatNo", label: "VAT No." },
-    { value: "invoicingEmail", label: "Invoicing Email" },
+    { value: "name", label: "Name" },
+    { value: "address", label: "Address" },
+    { value: "city", label: "City" },
+    { value: "country", label: "Country" },
+    { value: "postal_code", label: "Postal Code" },
+    { value: "parentCompanyName", label: "Parent Company" },
+    { value: "childCompanyName", label: "Child Company" },
   ] as const;
 
-  const searchableFields = type === "contacts" ? contactFields : companyFields;
+  const bookingFields = [
+    { value: "hotelName", label: "Hotel Name" },
+    { value: "bookerName", label: "Booker Name" },
+    { value: "arrivalDate", label: "Arrival Date" },
+    { value: "hotelConfirmationNo", label: "Confirmation No." },
+  ] as const;
+
+  const searchableFields = type === "contacts" 
+    ? contactFields 
+    : type === "companies" 
+    ? companyFields
+    : bookingFields;
 
   const [searchField, setSearchField] = useState(searchableFields[0].value);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +49,11 @@ export default function SearchBar({
   useEffect(() => {
     onSearch("", searchField);
   }, []);
+
+  // Reset search field when type changes
+  useEffect(() => {
+    setSearchField(searchableFields[0].value);
+  }, [type]);
 
   const handleSearch = () => {
     onSearch(searchTerm.trim(), searchField);

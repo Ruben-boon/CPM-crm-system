@@ -1,6 +1,6 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit } from "lucide-react";
+import { Save, X, Edit, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useBookingsData } from "@/context/DataContext";
 import { toast } from "sonner";
@@ -21,7 +21,6 @@ interface BookingFormData {
   nights: number;
   guestIds: string[];
   guestNames: string[];
-  guestRemarks: string[];
   hotelConfirmationNo: string;
   roomType: string;
   roomRate: string;
@@ -42,7 +41,6 @@ const INITIAL_FORM_STATE: BookingFormData = {
   nights: 0,
   guestIds: [],
   guestNames: [],
-  guestRemarks: [],
   hotelConfirmationNo: "",
   roomType: "",
   roomRate: "",
@@ -52,10 +50,9 @@ const INITIAL_FORM_STATE: BookingFormData = {
 };
 
 const COST_CENTRE_OPTIONS = [
-  { value: "SALES", label: "Sales Department" },
-  { value: "IT", label: "IT Department" },
-  { value: "HR", label: "Human Resources" },
-  { value: "FINANCE", label: "Finance Department" },
+  { value: "CC1", label: "Cost Centre 1" },
+  { value: "CC2", label: "Cost Centre 2" },
+  { value: "CC3", label: "Cost Centre 3" },
 ] as const;
 
 export function BookingForm() {
@@ -71,16 +68,28 @@ export function BookingForm() {
 
   const [formData, setFormData] = useState<BookingFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Calculate nights when arrival or departure dates change
+  const showForm = selectedItem || isCreating;
+
   useEffect(() => {
+    // Reset creating state when an item is selected
+    if (selectedItem) {
+      setIsCreating(false);
+    }
+  }, [selectedItem]);
+
+  useEffect(() => {
+    // Calculate nights when arrival or departure date changes
     if (formData.arrivalDate && formData.departureDate) {
       const arrival = new Date(formData.arrivalDate);
       const departure = new Date(formData.departureDate);
-      const diffTime = departure.getTime() - arrival.getTime();
-      const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const nights = Math.ceil((departure.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24));
       if (nights >= 0) {
-        setFormData(prev => ({ ...prev, nights }));
+        setFormData(prev => ({
+          ...prev,
+          nights
+        }));
       }
     }
   }, [formData.arrivalDate, formData.departureDate]);
@@ -117,7 +126,6 @@ export function BookingForm() {
         nights: selectedItem.nights || 0,
         guestIds: selectedItem.guestIds || [],
         guestNames: selectedItem.guestNames || [],
-        guestRemarks: selectedItem.guestRemarks || [],
         hotelConfirmationNo: selectedItem.hotelConfirmationNo || "",
         roomType: selectedItem.roomType || "",
         roomRate: selectedItem.roomRate || "",
@@ -151,6 +159,7 @@ export function BookingForm() {
           `Booking ${selectedItem?._id ? "updated" : "created"} successfully`
         );
         setIsEditing(false);
+        setIsCreating(false);
         setPendingChanges({});
       } else {
         toast.error(
@@ -178,7 +187,6 @@ export function BookingForm() {
         nights: selectedItem.nights || 0,
         guestIds: selectedItem.guestIds || [],
         guestNames: selectedItem.guestNames || [],
-        guestRemarks: selectedItem.guestRemarks || [],
         hotelConfirmationNo: selectedItem.hotelConfirmationNo || "",
         roomType: selectedItem.roomType || "",
         roomRate: selectedItem.roomRate || "",
@@ -191,7 +199,18 @@ export function BookingForm() {
     }
     setPendingChanges({});
     setIsEditing(false);
+    setIsCreating(false);
   };
+
+  if (!showForm) {
+    return (
+      <div className="booking-form-empty">
+        {/* <Button icon={Plus} onClick={() => setIsCreating(true)}>
+          New Booking
+        </Button> */}
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSave} className="booking-form">
@@ -206,7 +225,7 @@ export function BookingForm() {
             </Button>
           )}
 
-          {isEditing && (
+          {(isEditing || isCreating) && (
             <>
               <Button
                 intent="secondary"
@@ -220,7 +239,7 @@ export function BookingForm() {
                 icon={Save}
                 type="submit"
                 disabled={
-                  isSubmitting || Object.keys(pendingChanges).length === 0
+                  isSubmitting || (!isCreating && Object.keys(pendingChanges).length === 0)
                 }
               >
                 Save
@@ -236,7 +255,7 @@ export function BookingForm() {
             value={formData.costCentre}
             onChange={(value) => handleChange("costCentre", value)}
             options={COST_CENTRE_OPTIONS}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["costCentre"] ? "field-changed" : ""}
           />
           <TextField
@@ -244,14 +263,14 @@ export function BookingForm() {
             value={formData.bookingDate}
             onChange={(value) => handleChange("bookingDate", value)}
             type="date"
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["bookingDate"] ? "field-changed" : ""}
           />
           <RefField
             label="Booker"
             value={formData.bookerId}
             onChange={(value, displayValue) => handleChange("bookerId", value, displayValue)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["bookerId"] ? "field-changed" : ""}
             collectionName="contacts"
             displayFields={["general.firstName", "general.lastName"]}
@@ -261,7 +280,7 @@ export function BookingForm() {
             label="Hotel"
             value={formData.hotelId}
             onChange={(value, displayValue) => handleChange("hotelId", value, displayValue)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["hotelId"] ? "field-changed" : ""}
             collectionName="companies"
             displayFields={["supplierName", "entityName"]}
@@ -272,7 +291,7 @@ export function BookingForm() {
             value={formData.arrivalDate}
             onChange={(value) => handleChange("arrivalDate", value)}
             type="date"
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["arrivalDate"] ? "field-changed" : ""}
           />
           <TextField
@@ -280,71 +299,71 @@ export function BookingForm() {
             value={formData.departureDate}
             onChange={(value) => handleChange("departureDate", value)}
             type="date"
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["departureDate"] ? "field-changed" : ""}
           />
           <TextField
             label="Nights"
             value={formData.nights.toString()}
-            onChange={(value) => handleChange("nights", value)}
-            type="number"
+            onChange={() => {}} // Nights is calculated automatically
             disabled={true}
             isEditing={false}
+            className="read-only"
           />
+        </div>
+        <div className="col">
           <MultiRefField
             label="Guests"
             value={formData.guestIds}
             onChange={(values, displayValues) =>
               handleChange("guestIds", values, displayValues)
             }
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["guestIds"] ? "field-changed" : ""}
             collectionName="contacts"
             displayFields={["general.firstName", "general.lastName", "general.remark"]}
             selectedLabels={formData.guestNames}
           />
-        </div>
-        <div className="col">
           <TextField
             label="Hotel Confirmation No."
             value={formData.hotelConfirmationNo}
             onChange={(value) => handleChange("hotelConfirmationNo", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["hotelConfirmationNo"] ? "field-changed" : ""}
           />
           <TextField
             label="Room Type"
             value={formData.roomType}
             onChange={(value) => handleChange("roomType", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["roomType"] ? "field-changed" : ""}
           />
           <TextField
             label="Room Rate"
             value={formData.roomRate}
             onChange={(value) => handleChange("roomRate", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["roomRate"] ? "field-changed" : ""}
           />
           <TextField
             label="Payment Instructions"
             value={formData.paymentInstructions}
             onChange={(value) => handleChange("paymentInstructions", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["paymentInstructions"] ? "field-changed" : ""}
           />
           <TextField
             label="Cancellations"
             value={formData.cancellations}
             onChange={(value) => handleChange("cancellations", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["cancellations"] ? "field-changed" : ""}
           />
           <TextField
             label="General Remarks"
             value={formData.generalRemarks}
             onChange={(value) => handleChange("generalRemarks", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["generalRemarks"] ? "field-changed" : ""}
           />
         </div>

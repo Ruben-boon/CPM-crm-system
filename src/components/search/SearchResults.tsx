@@ -4,8 +4,18 @@ import { Item } from "@/types/types";
 interface SearchResultProps {
   items: Item[];
   onSelect: (item: Item) => void;
-  type?: "contacts" | "companies";
+  type?: "contacts" | "companies" | "bookings";
 }
+
+// Helper function to get role display label
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case "booker": return "Booker";
+    case "guest": return "Guest";
+    case "both": return "Booker & Guest";
+    default: return role || "-";
+  }
+};
 
 export default function SearchResults({ items, onSelect, type = "contacts" }: SearchResultProps) {
   if (!items || items.length === 0) {
@@ -21,7 +31,9 @@ export default function SearchResults({ items, onSelect, type = "contacts" }: Se
               <div className="search-results__header-name">
                 {type === "contacts" 
                   ? `${item.general?.firstName} ${item.general?.lastName}`
-                  : `${item.supplierName}`}
+                  : type === "companies"
+                  ? `${item.name}`
+                  : `${item.hotelConfirmationNo} - ${new Date(item.arrivalDate).toLocaleDateString()}`}
               </div>
             </div>
 
@@ -33,17 +45,31 @@ export default function SearchResults({ items, onSelect, type = "contacts" }: Se
                       <dd>{item.general.email}</dd>
                     </div>
                   )}
-                  {item.general?.phone && (
+                  {item.general?.role && (
                     <div className="search-results__details-section">
-                      <dd>{item.general.phone}</dd>
+                      <dd>Role: {getRoleLabel(item.general.role)}</dd>
+                    </div>
+                  )}
+                </>
+              ) : type === "companies" ? (
+                <>
+                  {item.address && (
+                    <div className="search-results__details-section">
+                      <dd>{item.address}</dd>
+                      <dd>{item.city} {item.postal_code}</dd>
                     </div>
                   )}
                 </>
               ) : (
                 <>
-                  {item.entityName && (
+                  {item.bookerName && (
                     <div className="search-results__details-section">
-                      <dd>{item.entityName}</dd>
+                      <dd>Booker: {item.bookerName}</dd>
+                    </div>
+                  )}
+                  {item.nights && (
+                    <div className="search-results__details-section">
+                      <dd>Nights: {item.nights}</dd>
                     </div>
                   )}
                 </>

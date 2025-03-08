@@ -7,6 +7,11 @@ import {
   updateDocument,
 } from "@/app/actions/crudActions";
 
+interface RoleFilter {
+  bookerChecked: boolean;
+  guestChecked: boolean;
+}
+
 interface DataContextType {
   items: Item[];
   selectedItem: Item | null;
@@ -14,12 +19,14 @@ interface DataContextType {
   error: string | null;
   isEditing: boolean;
   pendingChanges: Record<string, ChangeRecord>;
-  searchItems: (searchTerm?: string) => Promise<void>;
+  roleFilter: RoleFilter;
+  searchItems: (searchTerm?: string, searchField?: string) => Promise<void>;
   selectItem: (item: Partial<Item> | null, startEditing?: boolean) => void;
   createItem: (item: Item) => Promise<boolean>;
   updateItem: (item: Item) => Promise<boolean>;
   setIsEditing: (isEditing: boolean) => void;
   setPendingChanges: (changes: Record<string, ChangeRecord>) => void;
+  setRoleFilter: (filter: Partial<RoleFilter>) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -34,6 +41,17 @@ function createDataContext(collectionName: string) {
     const [pendingChanges, setPendingChanges] = useState<
       Record<string, ChangeRecord>
     >({});
+    const [roleFilter, setRoleFilterState] = useState<RoleFilter>({
+      bookerChecked: false,
+      guestChecked: false
+    });
+
+    const setRoleFilter = (filter: Partial<RoleFilter>) => {
+      setRoleFilterState(prev => ({
+        ...prev,
+        ...filter
+      }));
+    };
 
     const searchItems = async (searchTerm?: string, searchField?: string) => {
       console.log(
@@ -49,7 +67,20 @@ function createDataContext(collectionName: string) {
           searchTerm,
           searchField
         );
-        setItems(results);
+        
+        // role filtering for contacts
+        let filteredResults = [...results];
+        if (collectionName === "contacts" && (roleFilter.bookerChecked || roleFilter.guestChecked)) {
+          filteredResults = results.filter(item => {
+            const role = item.general?.role;
+            const includeBooker = roleFilter.bookerChecked && (role === "booker" || role === "both");
+            const includeGuest = roleFilter.guestChecked && (role === "guest" || role === "both");
+
+            return includeBooker || includeGuest;
+          });
+        }
+        
+        setItems(filteredResults);
         setError(null);
       } catch (error) {
         setError(error instanceof Error ? error.message : "Search failed");
@@ -110,12 +141,14 @@ function createDataContext(collectionName: string) {
           error,
           isEditing,
           pendingChanges,
+          roleFilter,
           searchItems,
           selectItem,
           createItem,
           updateItem,
           setIsEditing,
           setPendingChanges,
+          setRoleFilter,
         }}
       >
         {children}

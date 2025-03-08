@@ -8,48 +8,42 @@ import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
 import { MultiRefField } from "../fields/MultiRefField";
 import { RefField } from "../fields/RefField";
+import { RadioField } from "../fields/RadioField";
 
 interface ContactFormData {
-  general: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    type: string;
-    companyId: string;
-    companyName: string;
-    bookerId: string;
-    bookerName: string;
-    bookingIds: string[];
-    bookingNames: string[];
-    contactIds: string[];
-    relatedContacts: string[];
-  };
+  entityName: string;
+  entityLabel: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
+  bookerId: string;
+  bookerName: string;
+  bookingIds: string[];
+  bookingNames: string[];
+  contactIds: string[];
+  relatedContacts: string[];
 }
 
 const INITIAL_FORM_STATE: ContactFormData = {
-  general: {
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    type: "",
-    companyId: "",
-    companyName: "",
-    bookerId: "",
-    bookerName: "",
-    bookingIds: [],
-    bookingNames: [],
-    contactIds: [],
-    relatedContacts: [],
-  },
+  entityName: "", entityLabel: "", title: "", firstName: "", lastName: "",
+  email: "", phone: "", role: "", bookerId: "", bookerName: "",
+  bookingIds: [], bookingNames: [], contactIds: [], relatedContacts: []
 };
 
-const TYPE_OPTIONS = [
-  { value: "a", label: "Contact" },
-  { value: "b", label: "Client" },
-  { value: "c", label: "Booker?" },
-];
+const OPTIONS = {
+  title: [
+    { value: "mr", label: "Mr." },
+    { value: "ms", label: "Ms." },
+  ],
+  role: [
+    { value: "booker", label: "Booker" },
+    { value: "guest", label: "Guest" },
+    { value: "both", label: "Both" },
+  ]
+};
 
 const BOOKING_DISPLAY_FIELDS = ["name", "lastName"];
 
@@ -66,65 +60,55 @@ export function ContactForm() {
 
   const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleChange = (
-    section: keyof ContactFormData,
-    field: string,
-    value: string | string[],
-    displayValue?: string | string[]
-  ) => {
-    if (section === "general") {
-      setFormData((prev) => ({
-        ...prev,
-        general: {
-          ...prev.general,
-          [field]: value,
-          ...(displayValue && field === "companyId"
-            ? { companyName: displayValue }
-            : {}),
-          ...(displayValue && field === "bookerId"
-            ? { bookerName: displayValue }
-            : {}),
-          ...(displayValue && field === "bookingIds"
-            ? { bookingNames: displayValue }
-            : {}),
-          ...(displayValue && field === "contactIds"
-            ? { relatedContacts: displayValue }
-            : {}),
-        },
-      }));
+  const showForm = selectedItem || isCreating;
+
+  // Reset creating state when selected item changes
+  useEffect(() => {
+    if (selectedItem) setIsCreating(false);
+  }, [selectedItem]);
+
+  // Load form data when selected item changes
+  useEffect(() => {
+    if (selectedItem) {
+      setFormData({
+        entityName: selectedItem.entityName || "",
+        entityLabel: selectedItem.entityLabel || "",
+        title: selectedItem.general?.title || "",
+        firstName: selectedItem.general?.firstName || "",
+        lastName: selectedItem.general?.lastName || "",
+        email: selectedItem.general?.email || "",
+        phone: selectedItem.general?.phone || "",
+        role: selectedItem.general?.role || "",
+        bookerId: selectedItem.general?.bookerId || "",
+        bookerName: "",
+        bookingIds: selectedItem.general?.bookingIds || [],
+        bookingNames: [],
+        contactIds: selectedItem.general?.contactIds || [],
+        relatedContacts: [],
+      });
     }
+  }, [selectedItem]);
 
-    setPendingChanges((prev) => ({
+  const handleChange = (field: keyof ContactFormData, value: string | string[], displayValue?: string | string[]) => {
+    setFormData(prev => ({
       ...prev,
-      [`${section}.${field}`]: {
-        oldValue: selectedItem?.[section]?.[field] || "",
+      [field]: value,
+      ...(displayValue && field === "entityName" ? { entityLabel: displayValue } : {}),
+      ...(displayValue && field === "bookerId" ? { bookerName: displayValue } : {}),
+      ...(displayValue && field === "bookingIds" ? { bookingNames: displayValue } : {}),
+      ...(displayValue && field === "contactIds" ? { relatedContacts: displayValue } : {}),
+    }));
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [field]: {
+        oldValue: selectedItem?.[field] || "",
         newValue: value,
       },
     }));
   };
-
-  useEffect(() => {
-    if (selectedItem) {
-      setFormData({
-        general: {
-          firstName: selectedItem.general?.firstName || "",
-          lastName: selectedItem.general?.lastName || "",
-          email: selectedItem.general?.email || "",
-          phone: selectedItem.general?.phone || "",
-          type: selectedItem.general?.type || "",
-          companyId: selectedItem.general?.companyId || "",
-          companyName: "",
-          bookerId: selectedItem.general?.bookerId || "",
-          bookerName: "",
-          bookingIds: selectedItem.general?.bookingIds || [],
-          bookingNames: [],
-          contactIds: selectedItem.general?.contactIds || [],
-          relatedContacts: [],
-        },
-      });
-    }
-  }, [selectedItem]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,29 +117,32 @@ export function ContactForm() {
     try {
       const itemData = {
         ...selectedItem,
+        entityName: formData.entityName,
         general: {
-          ...formData.general,
-          companyName: undefined,
-          bookerName: undefined,
-          bookingNames: undefined,
-          relatedContacts: undefined,
+          title: formData.title,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          bookerId: formData.bookerId,
+          bookingIds: formData.bookingIds,
+          contactIds: formData.contactIds,
         },
       };
 
-      const success = selectedItem?._id
+      const isUpdate = !!selectedItem?._id;
+      const success = isUpdate 
         ? await updateItem(itemData)
         : await createItem(itemData);
 
       if (success) {
-        toast.success(
-          `Contact ${selectedItem?._id ? "updated" : "created"} successfully`
-        );
+        toast.success(`Contact ${isUpdate ? "updated" : "created"} successfully`);
         setIsEditing(false);
+        setIsCreating(false);
         setPendingChanges({});
       } else {
-        toast.error(
-          `Failed to ${selectedItem?._id ? "update" : "create"} contact`
-        );
+        toast.error(`Failed to ${isUpdate ? "update" : "create"} contact`);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -166,163 +153,141 @@ export function ContactForm() {
 
   const handleCancel = () => {
     if (selectedItem) {
+      // Reset to current item data
       setFormData({
-        general: {
-          firstName: selectedItem.general?.firstName || "",
-          lastName: selectedItem.general?.lastName || "",
-          email: selectedItem.general?.email || "",
-          phone: selectedItem.general?.phone || "",
-          type: selectedItem.general?.type || "",
-          companyId: selectedItem.general?.companyId || "",
-          companyName: selectedItem.general?.companyName || "",
-          bookerId: selectedItem.general?.bookerId || "",
-          bookerName: selectedItem.general?.bookerName || "",
-          bookingIds: selectedItem.general?.bookingIds || [],
-          bookingNames: selectedItem.general?.bookingNames || [],
-          contactIds: selectedItem.general?.contactIds || [],
-          relatedContacts: selectedItem.general?.relatedContacts || [],
-        },
+        entityName: selectedItem.entityName || "",
+        entityLabel: selectedItem.entityLabel || "",
+        title: selectedItem.general?.title || "",
+        firstName: selectedItem.general?.firstName || "",
+        lastName: selectedItem.general?.lastName || "",
+        email: selectedItem.general?.email || "",
+        phone: selectedItem.general?.phone || "",
+        role: selectedItem.general?.role || "",
+        bookerId: selectedItem.general?.bookerId || "",
+        bookerName: selectedItem.general?.bookerName || "",
+        bookingIds: selectedItem.general?.bookingIds || [],
+        bookingNames: selectedItem.general?.bookingNames || [],
+        contactIds: selectedItem.general?.contactIds || [],
+        relatedContacts: selectedItem.general?.relatedContacts || [],
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
     }
     setPendingChanges({});
     setIsEditing(false);
+    setIsCreating(false);
   };
 
+  if (!showForm) {
+    return <div className="contact-form-empty"></div>;
+  }
+
+  // Helper function to create field props
+  const fieldProps = (field: keyof ContactFormData, required = false) => ({
+    value: formData[field] as string,
+    onChange: (value: string) => handleChange(field, value),
+    isEditing: isEditing || isCreating,
+    className: pendingChanges[field] ? "field-changed" : "",
+    required
+  });
+
   return (
-    <>
-      <form onSubmit={handleSave} className="contact-form">
-        <div className="top-bar">
-          <div className="top-bar__title">
-            {selectedItem?._id ? "Contact Details" : "New Contact"}
-          </div>
-          <div className="top-bar__edit">
-            {!isEditing && selectedItem?._id && (
-              <Button icon={Edit} onClick={() => setIsEditing(true)}>
-                Edit
+    <form onSubmit={handleSave} className="contact-form">
+      <div className="top-bar">
+        <div className="top-bar__title">
+          {selectedItem?._id ? "Contact Details" : "New Contact"}
+        </div>
+        <div className="top-bar__edit">
+          {!isEditing && selectedItem?._id && (
+            <Button icon={Edit} onClick={() => setIsEditing(true)}>Edit</Button>
+          )}
+
+          {(isEditing || isCreating) && (
+            <>
+              <Button
+                intent="secondary"
+                icon={X}
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
               </Button>
-            )}
-
-            {isEditing && (
-              <>
-                <Button
-                  intent="secondary"
-                  icon={X}
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  icon={Save}
-                  type="submit"
-                  disabled={
-                    isSubmitting || Object.keys(pendingChanges).length === 0
-                  }
-                >
-                  Save
-                </Button>
-              </>
-            )}
-          </div>
+              <Button
+                icon={Save}
+                type="submit"
+                disabled={isSubmitting || (!isCreating && Object.keys(pendingChanges).length === 0)}
+              >
+                Save
+              </Button>
+            </>
+          )}
         </div>
-        <div className="flex">
-          <div className="col">
-            <RefField
-              label="Company"
-              value={formData.general.companyId}
-              onChange={(value, displayValue) =>
-                handleChange("general", "companyId", value, displayValue)
-              }
-              isEditing={isEditing}
-              className={
-                pendingChanges[`general.companyId`] ? "field-changed" : ""
-              }
-              collectionName="companies"
-              displayFields={["name"]}
-              selectedLabel={formData.general.companyName}
-            />
-            <TextField
-              label="First Name"
-              value={formData.general.firstName}
-              onChange={(value) => handleChange("general", "firstName", value)}
-              required
-              isEditing={isEditing}
-              className={
-                pendingChanges[`general.firstName`] ? "field-changed" : ""
-              }
-            />
-            <TextField
-              label="Last Name"
-              value={formData.general.lastName}
-              onChange={(value) => handleChange("general", "lastName", value)}
-              required
-              isEditing={isEditing}
-              className={
-                pendingChanges[`general.lastName`] ? "field-changed" : ""
-              }
-            />
-            <TextField
-              label="E-mail"
-              value={formData.general.email}
-              onChange={(value) => handleChange("general", "email", value)}
-              type="email"
-              isEditing={isEditing}
-              className={pendingChanges[`general.email`] ? "field-changed" : ""}
-            />
-            <TextField
-              label="Phone"
-              value={formData.general.phone}
-              onChange={(value) => handleChange("general", "phone", value)}
-              type="tel"
-              isEditing={isEditing}
-              className={pendingChanges[`general.phone`] ? "field-changed" : ""}
-            />
-            <DropdownField
-              label="Type"
-              value={formData.general.type}
-              onChange={(value) => handleChange("general", "type", value)}
-              options={TYPE_OPTIONS}
-              required
-              isEditing={isEditing}
-            />
+      </div>
+      <div className="flex">
+        <div className="col">
+          {/* <RefField
+            label="Company"
+            value={formData.entityName}
+            onChange={(value, displayValue) => handleChange("entityName", value, displayValue)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["entityName"] ? "field-changed" : ""}
+            collectionName="companies"
+            displayFields={["entityName"]}
+            selectedLabel={formData.entityLabel}
+          /> */}
+               <RadioField
+            label="Role"
+            options={OPTIONS.role}
+            {...fieldProps("role", true)}
+          />
+          <DropdownField
+            label="Title"
+            options={OPTIONS.title}
+            {...fieldProps("title")}
+          />
+          <TextField
+            label="First Name"
+            {...fieldProps("firstName", true)}
+          />
+          <TextField
+            label="Last Name"
+            {...fieldProps("lastName", true)}
+          />
+          <TextField
+            label="E-mail"
+            type="email"
+            {...fieldProps("email")}
+          />
+          <TextField
+            label="Phone"
+            type="tel"
+            {...fieldProps("phone")}
+          />
+     
 
-            <MultiRefField
-              label="Related contacts"
-              value={formData.general.contactIds}
-              onChange={(values, displayValues) =>
-                handleChange("general", "contactIds", values, displayValues)
-              }
-              required
-              isEditing={isEditing}
-              className={
-                pendingChanges[`general.contactIds`] ? "field-changed" : ""
-              }
-              collectionName="contacts"
-              displayFields={["general.firstName", "general.lastName"]}
-              selectedLabels={formData.general.relatedContacts}
-            />
-            <p>Bookings work in progress should fetch the other way around*</p>
-            <MultiRefField
-              label="Bookings"
-              value={formData.general.bookingIds}
-              onChange={(values, displayValues) =>
-                handleChange("general", "bookingIds", values, displayValues)
-              }
-              required
-              isEditing={isEditing}
-              className={
-                pendingChanges[`general.bookingIds`] ? "field-changed" : ""
-              }
-              collectionName="bookings"
-              displayFields={BOOKING_DISPLAY_FIELDS}
-              selectedLabels={formData.general.bookingNames}
-            />
-          </div>
-          <div className="col"></div>
+          {/* <MultiRefField
+            label="Related contacts"
+            value={formData.contactIds}
+            onChange={(values, displayValues) => handleChange("contactIds", values, displayValues)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["contactIds"] ? "field-changed" : ""}
+            collectionName="contacts"
+            displayFields={["general.firstName", "general.lastName"]}
+            selectedLabels={formData.relatedContacts}
+          /> */}
+          {/* <MultiRefField
+            label="Bookings"
+            value={formData.bookingIds}
+            onChange={(values, displayValues) => handleChange("bookingIds", values, displayValues)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["bookingIds"] ? "field-changed" : ""}
+            collectionName="bookings"
+            displayFields={BOOKING_DISPLAY_FIELDS}
+            selectedLabels={formData.bookingNames}
+          /> */}
         </div>
-      </form>
-    </>
+        <div className="col"></div>
+      </div>
+    </form>
   );
 }

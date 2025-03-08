@@ -19,13 +19,21 @@ function PageContent() {
     <>
       <div className="search-area">
         <div className="search-panel">
-          <SearchBar onSearch={searchItems} isLoading={isLoading} type="companies" />
+          <SearchBar 
+            onSearch={searchItems} 
+            isLoading={isLoading} 
+            type="companies" 
+          />
           <div className="button-container">
             <Button icon={Plus} onClick={() => selectItem({}, true)}>
               New Company
             </Button>
           </div>
-          <SearchResults items={items} onSelect={selectItem} type="companies" />
+          <SearchResults 
+            items={items} 
+            onSelect={selectItem} 
+            type="companies"
+          />
         </div>
       </div>
 

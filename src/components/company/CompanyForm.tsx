@@ -1,64 +1,33 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit } from "lucide-react";
+import { Save, X, Edit, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCompaniesData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
-import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
+import { updateCompanyRelationship } from "@/app/actions/updateCompanyRelations";
+import { searchDocuments } from "@/app/actions/crudActions";
 
 interface CompanyFormData {
-  parentCompany: string;
-  parentCompanyName: string;
-  childCompany: string;
-  childCompanyName: string;
-  supplierName: string;
-  entityName: string;
-  currency: string;
-  vatNo: string;
-  locationType: string;
-  invoicingEmail: string;
-  phone: string;
-  roadName: string;
-  buildingNr: string;
-  zipCode: string;
+  name: string;
+  address: string;
+  postal_code: string;
+  city: string;
   country: string;
+  parentCompany: string;
+  childCompany: string;
 }
 
 const INITIAL_FORM_STATE: CompanyFormData = {
-  parentCompany: "",
-  parentCompanyName: "",
-  childCompany: "",
-  childCompanyName: "",
-  supplierName: "",
-  entityName: "",
-  currency: "",
-  vatNo: "",
-  locationType: "",
-  invoicingEmail: "",
-  phone: "",
-  roadName: "",
-  buildingNr: "",
-  zipCode: "",
+  name: "",
+  address: "",
+  postal_code: "",
+  city: "",
   country: "",
+  parentCompany: "",
+  childCompany: ""
 };
-
-const CURRENCY_OPTIONS = [
-  { value: "USD", label: "US Dollar (USD)" },
-  { value: "EUR", label: "Euro (EUR)" },
-  { value: "GBP", label: "British Pound (GBP)" },
-  { value: "JPY", label: "Japanese Yen (JPY)" },
-  { value: "CNY", label: "Chinese Yuan (CNY)" },
-] as const;
-
-const LOCATION_TYPE_OPTIONS = [
-  { value: "HQ", label: "Headquarters" },
-  { value: "BRANCH", label: "Branch Office" },
-  { value: "WAREHOUSE", label: "Warehouse" },
-  { value: "RETAIL", label: "Retail Location" },
-  { value: "VIRTUAL", label: "Virtual Office" },
-] as const;
 
 export function CompanyForm() {
   const {
@@ -69,18 +38,72 @@ export function CompanyForm() {
     isEditing,
     pendingChanges,
     setPendingChanges,
+    searchItems
   } = useCompaniesData();
 
   const [formData, setFormData] = useState<CompanyFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [originalParentCompany, setOriginalParentCompany] = useState<string>("");
+  
+  // State for current company names
+  const [parentCompanyName, setParentCompanyName] = useState<string>("");
+  const [childCompanyName, setChildCompanyName] = useState<string>("");
+
+  const showForm = selectedItem || isCreating;
+
+  // Load company names when needed
+  useEffect(() => {
+    const loadRelatedCompanyNames = async () => {
+      // Load parent company name
+      if (formData.parentCompany) {
+        try {
+          const results = await searchDocuments("companies", formData.parentCompany, "_id");
+          if (Array.isArray(results) && results.length > 0) {
+            setParentCompanyName(results[0].name || "");
+          }
+        } catch (error) {
+          console.error("Error loading parent company:", error);
+        }
+      } else {
+        setParentCompanyName("");
+      }
+      
+      // Load child company name
+      if (formData.childCompany) {
+        try {
+          const results = await searchDocuments("companies", formData.childCompany, "_id");
+          if (Array.isArray(results) && results.length > 0) {
+            setChildCompanyName(results[0].name || "");
+          }
+        } catch (error) {
+          console.error("Error loading child company:", error);
+        }
+      } else {
+        setChildCompanyName("");
+      }
+    };
+    
+    loadRelatedCompanyNames();
+  }, [formData.parentCompany, formData.childCompany]);
+
+  useEffect(() => {
+    if (selectedItem) {
+      setIsCreating(false);
+      setOriginalParentCompany(selectedItem.parentCompany || "");
+    }
+  }, [selectedItem]);
 
   const handleChange = (field: keyof CompanyFormData, value: string, displayValue?: string) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
-      ...(displayValue && field === "parentCompany" ? { parentCompanyName: displayValue } : {}),
-      ...(displayValue && field === "childCompany" ? { childCompanyName: displayValue } : {}),
+      [field]: value
     }));
+    
+    // Immediately update display name state for responsive UI
+    if (field === "parentCompany" && displayValue) {
+      setParentCompanyName(displayValue);
+    }
 
     setPendingChanges((prev) => ({
       ...prev,
@@ -94,21 +117,13 @@ export function CompanyForm() {
   useEffect(() => {
     if (selectedItem) {
       setFormData({
-        parentCompany: selectedItem.parentCompany || "",
-        parentCompanyName: selectedItem.parentCompanyName || "",
-        childCompany: selectedItem.childCompany || "",
-        childCompanyName: selectedItem.childCompanyName || "",
-        supplierName: selectedItem.supplierName || "",
-        entityName: selectedItem.entityName || "",
-        currency: selectedItem.currency || "",
-        vatNo: selectedItem.vatNo || "",
-        locationType: selectedItem.locationType || "",
-        invoicingEmail: selectedItem.invoicingEmail || "",
-        phone: selectedItem.phone || "",
-        roadName: selectedItem.roadName || "",
-        buildingNr: selectedItem.buildingNr || "",
-        zipCode: selectedItem.zipCode || "",
+        name: selectedItem.name || "",
+        address: selectedItem.address || "",
+        postal_code: selectedItem.postal_code || "",
+        city: selectedItem.city || "",
         country: selectedItem.country || "",
+        parentCompany: selectedItem.parentCompany || "",
+        childCompany: selectedItem.childCompany || ""
       });
     }
   }, [selectedItem]);
@@ -120,10 +135,7 @@ export function CompanyForm() {
     try {
       const itemData = {
         ...selectedItem,
-        ...formData,
-        // Remove display-only fields
-        parentCompanyName: undefined,
-        childCompanyName: undefined,
+        ...formData
       };
 
       const success = selectedItem?._id
@@ -131,10 +143,38 @@ export function CompanyForm() {
         : await createItem(itemData);
 
       if (success) {
+        // After successfully saving, update relationship if parent company has changed
+        if (selectedItem?._id && formData.parentCompany !== originalParentCompany) {
+          
+          const relationshipResult = await updateCompanyRelationship(
+            selectedItem._id,
+            formData.parentCompany || null
+          );
+          
+          if (!relationshipResult.success) {
+            toast.error(`Company saved but relationship update failed: ${relationshipResult.error}`);
+          } else {
+            // Show specific success message based on whether adding or removing relationship
+            if (formData.parentCompany) {
+              if (originalParentCompany) {
+                toast.success(`Successfully changed parent company relationship`);
+              } else {
+                toast.success(`Successfully set parent company relationship`);
+              }
+            } else if (originalParentCompany) {
+              toast.success(`Successfully removed parent company relationship`);
+            }
+            
+            // Refresh the data to get the updated relationships
+            await searchItems();
+          }
+        }
+        
         toast.success(
           `Company ${selectedItem?._id ? "updated" : "created"} successfully`
         );
         setIsEditing(false);
+        setIsCreating(false);
         setPendingChanges({});
       } else {
         toast.error(
@@ -151,28 +191,31 @@ export function CompanyForm() {
   const handleCancel = () => {
     if (selectedItem) {
       setFormData({
-        parentCompany: selectedItem.parentCompany || "",
-        parentCompanyName: selectedItem.parentCompanyName || "",
-        childCompany: selectedItem.childCompany || "",
-        childCompanyName: selectedItem.childCompanyName || "",
-        supplierName: selectedItem.supplierName || "",
-        entityName: selectedItem.entityName || "",
-        currency: selectedItem.currency || "",
-        vatNo: selectedItem.vatNo || "",
-        locationType: selectedItem.locationType || "",
-        invoicingEmail: selectedItem.invoicingEmail || "",
-        phone: selectedItem.phone || "",
-        roadName: selectedItem.roadName || "",
-        buildingNr: selectedItem.buildingNr || "",
-        zipCode: selectedItem.zipCode || "",
+        name: selectedItem.name || "",
+        address: selectedItem.address || "",
+        postal_code: selectedItem.postal_code || "",
+        city: selectedItem.city || "",
         country: selectedItem.country || "",
+        parentCompany: selectedItem.parentCompany || "",
+        childCompany: selectedItem.childCompany || ""
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
     }
     setPendingChanges({});
     setIsEditing(false);
+    setIsCreating(false);
   };
+
+  if (!showForm) {
+    return (
+      <div className="company-form-empty">
+        {/* <Button icon={Plus} onClick={() => setIsCreating(true)}>
+          New Company
+        </Button> */}
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSave} className="company-form">
@@ -187,7 +230,7 @@ export function CompanyForm() {
             </Button>
           )}
 
-          {isEditing && (
+          {(isEditing || isCreating) && (
             <>
               <Button
                 intent="secondary"
@@ -201,7 +244,7 @@ export function CompanyForm() {
                 icon={Save}
                 type="submit"
                 disabled={
-                  isSubmitting || Object.keys(pendingChanges).length === 0
+                  isSubmitting || (!isCreating && Object.keys(pendingChanges).length === 0)
                 }
               >
                 Save
@@ -216,107 +259,65 @@ export function CompanyForm() {
             label="Parent Company"
             value={formData.parentCompany}
             onChange={(value, displayValue) => handleChange("parentCompany", value, displayValue)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["parentCompany"] ? "field-changed" : ""}
             collectionName="companies"
-            displayFields={["supplierName", "entityName"]}
-            selectedLabel={formData.parentCompanyName}
+            displayFields={["name"]}
+            selectedLabel={parentCompanyName}
           />
+             <RefField
+            label="Child Company"
+            value={formData.childCompany}
+            onChange={(value, displayValue) => handleChange("childCompany", value, displayValue)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["childCompany"] ? "field-changed" : ""}
+            collectionName="companies"
+            displayFields={["name"]}
+            selectedLabel={childCompanyName}
+            disabled={true} // Make this read-only as it's managed automatically
+          />
+          <div className="info-box">
+            <p>Note: Child company is automatically set when another company selects this company as its parent.</p>
+          </div>
           <TextField
-            label="Supplier Name"
-            value={formData.supplierName}
-            onChange={(value) => handleChange("supplierName", value)}
+            label="Name"
+            value={formData.name}
+            onChange={(value) => handleChange("name", value)}
             required
-            isEditing={isEditing}
-            className={pendingChanges["supplierName"] ? "field-changed" : ""}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["name"] ? "field-changed" : ""}
           />
           <TextField
-            label="Entity Name"
-            value={formData.entityName}
-            onChange={(value) => handleChange("entityName", value)}
-            isEditing={isEditing}
-            className={pendingChanges["entityName"] ? "field-changed" : ""}
-          />
-          <DropdownField
-            label="Currency"
-            value={formData.currency}
-            onChange={(value) => handleChange("currency", value)}
-            options={CURRENCY_OPTIONS}
-            isEditing={isEditing}
-            className={pendingChanges["currency"] ? "field-changed" : ""}
+            label="Address"
+            value={formData.address}
+            onChange={(value) => handleChange("address", value)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["address"] ? "field-changed" : ""}
           />
           <TextField
-            label="VAT No."
-            value={formData.vatNo}
-            onChange={(value) => handleChange("vatNo", value)}
-            isEditing={isEditing}
-            className={pendingChanges["vatNo"] ? "field-changed" : ""}
-          />
-          <DropdownField
-            label="Location Type"
-            value={formData.locationType}
-            onChange={(value) => handleChange("locationType", value)}
-            options={LOCATION_TYPE_OPTIONS}
-            isEditing={isEditing}
-            className={pendingChanges["locationType"] ? "field-changed" : ""}
-          />
-        </div>
-        <div className="col">
-          <TextField
-            label="Invoicing Email"
-            value={formData.invoicingEmail}
-            onChange={(value) => handleChange("invoicingEmail", value)}
-            type="email"
-            isEditing={isEditing}
-            className={pendingChanges["invoicingEmail"] ? "field-changed" : ""}
+            label="Postal Code"
+            value={formData.postal_code}
+            onChange={(value) => handleChange("postal_code", value)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["postal_code"] ? "field-changed" : ""}
           />
           <TextField
-            label="Phone"
-            value={formData.phone}
-            onChange={(value) => handleChange("phone", value)}
-            type="tel"
-            isEditing={isEditing}
-            className={pendingChanges["phone"] ? "field-changed" : ""}
-          />
-          <TextField
-            label="Road Name"
-            value={formData.roadName}
-            onChange={(value) => handleChange("roadName", value)}
-            isEditing={isEditing}
-            className={pendingChanges["roadName"] ? "field-changed" : ""}
-          />
-          <TextField
-            label="Building Nr."
-            value={formData.buildingNr}
-            onChange={(value) => handleChange("buildingNr", value)}
-            isEditing={isEditing}
-            className={pendingChanges["buildingNr"] ? "field-changed" : ""}
-          />
-          <TextField
-            label="Zip Code"
-            value={formData.zipCode}
-            onChange={(value) => handleChange("zipCode", value)}
-            isEditing={isEditing}
-            className={pendingChanges["zipCode"] ? "field-changed" : ""}
+            label="City"
+            value={formData.city}
+            onChange={(value) => handleChange("city", value)}
+            isEditing={isEditing || isCreating}
+            className={pendingChanges["city"] ? "field-changed" : ""}
           />
           <TextField
             label="Country"
             value={formData.country}
             onChange={(value) => handleChange("country", value)}
-            isEditing={isEditing}
+            isEditing={isEditing || isCreating}
             className={pendingChanges["country"] ? "field-changed" : ""}
           />
-          <RefField
-            label="Child Company"
-            value={formData.childCompany}
-            onChange={(value, displayValue) => handleChange("childCompany", value, displayValue)}
-            isEditing={isEditing}
-            className={pendingChanges["childCompany"] ? "field-changed" : ""}
-            collectionName="companies"
-            displayFields={["supplierName", "entityName"]}
-            selectedLabel={formData.childCompanyName}
-          />
-          
+        </div>
+        <div className="col">
+       
         </div>
       </div>
     </form>

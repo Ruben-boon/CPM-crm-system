@@ -20,6 +20,10 @@ nav {
     display: flex;
     gap: 16px;
     width: 100%;
+    align-items: center;
+    .menu-link-icon {
+      height:80%;
+    }
     &:hover {
       background-color: rgb(31, 31, 31);
     }

@@ -47,10 +47,11 @@ export function RefField({
             value,
             "_id"
           );
-          const results = typeof response === 'string' 
-            ? JSON.parse(response) 
-            : Array.isArray(response) 
-              ? response 
+          const results =
+            typeof response === "string"
+              ? JSON.parse(response)
+              : Array.isArray(response)
+              ? response
               : [];
           if (results.length > 0) {
             const display = formatDisplayValue(results[0]);
@@ -72,7 +73,10 @@ export function RefField({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsSearching(false);
       }
     }
@@ -81,7 +85,7 @@ export function RefField({
   }, []);
 
   const getNestedValue = (obj: any, path: string) => {
-    const parts = path.split('.');
+    const parts = path.split(".");
     let value = obj;
     for (const part of parts) {
       value = value?.[part];
@@ -91,7 +95,7 @@ export function RefField({
 
   const formatDisplayValue = (result: SearchResult) => {
     return displayFields
-      .map(field => getNestedValue(result, field))
+      .map((field) => getNestedValue(result, field))
       .filter(Boolean)
       .join(" ");
   };
@@ -101,29 +105,23 @@ export function RefField({
     if (term.length > 0) {
       try {
         const searchPromises = displayFields.map((field) =>
-          searchDocuments<SearchResult>(
-            collectionName,
-            term,
-            field
-          ).then(response => {
-            return typeof response === 'string' 
-              ? JSON.parse(response) 
-              : Array.isArray(response) 
-                ? response 
+          searchDocuments<SearchResult>(collectionName, term, field).then(
+            (response) => {
+              return typeof response === "string"
+                ? JSON.parse(response)
+                : Array.isArray(response)
+                ? response
                 : [];
-          })
+            }
+          )
         );
-        
+
         const results = await Promise.all(searchPromises);
-        
+
         const uniqueResults = Array.from(
-          new Map(
-            results
-              .flat()
-              .map(item => [item._id, item])
-          ).values()
+          new Map(results.flat().map((item) => [item._id, item])).values()
         );
-        
+
         setResults(uniqueResults);
         setIsSearching(true);
       } catch (error) {
@@ -155,7 +153,10 @@ export function RefField({
           <div className={`read-only flex-1 ${className}`}>
             {displayValue || <span className="empty-reference">-</span>}
           </div>
-          {isEditing && (
+          {isEditing && disabled && (
+            <span><i>This field is automatically set and cannot be edited.</i></span>
+          )}
+          {isEditing && !disabled && (
             <div className="search-container flex-1">
               <input
                 type="text"
@@ -174,7 +175,9 @@ export function RefField({
                       className="result-item"
                       onClick={() => handleSelect(result)}
                     >
-                      <span className="result-name">{formatDisplayValue(result)}</span>
+                      <span className="result-name">
+                        {formatDisplayValue(result)}
+                      </span>
                       <span className="result-id">{result._id}</span>
                     </div>
                   ))}
