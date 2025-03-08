@@ -20,6 +20,16 @@ interface CompanyFormData {
   childCompany: string;
 }
 
+interface Contact {
+  _id: string;
+  general: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    type?: string;
+  };
+}
+
 const INITIAL_FORM_STATE: CompanyFormData = {
   name: "",
   address: "",
@@ -53,6 +63,10 @@ export function CompanyForm() {
   // State for current company names
   const [parentCompanyName, setParentCompanyName] = useState<string>("");
   const [childCompanyName, setChildCompanyName] = useState<string>("");
+  
+  // State for associated contacts
+  const [associatedContacts, setAssociatedContacts] = useState<Contact[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   const showForm = selectedItem || isCreating;
   
@@ -60,6 +74,13 @@ export function CompanyForm() {
   const handleChildCompanyClick = () => {
     if (formData.childCompany) {
       navigateTo('/companies', formData.childCompany);
+    }
+  };
+  
+  // Handle click on contact to navigate to it
+  const handleContactClick = (contactId: string) => {
+    if (contactId) {
+      navigateTo('/contacts', contactId);
     }
   };
 
@@ -97,6 +118,31 @@ export function CompanyForm() {
     
     loadRelatedCompanyNames();
   }, [formData.parentCompany, formData.childCompany]);
+  
+  // Load contacts that reference this company
+  useEffect(() => {
+    const loadAssociatedContacts = async () => {
+      if (!selectedItem?._id) {
+        setAssociatedContacts([]);
+        return;
+      }
+      
+      setIsLoadingContacts(true);
+      try {
+        // Search for contacts where entityName equals the current company ID
+        const results = await searchDocuments<Contact>("contacts", selectedItem._id, "entityName");
+        if (Array.isArray(results)) {
+          setAssociatedContacts(results);
+        }
+      } catch (error) {
+        console.error("Error loading associated contacts:", error);
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    };
+    
+    loadAssociatedContacts();
+  }, [selectedItem?._id]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -308,6 +354,40 @@ export function CompanyForm() {
                   <span><i>This field is automatically set and cannot be edited.</i></span>
                 )}
               </div>
+            </div>
+          </div>
+          
+          {/* Associated Contacts Section */}
+          <div className="ref-field multi-ref-field">
+            <label className="field-label">Associated Contacts</label>
+            <div className="ref-field-container">
+              {isLoadingContacts ? (
+                <div className="loading-indicator">Loading contacts...</div>
+              ) : associatedContacts.length > 0 ? (
+                <div className="selected-items">
+                  {associatedContacts.map((contact) => (
+                    <div 
+                      key={contact._id} 
+                      className="selected-item company-link"
+                      onClick={() => handleContactClick(contact._id)}
+                    >
+                      <span>
+                        {contact.general.firstName} {contact.general.lastName}
+                        {contact.general.email && ` (${contact.general.email})`}
+                      </span>
+                      <ExternalLink size={14} className="company-link-icon" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="read-only">
+                  <span className="empty-reference">No associated contacts</span>
+                </div>
+                
+              )}
+                 {isEditing && (
+                  <span><i>This field is automatically set and cannot be edited.</i></span>
+                )}
             </div>
           </div>
           
