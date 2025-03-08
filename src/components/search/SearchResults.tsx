@@ -22,11 +22,16 @@ export default function SearchResults({ items, onSelect, type = "contacts" }: Se
     return <div className="search-results__empty">No results found</div>;
   }
 
+  // Handle the click event for an item
+  const handleItemClick = (item: Item) => {
+    onSelect(item);
+  };
+
   return (
     <ul className="search-results">
       {items.map((item) => (
         <li key={item._id.toString()} className="search-results__item">
-          <div className="search-results__content" onClick={() => onSelect(item)}>
+          <div className="search-results__content" onClick={() => handleItemClick(item)}>
             <div className="search-results__header">
               <div className="search-results__header-name">
                 {type === "contacts" 
@@ -47,16 +52,15 @@ export default function SearchResults({ items, onSelect, type = "contacts" }: Se
                   )}
                   {item.general?.role && (
                     <div className="search-results__details-section">
-                      <dd>Role: {getRoleLabel(item.general.role)}</dd>
+                      <dd>{getRoleLabel(item.general.role)}</dd>
                     </div>
                   )}
                 </>
               ) : type === "companies" ? (
                 <>
-                  {item.address && (
+                  {item.city && (
                     <div className="search-results__details-section">
-                      <dd>{item.address}</dd>
-                      <dd>{item.city} {item.postal_code}</dd>
+                      <dd>{item.city}{item.country ? `, ${item.country}` : ''}</dd>
                     </div>
                   )}
                 </>

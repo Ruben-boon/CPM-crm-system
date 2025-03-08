@@ -1,6 +1,6 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit, Plus } from "lucide-react";
+import { Save, X, Edit, Plus, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCompaniesData } from "@/context/DataContext";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { TextField } from "../fields/TextField";
 import { RefField } from "../fields/RefField";
 import { updateCompanyRelationship } from "@/app/actions/updateCompanyRelations";
 import { searchDocuments } from "@/app/actions/crudActions";
+import { useNavigation } from "@/app/layout"; // Import the navigation hook
 
 interface CompanyFormData {
   name: string;
@@ -40,6 +41,9 @@ export function CompanyForm() {
     setPendingChanges,
     searchItems
   } = useCompaniesData();
+  
+  // Get the navigation context
+  const { navigateTo } = useNavigation();
 
   const [formData, setFormData] = useState<CompanyFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +55,13 @@ export function CompanyForm() {
   const [childCompanyName, setChildCompanyName] = useState<string>("");
 
   const showForm = selectedItem || isCreating;
+  
+  // Handle click on child company to navigate to it
+  const handleChildCompanyClick = () => {
+    if (formData.childCompany) {
+      navigateTo('/companies', formData.childCompany);
+    }
+  };
 
   // Load company names when needed
   useEffect(() => {
@@ -217,6 +228,23 @@ export function CompanyForm() {
     );
   }
 
+  // Create a clickable link component for the child company
+  const ChildCompanyLink = () => {
+    if (!formData.childCompany || !childCompanyName) {
+      return <span className="empty-reference">-</span>;
+    }
+    
+    return (
+      <div 
+        className="company-link" 
+        onClick={handleChildCompanyClick}
+      >
+        <span>{childCompanyName}</span>
+        <ExternalLink size={14} className="company-link-icon" />
+      </div>
+    );
+  };
+
   return (
     <form onSubmit={handleSave} className="company-form">
       <div className="top-bar">
@@ -265,20 +293,24 @@ export function CompanyForm() {
             displayFields={["name"]}
             selectedLabel={parentCompanyName}
           />
-             <RefField
-            label="Child Company"
-            value={formData.childCompany}
-            onChange={(value, displayValue) => handleChange("childCompany", value, displayValue)}
-            isEditing={isEditing || isCreating}
-            className={pendingChanges["childCompany"] ? "field-changed" : ""}
-            collectionName="companies"
-            displayFields={["name"]}
-            selectedLabel={childCompanyName}
-            disabled={true} // Make this read-only as it's managed automatically
-          />
-          <div className="info-box">
-            <p>Note: Child company is automatically set when another company selects this company as its parent.</p>
+          
+          {/* Custom field with clickable child company link */}
+          <div className="ref-field">
+            <label className="field-label">
+              Child Company
+            </label>
+            <div className="ref-field-container">
+              <div className="ref-field-single">
+                <div className={`read-only flex-1 ${pendingChanges["childCompany"] ? "field-changed" : ""}`}>
+                  <ChildCompanyLink />
+                </div>
+                {isEditing && (
+                  <span><i>This field is automatically set and cannot be edited.</i></span>
+                )}
+              </div>
+            </div>
           </div>
+          
           <TextField
             label="Name"
             value={formData.name}
