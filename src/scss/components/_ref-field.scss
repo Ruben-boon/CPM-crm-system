@@ -11,7 +11,6 @@ $ref-field-focus-shadow: rgba(74, 108, 247, 0.3);
 $transition-speed: 0.2s;
 .ref-field {
   margin-bottom: 1rem;
-
   &-container {
     width: 100%;
   }
@@ -22,7 +21,8 @@ $transition-speed: 0.2s;
   }
   // Selected value container
   .selected-value {
-    padding:7px;
+    padding: 7px;
+    background: #f6f6f8;
     &-container {
       display: flex;
       align-items: center;
@@ -95,7 +95,7 @@ $transition-speed: 0.2s;
       position: absolute;
       right: 10px;
       top: 50%;
-      height:20px;
+      height: 20px;
       transform: translateY(-50%);
       color: $ref-field-text-muted;
       pointer-events: none;
@@ -156,8 +156,12 @@ $transition-speed: 0.2s;
 
   // Read-only view
   .read-only {
-    padding: $ref-field-padding 0;
-
+    align-items: center;
+    border: 1px solid #e4e4e7;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    padding: 7px;
+    transition: all .2sease-in-out;
     &.flex-1 {
       flex: 1;
     }

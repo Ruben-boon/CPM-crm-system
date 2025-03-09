@@ -10,8 +10,8 @@
   transition: all 0.2s ease-in-out;
   &:disabled {
     background-color: transparent;
-    border-color: transparent;
     color: black;
+    cursor: not-allowed;
   }
 }
 .field-changed {

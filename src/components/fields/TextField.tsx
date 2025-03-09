@@ -39,10 +39,8 @@ export function TextField({
           autoFocus={isEditing}
         />
       ) : (
-        <div className={`input-read-only ${className}`}>
-          {" "}
-          {value || <span className="empty-reference">-</span>}
-        </div>
+        <input disabled value={value} className={`input-base ${className}`}>
+        </input>
       )}
     </div>
   );

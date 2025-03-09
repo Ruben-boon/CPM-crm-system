@@ -70,7 +70,9 @@ export function ContactForm() {
   const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(INITIAL_LOADING_STATE);
+  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
+    INITIAL_LOADING_STATE
+  );
   const [isFormLoading, setIsFormLoading] = useState(false);
 
   // Function to check if all reference fields are loaded
@@ -100,7 +102,7 @@ export function ContactForm() {
 
       // Reset loading state when selected item changes
       setFieldsLoaded(INITIAL_LOADING_STATE);
-      
+
       // Show loading if the selected item has a companyId
       setIsFormLoading(!!selectedItem.general?.companyId);
 
@@ -137,9 +139,9 @@ export function ContactForm() {
     // If changing a reference field, update loading state
     if (field === "companyId") {
       // Reset the loaded state and show loading if there's a new value
-      setFieldsLoaded(prev => ({
+      setFieldsLoaded((prev) => ({
         ...prev,
-        companyId: false
+        companyId: false,
       }));
       setIsFormLoading(!!value);
     }
@@ -173,12 +175,12 @@ export function ContactForm() {
       console.error("Company field load error:", error);
       toast.error(`Error loading company information`);
     }
-    
-    setFieldsLoaded(prev => ({
+
+    setFieldsLoaded((prev) => ({
       ...prev,
-      companyId: loaded
+      companyId: loaded,
     }));
-    
+
     // Update form loading state after company is loaded
     setIsFormLoading(false);
   };
@@ -283,8 +285,11 @@ export function ContactForm() {
 
   return (
     <div className="detail-wrapper">
-      {isFormLoading && <LoadingSpinner isLoading/>}
-      <form onSubmit={handleSave} className="contact-form">
+      {isFormLoading && <LoadingSpinner isLoading />}
+      <form
+        onSubmit={handleSave}
+        className={`contact-form ${!isFormLoading ? "done-loading" : ""}`}
+      >
         <div className="top-bar">
           <div className="top-bar__title">
             {selectedItem?._id ? "Contact Details" : "New Contact"}

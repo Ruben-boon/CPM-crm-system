@@ -50,9 +50,8 @@ export function DropdownField({
           ))}
         </select>
       ) : (
-        <div className="input-read-only">
-          {options.find(opt => opt.value === value)?.label || <span className="empty-reference">-</span>}
-        </div>
+        <input disabled value={options.find(opt => opt.value === value)?.label} className="input-base">
+        </input>
       )}
     </div>
   );
