@@ -1,9 +1,11 @@
 "use client";
 import { Item } from "@/types/types";
+import { Copy } from "lucide-react";
 
 interface SearchResultProps {
   items: Item[];
   onSelect: (item: Item) => void;
+  onCopy?: (item: Item) => void;
   type?: "contacts" | "companies" | "bookings";
 }
 
@@ -17,7 +19,7 @@ const getRoleLabel = (role: string) => {
   }
 };
 
-export default function SearchResults({ items, onSelect, type = "contacts" }: SearchResultProps) {
+export default function SearchResults({ items, onSelect, onCopy, type = "contacts" }: SearchResultProps) {
   if (!items || items.length === 0) {
     return <div className="search-results__empty">No results found</div>;
   }
@@ -25,6 +27,14 @@ export default function SearchResults({ items, onSelect, type = "contacts" }: Se
   // Handle the click event for an item
   const handleItemClick = (item: Item) => {
     onSelect(item);
+  };
+
+  // Handle the copy event for an item
+  const handleCopyClick = (e: React.MouseEvent, item: Item) => {
+    e.stopPropagation(); // Prevent triggering the parent click event
+    if (onCopy) {
+      onCopy(item);
+    }
   };
 
   return (
@@ -40,6 +50,16 @@ export default function SearchResults({ items, onSelect, type = "contacts" }: Se
                   ? `${item.name}`
                   : `${item.hotelConfirmationNo} - ${new Date(item.arrivalDate).toLocaleDateString()}`}
               </div>
+              {onCopy && (
+                <button 
+                  className="search-results__copy-btn"
+                  onClick={(e) => handleCopyClick(e, item)}
+                  title="Make a copy"
+                  aria-label="Make a copy"
+                >
+                  <Copy size={16} />
+                </button>
+              )}
             </div>
 
             <dl className="search-results__details">

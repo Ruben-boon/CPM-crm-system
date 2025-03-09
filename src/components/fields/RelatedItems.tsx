@@ -134,12 +134,8 @@ export function RelatedItems({
           gap: 0.5rem;
           max-height: 300px;
           overflow-y: auto;
-        }
-
-        .related-items__item {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
+          align-items: flex-start;
           padding: 0.75rem;
           border-radius: 4px;
           background-color: #white;
@@ -147,6 +143,12 @@ export function RelatedItems({
           cursor: ${onItemClick ? "pointer" : "default"};
           transition: all 0.2s;
           color: var(--accent-color);
+        }
+
+        .related-items__item {
+            display:flex;
+            justify-content:space-between;
+            width:100%;
         }
         .related-items__item:hover {
           text-decoration: underline;

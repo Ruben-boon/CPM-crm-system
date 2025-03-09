@@ -1,35 +1,76 @@
 "use client";
 
-import { ContactForm } from "@/components/contact/ContactForm";
-import { useContactsData } from "@/context/DataContext";
+import { useCompaniesData } from "@/context/DataContext";
 import { searchDocuments } from "@/app/actions/crudActions";
-import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CompanyForm } from "@/components/company/CompanyForm";
 
-export default function ContactDetailPage() {
-  const { selectItem } = useContactsData();
+export default function CompanyDetailPage() {
+  const { selectItem } = useCompaniesData();
   const params = useParams();
-  const contactId = params.id;
+  const searchParams = useSearchParams();
+  const companyId = params.id;
+  const isCopy = searchParams.get("copy") === "true";
+  const sourceId = searchParams.get("sourceId");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadContact = async () => {
-      // Handle "new" contact case
-      if (contactId === "new") {
-        selectItem({}, true); // Empty object + start editing mode
-        return;
-      }
-      try {
-        const result = await searchDocuments("contacts", contactId as string, "_id");
-        if (Array.isArray(result) && result.length > 0) {
-          selectItem(result[0]);
+    const loadCompany = async () => {
+      setIsLoading(true);
+      
+      // Handle "new" company case
+      if (companyId === "new") {
+        // If it's a copy operation, load the source company
+        if (isCopy && sourceId) {
+          try {
+            const result = await searchDocuments("companies", sourceId as string, "_id");
+            if (Array.isArray(result) && result.length > 0) {
+              // Clone the source company data
+              const sourceCompany = { ...result[0] };
+              
+              // Remove the _id to create a new company
+              delete sourceCompany._id;
+              
+              // Set any other fields that should be reset for a new copy
+              // For example, you might want to modify the name to indicate it's a copy
+              if (sourceCompany.name) {
+                sourceCompany.name = `${sourceCompany.name} (Copy)`;
+              }
+              
+              // Select the company with edit mode enabled
+              selectItem(sourceCompany, true);
+            }
+          } catch (error) {
+            console.error("Error loading source company for copy:", error);
+            // Fallback to empty object if there's an error
+            selectItem({}, true);
+          }
+        } else {
+          // Regular new company
+          selectItem({}, true); // Empty object + start editing mode
         }
-      } catch (error) {
-        console.error("Error loading contact:", error);
+      } else {
+        // Regular company load
+        try {
+          const result = await searchDocuments("companies", companyId as string, "_id");
+          if (Array.isArray(result) && result.length > 0) {
+            selectItem(result[0]);
+          }
+        } catch (error) {
+          console.error("Error loading company:", error);
+        }
       }
+      
+      setIsLoading(false);
     };
    
-    loadContact();
-  }, [contactId]);
+    loadCompany();
+  }, [companyId, isCopy, sourceId, selectItem]);
 
-  return <ContactForm />;
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  return <CompanyForm />;
 }
