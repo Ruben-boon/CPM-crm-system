@@ -1,0 +1,83 @@
+// Search Input Component
+// ---------------------
+
+// Variables
+$search-bg: white;
+$search-border: #e4e4e7;
+$search-text: #333333;
+$search-placeholder: #71717a;
+$search-radius: 4px;
+$search-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+$search-height: 36px;
+$search-width: 100%;
+$search-icon-size: 24px;
+$search-transition: all 0.2s ease;
+
+.search {
+  &-container {
+    position: relative;
+    margin-bottom: 1rem;
+    width: $search-width;
+    
+    &.flex-1 {
+      flex: 1;
+    }
+  }
+  
+  &-input {
+    width: 100%;
+    height: $search-height;
+    padding: 0.5rem 0.75rem;
+    padding-left: 2.5rem; // Space for the icon
+    background-color: $search-bg;
+    border: 1px solid $search-border;
+    border-radius: $search-radius;
+    color: $search-text;
+    font-size: 0.875rem;
+    box-shadow: $search-shadow;
+    transition: $search-transition;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--accent-color, #4a6cf7);
+      box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.1);
+    }
+    
+    &::placeholder {
+      color: $search-placeholder;
+    }
+  }
+  
+  &-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $search-placeholder;
+    width: $search-icon-size;
+    height: $search-icon-size;
+    pointer-events: none;
+  }
+}
+
+// Reference field search input styles
+.ref-field {
+  .search-container {
+    width: 100%;
+  }
+  
+  // Style the company search input specifically
+  &[ref-field-single] {
+    .search-input {
+      // More specific styling for the company search input if needed
+      border-radius: $search-radius;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .search-input {
+    height: 40px; // Slightly larger on mobile for better touch targets
+  }
+}

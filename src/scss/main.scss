@@ -1,32 +1,9 @@
-// scss-docs-start
-// stylelint-disable annotation-no-unknown
+@forward 'abstracts';
 
-// abstracts
-@use "abstracts/variables";
-@use "abstracts/functions";
-@use "abstracts/mixins";
+@forward 'base';
 
-// base
-@use "base/typography";
-@use "base/reset";
-@use "base/general";
+@forward 'layout';
 
+@forward 'components';
 
-//ui
-@use "ui/header";
-@use "ui/search";
-@use "ui/details";
-@use "ui/details-panel";
-@use "ui/contact-form";
-
-
-@use "ui/inputs";
-@use "ui/buttons";
-@use "ui/fields/fields";
-@use "ui/fields/radio-field";
-@use "ui/search/role-filter";
-
-
-
-
-
+@forward 'pages';

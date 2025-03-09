@@ -1,0 +1,41 @@
+.details-panel {
+  flex-grow: 1;
+  padding: 32px;
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    &__title {
+      font-size: 24px;
+    }
+    &__edit {
+      display: flex;
+      gap: 16px;
+    }
+  }
+  .form-field {
+    display: flex;
+    gap: 32px;
+    justify-content: space-between;
+    height: 28px;
+    margin-bottom: 8px;
+    .required-mark {
+      color:var(--accent-color);
+    }
+  }
+}
+.detail-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  flex-direction: column;
+  &__grouped {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 1em;
+    border: 1px solid rgb(244, 244, 244);
+    border-radius: 4px;
+  }
+}

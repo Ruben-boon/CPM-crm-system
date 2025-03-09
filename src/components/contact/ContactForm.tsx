@@ -1,15 +1,14 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit, ExternalLink } from "lucide-react";
+import { Save, X, Edit } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useContactsData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
-import { MultiRefField } from "../fields/MultiRefField";
 import { RefField } from "../fields/RefField";
-import { searchDocuments } from "@/app/actions/crudActions";
-import { useNavigation } from "@/app/layout";
+import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "../loadingSpinner";
 
 interface ContactFormData {
   entityName: string;
@@ -21,20 +20,27 @@ interface ContactFormData {
   phone: string;
   role: string;
   companyId: string;
-  companyName: string;
-  bookerId: string;
-  bookerName: string;
-  bookingIds: string[];
-  bookingNames: string[];
-  contactIds: string[];
-  relatedContacts: string[];
+}
+
+interface FieldLoadingState {
+  companyId: boolean;
+  // Add other ref fields here as needed
 }
 
 const INITIAL_FORM_STATE: ContactFormData = {
-  entityName: "", entityLabel: "", title: "", firstName: "", lastName: "",
-  email: "", phone: "", role: "", companyId: "", companyName: "", 
-  bookerId: "", bookerName: "", bookingIds: [], bookingNames: [], 
-  contactIds: [], relatedContacts: []
+  entityName: "",
+  entityLabel: "",
+  title: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  role: "",
+  companyId: "",
+};
+
+const INITIAL_LOADING_STATE: FieldLoadingState = {
+  companyId: false,
 };
 
 const OPTIONS = {
@@ -45,7 +51,7 @@ const OPTIONS = {
   title: [
     { value: "mr", label: "Mr." },
     { value: "ms", label: "Ms." },
-  ]
+  ],
 };
 
 export function ContactForm() {
@@ -58,52 +64,47 @@ export function ContactForm() {
     pendingChanges,
     setPendingChanges,
   } = useContactsData();
-  
-  // Get the navigation context
-  const { navigateTo } = useNavigation();
+
+  const router = useRouter();
 
   const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [companyName, setCompanyName] = useState<string>("");
+  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(INITIAL_LOADING_STATE);
+  const [isFormLoading, setIsFormLoading] = useState(false);
 
-  const showForm = selectedItem || isCreating;
-  
-  // Handle click on company to navigate to it
-  const handleCompanyClick = () => {
-    if (formData.companyId) {
-      navigateTo('/companies', formData.companyId);
-    }
+  // Function to check if all reference fields are loaded
+  const checkAllFieldsLoaded = () => {
+    // Only check if loading if there's a value that needs to be loaded
+    const isCompanyLoaded = !formData.companyId || fieldsLoaded.companyId;
+    return isCompanyLoaded;
   };
 
-  // Reset creating state when selected item changes
+  // Update form loading state when fields load status changes
   useEffect(() => {
-    if (selectedItem) setIsCreating(false);
-  }, [selectedItem]);
-  
-  // Load company name when needed
-  useEffect(() => {
-    const loadCompanyName = async () => {
-      if (formData.companyId) {
-        try {
-          const results = await searchDocuments("companies", formData.companyId, "_id");
-          if (Array.isArray(results) && results.length > 0) {
-            setCompanyName(results[0].name || "");
-          }
-        } catch (error) {
-          console.error("Error loading company:", error);
-        }
-      } else {
-        setCompanyName("");
-      }
-    };
-    
-    loadCompanyName();
-  }, [formData.companyId]);
+    // If we have a companyId value but it's not loaded yet
+    const shouldShowLoading = formData.companyId && !fieldsLoaded.companyId;
+    setIsFormLoading(shouldShowLoading);
+  }, [formData.companyId, fieldsLoaded.companyId]);
 
   // Load form data when selected item changes
   useEffect(() => {
+    console.log("useEffect fired");
     if (selectedItem) {
+      // Handle creating/editing state
+      setIsCreating(false);
+      if (!selectedItem._id) {
+        setIsCreating(true);
+        setIsEditing(true);
+      }
+
+      // Reset loading state when selected item changes
+      setFieldsLoaded(INITIAL_LOADING_STATE);
+      
+      // Show loading if the selected item has a companyId
+      setIsFormLoading(!!selectedItem.general?.companyId);
+
+      // Set form data
       setFormData({
         entityName: selectedItem.entityName || "",
         entityLabel: selectedItem.entityLabel || "",
@@ -114,38 +115,90 @@ export function ContactForm() {
         phone: selectedItem.general?.phone || "",
         role: selectedItem.general?.role || "",
         companyId: selectedItem.general?.companyId || "",
-        companyName: "",
-        bookerId: selectedItem.general?.bookerId || "",
-        bookerName: "",
-        bookingIds: selectedItem.general?.bookingIds || [],
-        bookingNames: [],
-        contactIds: selectedItem.general?.contactIds || [],
-        relatedContacts: [],
       });
     }
   }, [selectedItem]);
 
-  const handleChange = (field: keyof ContactFormData, value: string | string[], displayValue?: string | string[]) => {
-    setFormData(prev => ({
+  const handleChange = (
+    field: keyof ContactFormData,
+    value: string | string[],
+    displayValue?: string | string[]
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
-      ...(displayValue && field === "entityName" ? { entityLabel: displayValue } : {}),
-      ...(displayValue && field === "companyId" ? { companyName: displayValue } : {}),
-      ...(displayValue && field === "bookerId" ? { bookerName: displayValue } : {}),
-      ...(displayValue && field === "bookingIds" ? { bookingNames: displayValue } : {}),
-      ...(displayValue && field === "contactIds" ? { relatedContacts: displayValue } : {}),
+      ...(displayValue && field === "entityName"
+        ? { entityLabel: displayValue }
+        : {}),
     }));
 
-    setPendingChanges(prev => ({
+    console.log("handleChange fired");
+
+    // If changing a reference field, update loading state
+    if (field === "companyId") {
+      // Reset the loaded state and show loading if there's a new value
+      setFieldsLoaded(prev => ({
+        ...prev,
+        companyId: false
+      }));
+      setIsFormLoading(!!value);
+    }
+
+    // This is creating a pendingChanges record but not comparing against the right path
+    setPendingChanges((prev) => {
+      // Determine the correct path to check in selectedItem
+      const oldValue =
+        field === "companyId" ||
+        field === "title" ||
+        field === "firstName" ||
+        field === "lastName" ||
+        field === "email" ||
+        field === "phone" ||
+        field === "role"
+          ? selectedItem?.general?.[field] || ""
+          : selectedItem?.[field] || "";
+
+      return {
+        ...prev,
+        [field]: {
+          oldValue,
+          newValue: value,
+        },
+      };
+    });
+  };
+
+  const handleCompanyLoadComplete = (loaded: boolean, error?: string) => {
+    if (error) {
+      console.error("Company field load error:", error);
+      toast.error(`Error loading company information`);
+    }
+    
+    setFieldsLoaded(prev => ({
       ...prev,
-      [field]: {
-        oldValue: selectedItem?.[field] || "",
-        newValue: value,
-      },
+      companyId: loaded
     }));
+    
+    // Update form loading state after company is loaded
+    setIsFormLoading(false);
+  };
+
+  const handleClose = () => {
+    console.log("handleClose fired");
+
+    // Reset state
+    setPendingChanges({});
+    if (isEditing) {
+      setIsEditing(false);
+    }
+
+    // Navigate
+    router.push("/contacts");
   };
 
   const handleSave = async (e: React.FormEvent) => {
+    console.log("handleSave fired");
+
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -161,22 +214,26 @@ export function ContactForm() {
           phone: formData.phone,
           role: formData.role,
           companyId: formData.companyId,
-          bookerId: formData.bookerId,
-          bookingIds: formData.bookingIds,
-          contactIds: formData.contactIds,
         },
       };
 
       const isUpdate = !!selectedItem?._id;
-      const success = isUpdate 
+      const success = isUpdate
         ? await updateItem(itemData)
         : await createItem(itemData);
 
       if (success) {
-        toast.success(`Contact ${isUpdate ? "updated" : "created"} successfully`);
+        toast.success(
+          `Contact ${isUpdate ? "updated" : "created"} successfully`
+        );
         setIsEditing(false);
         setIsCreating(false);
         setPendingChanges({});
+
+        // For new contacts, navigate to the detail view with the new ID
+        if (!isUpdate && itemData._id) {
+          router.push(`/contacts/${itemData._id}`);
+        }
       } else {
         toast.error(`Failed to ${isUpdate ? "update" : "create"} contact`);
       }
@@ -188,6 +245,8 @@ export function ContactForm() {
   };
 
   const handleCancel = () => {
+    console.log("handleCancel fired");
+
     if (selectedItem) {
       // Reset to current item data
       setFormData({
@@ -200,13 +259,6 @@ export function ContactForm() {
         phone: selectedItem.general?.phone || "",
         role: selectedItem.general?.role || "",
         companyId: selectedItem.general?.companyId || "",
-        companyName: selectedItem.general?.companyName || "",
-        bookerId: selectedItem.general?.bookerId || "",
-        bookerName: selectedItem.general?.bookerName || "",
-        bookingIds: selectedItem.general?.bookingIds || [],
-        bookingNames: selectedItem.general?.bookingNames || [],
-        contactIds: selectedItem.general?.contactIds || [],
-        relatedContacts: selectedItem.general?.relatedContacts || [],
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
@@ -214,11 +266,11 @@ export function ContactForm() {
     setPendingChanges({});
     setIsEditing(false);
     setIsCreating(false);
-  };
 
-  if (!showForm) {
-    return <div className="contact-form-empty"></div>;
-  }
+    if (isCreating) {
+      router.push("/contacts");
+    }
+  };
 
   // Helper function to create field props
   const fieldProps = (field: keyof ContactFormData, required = false) => ({
@@ -226,98 +278,92 @@ export function ContactForm() {
     onChange: (value: string) => handleChange(field, value),
     isEditing: isEditing || isCreating,
     className: pendingChanges[field] ? "field-changed" : "",
-    required
+    required,
   });
 
   return (
-    <form onSubmit={handleSave} className="contact-form">
-      <div className="top-bar">
-        <div className="top-bar__title">
-          {selectedItem?._id ? "Contact Details" : "New Contact"}
-        </div>
-        <div className="top-bar__edit">
-          {!isEditing && selectedItem?._id && (
-            <Button icon={Edit} onClick={() => setIsEditing(true)}>Edit</Button>
-          )}
+    <div className="detail-wrapper">
+      {isFormLoading && <LoadingSpinner isLoading/>}
+      <form onSubmit={handleSave} className="contact-form">
+        <div className="top-bar">
+          <div className="top-bar__title">
+            {selectedItem?._id ? "Contact Details" : "New Contact"}
+          </div>
+          <div className="top-bar__edit">
+            {!isEditing && selectedItem?._id && (
+              <>
+                <Button icon={Edit} onClick={() => setIsEditing(true)}>
+                  Edit
+                </Button>
+                <Button
+                  intent="ghost"
+                  icon={X}
+                  type="button"
+                  onClick={handleClose}
+                >
+                  Close
+                </Button>
+              </>
+            )}
 
-          {(isEditing || isCreating) && (
-            <>
-              <Button
-                intent="secondary"
-                icon={X}
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                icon={Save}
-                type="submit"
-                disabled={isSubmitting || (!isCreating && Object.keys(pendingChanges).length === 0)}
-              >
-                Save
-              </Button>
-            </>
-          )}
+            {(isEditing || isCreating) && (
+              <>
+                <Button
+                  intent="secondary"
+                  icon={X}
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  icon={Save}
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    (!isCreating && Object.keys(pendingChanges).length === 0) ||
+                    isFormLoading ||
+                    !checkAllFieldsLoaded()
+                  }
+                >
+                  Save
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="flex">
-        <div className="col">
-          <DropdownField
-            label="Title"
-            options={OPTIONS.title}
-            {...fieldProps("title")}
-          />
-          <TextField
-            label="First Name"
-            {...fieldProps("firstName", true)}
-          />
-          <TextField
-            label="Last Name"
-            {...fieldProps("lastName", true)}
-          />
-          <TextField
-            label="E-mail"
-            type="email"
-            {...fieldProps("email")}
-          />
-          <TextField
-            label="Phone"
-            type="tel"
-            {...fieldProps("phone")}
-          />
-          <DropdownField
-            label="Role"
-            options={OPTIONS.role}
-            {...fieldProps("role", true)}
-          />
-          
-          <RefField
-            label="Company"
-            value={formData.companyId}
-            onChange={(value, displayValue) => handleChange("companyId", value, displayValue)}
-            isEditing={isEditing || isCreating}
-            className={pendingChanges["companyId"] ? "field-changed" : ""}
-            collectionName="companies"
-            displayFields={["name"]}
-            selectedLabel={companyName}
-          />
+        <div className="details-content">
+          <div className="col-third">
+            <DropdownField
+              label="Title"
+              options={OPTIONS.title}
+              {...fieldProps("title")}
+            />
+            <TextField label="First Name" {...fieldProps("firstName", true)} />
+            <TextField label="Last Name" {...fieldProps("lastName", true)} />
+            <TextField label="E-mail" type="email" {...fieldProps("email")} />
+            <TextField label="Phone" type="tel" {...fieldProps("phone")} />
+            <DropdownField
+              label="Role"
+              options={OPTIONS.role}
+              {...fieldProps("role", true)}
+            />
+            <RefField
+              label="Company"
+              value={formData.companyId}
+              onChange={(value, displayValue) =>
+                handleChange("companyId", value, displayValue)
+              }
+              isEditing={isEditing || isCreating}
+              className={pendingChanges["companyId"] ? "field-changed" : ""}
+              collectionName="companies"
+              displayFields={["name"]}
+              onLoadComplete={handleCompanyLoadComplete}
+            />
+          </div>
+          <div className="col-third"></div>
         </div>
-        <div className="col">
-          {/* Custom field with clickable company link when in view mode */}
-          {!isEditing && !isCreating && formData.companyId && companyName && (
-            <div className="company-link-container">
-              <div 
-                className="company-link" 
-                onClick={handleCompanyClick}
-              >
-                <span>{companyName}</span>
-                <ExternalLink size={14} className="company-link-icon" />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

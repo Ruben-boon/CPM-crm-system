@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 
 interface RefFieldProps {
@@ -12,12 +12,7 @@ interface RefFieldProps {
   className?: string;
   collectionName: string;
   displayFields?: string[];
-  selectedLabel?: string;
-}
-
-interface SearchResult {
-  _id: string;
-  [key: string]: any;
+  onLoadComplete?: (loaded: boolean, error?: string) => void;
 }
 
 export function RefField({
@@ -25,167 +20,268 @@ export function RefField({
   value = "",
   onChange,
   required = false,
-  disabled,
-  isEditing,
+  disabled = false,
+  isEditing = false,
   className = "",
   collectionName,
   displayFields = ["name"],
-  selectedLabel = "",
+  onLoadComplete,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [displayValue, setDisplayValue] = useState(selectedLabel);
+  const [results, setResults] = useState<any[]>([]);
+  const [displayValue, setDisplayValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const prevValueRef = useRef<string>(value);
+  const loadCompleteCalledRef = useRef<boolean>(false);
 
+  // Reset the load complete flag when value changes
   useEffect(() => {
-    const loadReferenceDetails = async () => {
-      if (value) {
-        try {
-          const response = await searchDocuments<SearchResult>(
-            collectionName,
-            value,
-            "_id"
-          );
-          const results =
-            typeof response === "string"
-              ? JSON.parse(response)
-              : Array.isArray(response)
-              ? response
-              : [];
-          if (results.length > 0) {
-            const display = formatDisplayValue(results[0]);
-            setDisplayValue(display);
-            onChange(value, display);
+    // Value has changed, we're starting a new load cycle
+    if (value !== prevValueRef.current) {
+      loadCompleteCalledRef.current = false;
+      setDisplayValue("");
+      prevValueRef.current = value;
+    }
+  }, [value]);
+  // Fetch and display name when value changes
+  useEffect(() => {
+    async function fetchDisplayName() {
+      // Reset display value if no ID
+      if (!value) {
+        setIsLoading(false);
+        
+        // Only signal complete if we haven't already for this value
+        if (!loadCompleteCalledRef.current) {
+          loadCompleteCalledRef.current = true;
+          onLoadComplete?.(true);
+        }
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await searchDocuments(collectionName, value, "_id");
+        const parsedResults = typeof response === "string" ? JSON.parse(response) : response;
+        const resultArray = Array.isArray(parsedResults) ? parsedResults : [];
+        
+        // Only proceed if this is still the current value
+        if (value !== prevValueRef.current) return;
+        
+        if (resultArray.length > 0) {
+          // Get display string from fields
+          const display = displayFields
+            .map(field => {
+              const parts = field.split(".");
+              let val = resultArray[0];
+              for (const part of parts) {
+                val = val?.[part];
+                if (val === undefined) break;
+              }
+              return val;
+            })
+            .filter(Boolean)
+            .join(" ");
+            
+          setDisplayValue(display);
+        } else {
+          setDisplayValue("");
+        }
+        
+        // Signal load complete only once per value
+        if (!loadCompleteCalledRef.current) {
+          loadCompleteCalledRef.current = true;
+          onLoadComplete?.(true);
+        }
+      } catch (error) {
+        console.error(`Failed to load ${collectionName} details:`, error);
+        
+        // Only handle error for current value
+        if (value === prevValueRef.current) {
+          setDisplayValue("");
+          
+          // Signal load error only once per value
+          if (!loadCompleteCalledRef.current) {
+            loadCompleteCalledRef.current = true;
+            onLoadComplete?.(false, `Failed to load ${collectionName} details`);
           }
-        } catch (error) {
-          console.error(`Failed to load ${collectionName} details:`, error);
+        }
+      } finally {
+        // Only update loading state if this is for the current value
+        if (value === prevValueRef.current) {
+          setIsLoading(false);
         }
       }
-    };
-
-    if (value && !selectedLabel) {
-      loadReferenceDetails();
-    } else {
-      setDisplayValue(selectedLabel);
     }
-  }, [value, selectedLabel, collectionName]);
+
+    // Only fetch if we have a value and haven't already completed loading for this value
+    if (value && !loadCompleteCalledRef.current) {
+      fetchDisplayName();
+    } else if (!value && !loadCompleteCalledRef.current) {
+      // For empty values, signal complete immediately
+      loadCompleteCalledRef.current = true;
+      onLoadComplete?.(true);
+    }
+  }, [value, collectionName, displayFields, onLoadComplete]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsSearching(false);
       }
     }
+    
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const getNestedValue = (obj: any, path: string) => {
-    const parts = path.split(".");
-    let value = obj;
-    for (const part of parts) {
-      value = value?.[part];
-    }
-    return value;
-  };
-
-  const formatDisplayValue = (result: SearchResult) => {
-    return displayFields
-      .map((field) => getNestedValue(result, field))
-      .filter(Boolean)
-      .join(" ");
-  };
-
-  const handleSearch = async (term: string) => {
+  // Handle search input
+  async function handleSearch(term: string) {
     setSearchTerm(term);
-    if (term.length > 0) {
-      try {
-        const searchPromises = displayFields.map((field) =>
-          searchDocuments<SearchResult>(collectionName, term, field).then(
-            (response) => {
-              return typeof response === "string"
-                ? JSON.parse(response)
-                : Array.isArray(response)
-                ? response
-                : [];
-            }
-          )
-        );
-
-        const results = await Promise.all(searchPromises);
-
-        const uniqueResults = Array.from(
-          new Map(results.flat().map((item) => [item._id, item])).values()
-        );
-
-        setResults(uniqueResults);
-        setIsSearching(true);
-      } catch (error) {
-        console.error("Search failed:", error);
-        setResults([]);
-      }
-    } else {
+    
+    if (!term.trim()) {
       setResults([]);
       setIsSearching(false);
+      return;
     }
-  };
 
-  const handleSelect = (result: SearchResult) => {
-    const display = formatDisplayValue(result);
+    try {
+      const response = await searchDocuments(collectionName, term, displayFields[0]);
+      const parsedResults = typeof response === "string" ? JSON.parse(response) : response;
+      const resultArray = Array.isArray(parsedResults) ? parsedResults : [];
+      
+      setResults(resultArray);
+      setIsSearching(resultArray.length > 0);
+    } catch (error) {
+      console.error("Search failed:", error);
+      setResults([]);
+    }
+  }
+
+  // Handle selecting a search result
+  function handleSelect(result: any) {
+    const display = displayFields
+      .map(field => {
+        const parts = field.split(".");
+        let val = result;
+        for (const part of parts) {
+          val = val?.[part];
+          if (val === undefined) break;
+        }
+        return val;
+      })
+      .filter(Boolean)
+      .join(" ");
+    
+    // When manually selecting, we're already "loaded"
+    loadCompleteCalledRef.current = true;
+    prevValueRef.current = result._id;  
     setDisplayValue(display);
     onChange(result._id, display);
     setSearchTerm("");
     setIsSearching(false);
-  };
+    
+    // Signal complete for manual selection
+    onLoadComplete?.(true);
+  }
 
+  // Clear the selection
+  function handleClear() {
+    loadCompleteCalledRef.current = true;
+    prevValueRef.current = "";
+    setDisplayValue("");
+    setSearchTerm("");
+    onChange("", "");
+    setIsSearching(false);
+    
+    // Signal complete for clearing
+    onLoadComplete?.(true);
+  }
+
+  // Read-only view
+  if (!isEditing) {
+    return (
+      <div className="ref-field">
+        <label className="field-label">{label}</label>
+        <div className={`read-only ${className}`}>
+          {value && displayValue ? displayValue : <span className="empty-reference">-</span>}
+        </div>
+      </div>
+    );
+  }
+
+  // Disabled view
+  if (disabled) {
+    return (
+      <div className="ref-field">
+        <label className="field-label">{label}</label>
+        <div className="disabled-field">
+          <i>This field is automatically set and cannot be edited.</i>
+        </div>
+      </div>
+    );
+  }
+
+  // Editable view
   return (
     <div className="ref-field">
       <label className="field-label">
         {label}
-        {isEditing && required && <span className="required-mark">*</span>}
+        {required && <span className="required-mark">*</span>}
       </label>
       <div className="ref-field-container" ref={dropdownRef}>
-        <div className="ref-field-single">
-          <div className={`read-only flex-1 ${className}`}>
-            {displayValue || <span className="empty-reference">-</span>}
-          </div>
-          {isEditing && disabled && (
-            <span><i>This field is automatically set and cannot be edited.</i></span>
-          )}
-          {isEditing && !disabled && (
-            <div className="search-container flex-1">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className={`search-input ${className}`}
-                placeholder="Search..."
-                disabled={disabled}
-              />
-              <Search className="search-icon" />
-              {isSearching && results.length > 0 && (
-                <div className="search-results">
-                  {results.map((result) => (
-                    <div
-                      key={result._id}
-                      className="result-item"
-                      onClick={() => handleSelect(result)}
-                    >
-                      <span className="result-name">
-                        {formatDisplayValue(result)}
-                      </span>
-                      <span className="result-id">{result._id}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {value ? (
+          <div className="selected-value-container">
+            <div className={`selected-value ${className}`}>
+              {isLoading ? "Loading..." : displayValue || "Loading..."}
             </div>
-          )}
-        </div>
+            <button
+              type="button"
+              className="clear-button"
+              onClick={handleClear}
+              aria-label="Clear selection"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <div className="search-container">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className={`search-input ${className}`}
+              placeholder="Search..."
+            />
+            <Search className="search-icon" />
+            
+            {isSearching && (
+              <div className="search-results">
+                {results.map((result) => (
+                  <div
+                    key={result._id}
+                    className="result-item"
+                    onClick={() => handleSelect(result)}
+                  >
+                    {displayFields
+                      .map(field => {
+                        const parts = field.split(".");
+                        let val = result;
+                        for (const part of parts) {
+                          val = val?.[part];
+                          if (val === undefined) break;
+                        }
+                        return val;
+                      })
+                      .filter(Boolean)
+                      .join(" ")}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
