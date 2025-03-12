@@ -52,28 +52,9 @@ export function CompanyForm() {
   const [formData, setFormData] = useState<CompanyFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
-    INITIAL_LOADING_STATE
-  );
-  const [isFormLoading, setIsFormLoading] = useState(false);
-  const [isChildCompaniesLoading, setIsChildCompaniesLoading] = useState(false);
+  const [isRelatedItemsLoading, setIsRelatedItemsLoading] = useState(false);
 
-  const checkAllFieldsLoaded = () => {
-    return !formData.parentCompanyId || fieldsLoaded.parentCompanyId;
-  };
 
-  useEffect(() => {
-    // Show loading if either the form fields or child companies are loading
-    const shouldShowLoading =
-      (formData.parentCompanyId && !fieldsLoaded.parentCompanyId) ||
-      isChildCompaniesLoading;
-
-    setIsFormLoading(shouldShowLoading);
-  }, [
-    formData.parentCompanyId,
-    fieldsLoaded.parentCompanyId,
-    isChildCompaniesLoading,
-  ]);
 
   // Load company data when component mounts or selectedItem changes
   useEffect(() => {
@@ -83,12 +64,6 @@ export function CompanyForm() {
         setIsCreating(true);
         setIsEditing(true);
       }
-
-      // Reset loading state
-      setFieldsLoaded(INITIAL_LOADING_STATE);
-
-      // Initial loading state based on parent company
-      setIsFormLoading(!!selectedItem.parentCompanyId);
 
       // Set form data
       setFormData({
@@ -111,15 +86,6 @@ export function CompanyForm() {
       ...prev,
       [field]: value,
     }));
-
-    // If changing a reference field, update loading state
-    if (field === "parentCompanyId") {
-      setFieldsLoaded((prev) => ({
-        ...prev,
-        parentCompanyId: false,
-      }));
-      setIsFormLoading(!!value);
-    }
 
     setPendingChanges((prev) => ({
       ...prev,
@@ -218,7 +184,8 @@ export function CompanyForm() {
 
   return (
     <div className="detail-wrapper">
-      {/* {isFormLoading && <LoadingSpinner isLoading />} */}
+      {!isEditing && <LoadingSpinner isLoading={isRelatedItemsLoading} />}
+    {/* this is reallllly janky atm if you double click it get stuck for example make this better */}
       <form onSubmit={handleSave} className="company-form">
         <div className="top-bar">
           <div className="top-bar__title">
@@ -297,6 +264,7 @@ export function CompanyForm() {
                   title="Child Companies"
                   emptyMessage="No child companies found"
                   onItemClick={handleRelationClick}
+                  onLoadingChange={(loading) => setIsRelatedItemsLoading(loading)}
                 />
               </div>
             )}

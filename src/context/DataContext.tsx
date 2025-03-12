@@ -5,6 +5,7 @@ import {
   createDocument,
   searchDocuments,
   updateDocument,
+  deleteDocument
 } from "@/app/actions/crudActions";
 
 interface RoleFilter {
@@ -24,6 +25,7 @@ interface DataContextType {
   selectItem: (item: Partial<Item> | null, startEditing?: boolean) => void;
   createItem: (item: Item) => Promise<boolean>;
   updateItem: (item: Item) => Promise<boolean>;
+  deleteItem: (id: string) => Promise<boolean>;
   setIsEditing: (isEditing: boolean) => void;
   setPendingChanges: (changes: Record<string, ChangeRecord>) => void;
   setRoleFilter: (filter: Partial<RoleFilter>) => void;
@@ -38,9 +40,7 @@ function createDataContext(collectionName: string) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<
-      Record<string, ChangeRecord>
-    >({});
+    const [pendingChanges, setPendingChanges] = useState<Record<string, ChangeRecord>>({});
     const [roleFilter, setRoleFilterState] = useState<RoleFilter>({
       bookerChecked: false,
       guestChecked: false
@@ -132,6 +132,32 @@ function createDataContext(collectionName: string) {
       }
     };
 
+    const deleteItem = async (id: string) => {
+      if (!id) {
+        setError("Missing item ID");
+        return false;
+      }
+
+      setIsLoading(true);
+      try {
+        const result = await deleteDocument(collectionName, id);
+        if (result.success) {
+          // Clear the selected item if it was deleted
+          if (selectedItem?._id === id) {
+            setSelectedItem(null);
+            setPendingChanges({});
+          }
+          await searchItems();
+          setError(null);
+          return true;
+        }
+        setError(result.error || "Deletion failed");
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     return (
       <DataContext.Provider
         value={{
@@ -146,6 +172,7 @@ function createDataContext(collectionName: string) {
           selectItem,
           createItem,
           updateItem,
+          deleteItem,
           setIsEditing,
           setPendingChanges,
           setRoleFilter,

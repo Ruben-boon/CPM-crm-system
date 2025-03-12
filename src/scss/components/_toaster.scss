@@ -1,0 +1,196 @@
+// Toaster styles
+[data-sonner-toaster] {
+    position: fixed;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    width: 360px;
+    max-width: 100%;
+    
+    &[data-position="top-right"] {
+      top: 16px;
+      right: 16px;
+      align-items: flex-end;
+    }
+    
+    &[data-position="top-left"] {
+      top: 16px;
+      left: 16px;
+      align-items: flex-start;
+    }
+    
+    &[data-position="bottom-right"] {
+      bottom: 16px;
+      right: 16px;
+      align-items: flex-end;
+    }
+    
+    &[data-position="bottom-left"] {
+      bottom: 16px;
+      left: 16px;
+      align-items: flex-start;
+    }
+    
+    &[data-position="top-center"] {
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      align-items: center;
+    }
+    
+    &[data-position="bottom-center"] {
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      align-items: center;
+    }
+  }
+  
+  [data-sonner-toast] {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    color: #333;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: sonner-toast-enter 0.2s ease forwards;
+    
+    &[data-removed="true"] {
+      animation: sonner-toast-exit 0.2s ease forwards;
+    }
+    
+    // Toast types
+    &[data-type="success"] {
+      border-left: 4px solid #10b981;
+      
+      [data-icon] {
+        color: #10b981;
+      }
+    }
+    
+    &[data-type="error"] {
+      border-left: 4px solid #ef4444;
+      
+      [data-icon] {
+        color: #ef4444;
+      }
+    }
+    
+    &[data-type="warning"] {
+      border-left: 4px solid #f59e0b;
+      
+      [data-icon] {
+        color: #f59e0b;
+      }
+    }
+    
+    &[data-type="info"] {
+      border-left: 4px solid #3b82f6;
+      
+      [data-icon] {
+        color: #3b82f6;
+      }
+    }
+  }
+  
+  [data-icon] {
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  [data-content] {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  [data-title] {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  
+  [data-description] {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  [data-close-button] {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #999;
+    
+    &:hover {
+      color: #333;
+    }
+  }
+  
+  // Loading indicator
+  [data-loader] {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #3b82f6;
+    border-radius: 50%;
+    animation: sonner-spin 1s linear infinite;
+  }
+  
+  // Animations
+  @keyframes sonner-toast-enter {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes sonner-toast-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-16px);
+    }
+  }
+  
+  @keyframes sonner-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  // Dark mode
+  .dark {
+    [data-sonner-toast] {
+      background-color: #222;
+      color: #fff;
+      
+      [data-description] {
+        color: #ccc;
+      }
+      
+      [data-close-button] {
+        color: #ccc;
+        
+        &:hover {
+          color: #fff;
+        }
+      }
+    }
+  }

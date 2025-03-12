@@ -1,6 +1,6 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit } from "lucide-react";
+import { Save, X, Edit, Trash2 } from "lucide-react"; // Added Trash2 icon
 import { useState, useEffect } from "react";
 import { useContactsData } from "@/context/DataContext";
 import { toast } from "sonner";
@@ -9,6 +9,74 @@ import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
+
+//delete confirmation
+function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="delete-confirmation-overlay">
+      <div className="delete-confirmation-dialog">
+        <h3>Confirm Deletion</h3>
+        <p>Are you sure you want to delete {itemName || "this contact"}?</p>
+        <p className="warning-text">This action cannot be undone.</p>
+        <div className="dialog-buttons">
+          <Button intent="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button intent="danger" onClick={onConfirm}>
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .delete-confirmation-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .delete-confirmation-dialog {
+          background-color: white;
+          border-radius: 8px;
+          padding: 24px;
+          width: 400px;
+          max-width: 90vw;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        h3 {
+          margin-top: 0;
+          margin-bottom: 16px;
+          font-size: 18px;
+        }
+
+        p {
+          margin-bottom: 16px;
+        }
+
+        .warning-text {
+          color: #e11d48;
+          font-weight: 500;
+        }
+
+        .dialog-buttons {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 interface ContactFormData {
   entityName: string;
@@ -24,7 +92,6 @@ interface ContactFormData {
 
 interface FieldLoadingState {
   companyId: boolean;
-  // Add other ref fields here as needed
 }
 
 const INITIAL_FORM_STATE: ContactFormData = {
@@ -59,6 +126,7 @@ export function ContactForm() {
     selectedItem,
     updateItem,
     createItem,
+    deleteItem, 
     setIsEditing,
     isEditing,
     pendingChanges,
@@ -75,38 +143,34 @@ export function ContactForm() {
   );
   const [isFormLoading, setIsFormLoading] = useState(false);
 
+  // Add these for delete functionality
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Function to check if all reference fields are loaded
   const checkAllFieldsLoaded = () => {
-    // Only check if loading if there's a value that needs to be loaded
     const isCompanyLoaded = !formData.companyId || fieldsLoaded.companyId;
     return isCompanyLoaded;
   };
 
   // Update form loading state when fields load status changes
   useEffect(() => {
-    // If we have a companyId value but it's not loaded yet
     const shouldShowLoading = formData.companyId && !fieldsLoaded.companyId;
     setIsFormLoading(shouldShowLoading);
   }, [formData.companyId, fieldsLoaded.companyId]);
 
   // Load form data when selected item changes
   useEffect(() => {
-    console.log("useEffect fired");
     if (selectedItem) {
-      // Handle creating/editing state
       setIsCreating(false);
       if (!selectedItem._id) {
         setIsCreating(true);
         setIsEditing(true);
       }
 
-      // Reset loading state when selected item changes
       setFieldsLoaded(INITIAL_LOADING_STATE);
-
-      // Show loading if the selected item has a companyId
       setIsFormLoading(!!selectedItem.general?.companyId);
 
-      // Set form data
       setFormData({
         entityName: selectedItem.entityName || "",
         entityLabel: selectedItem.entityLabel || "",
@@ -134,11 +198,7 @@ export function ContactForm() {
         : {}),
     }));
 
-    console.log("handleChange fired");
-
-    // If changing a reference field, update loading state
     if (field === "companyId") {
-      // Reset the loaded state and show loading if there's a new value
       setFieldsLoaded((prev) => ({
         ...prev,
         companyId: false,
@@ -146,9 +206,7 @@ export function ContactForm() {
       setIsFormLoading(!!value);
     }
 
-    // This is creating a pendingChanges record but not comparing against the right path
     setPendingChanges((prev) => {
-      // Determine the correct path to check in selectedItem
       const oldValue =
         field === "companyId" ||
         field === "title" ||
@@ -181,26 +239,19 @@ export function ContactForm() {
       companyId: loaded,
     }));
 
-    // Update form loading state after company is loaded
     setIsFormLoading(false);
   };
 
   const handleClose = () => {
-    console.log("handleClose fired");
-
-    // Reset state
     setPendingChanges({});
     if (isEditing) {
       setIsEditing(false);
     }
 
-    // Navigate
     router.push("/contacts");
   };
 
   const handleSave = async (e: React.FormEvent) => {
-    console.log("handleSave fired");
-
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -232,7 +283,6 @@ export function ContactForm() {
         setIsCreating(false);
         setPendingChanges({});
 
-        // For new contacts, navigate to the detail view with the new ID
         if (!isUpdate && itemData._id) {
           router.push(`/contacts/${itemData._id}`);
         }
@@ -247,10 +297,7 @@ export function ContactForm() {
   };
 
   const handleCancel = () => {
-    console.log("handleCancel fired");
-
     if (selectedItem) {
-      // Reset to current item data
       setFormData({
         entityName: selectedItem.entityName || "",
         entityLabel: selectedItem.entityLabel || "",
@@ -274,6 +321,51 @@ export function ContactForm() {
     }
   };
 
+  // Add delete handler functions
+  const handleDeleteClick = (e) => {
+    // If there's an event, prevent default behavior (like form submission)
+    if (e) e.preventDefault();
+    
+    // Cancel editing mode first to avoid update conflict
+    if (isEditing) {
+      setIsEditing(false);
+      setPendingChanges({});
+    }
+    
+    // Show confirmation dialog
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmation(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedItem?._id) {
+      toast.error("No item selected to delete");
+      setShowDeleteConfirmation(false);
+      return;
+    }
+  
+    setIsDeleting(true);
+    try {
+      const success = await deleteItem(selectedItem._id);
+      
+      if (success) {
+        toast.success("Contact deleted successfully");
+        router.push("/contacts");
+      } else {
+        toast.error("Failed to delete contact");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("An unexpected error occurred during deletion");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
   // Helper function to create field props
   const fieldProps = (field: keyof ContactFormData, required = false) => ({
     value: formData[field] as string,
@@ -283,9 +375,24 @@ export function ContactForm() {
     required,
   });
 
+  // Get contact name for confirmation dialog
+  const contactName =
+    formData.firstName && formData.lastName
+      ? `${formData.firstName} ${formData.lastName}`
+      : "this contact";
+
   return (
     <div className="detail-wrapper">
-      {isFormLoading && <LoadingSpinner isLoading />}
+      <LoadingSpinner isLoading={isFormLoading || isDeleting} />
+
+      {/* Add delete confirmation dialog */}
+      <DeleteConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        itemName={contactName}
+      />
+
       <form
         onSubmit={handleSave}
         className={`contact-form ${!isFormLoading ? "done-loading" : ""}`}
@@ -367,6 +474,18 @@ export function ContactForm() {
             />
           </div>
           <div className="col-third"></div>
+        </div>
+        <div className="bottom-bar">
+        {isEditing && !isCreating && selectedItem?._id && (
+            <Button
+              intent="danger"
+              icon={Trash2}
+              onClick={handleDeleteClick}
+              disabled={isDeleting}
+            >
+              Delete
+            </Button>
+          )}
         </div>
       </form>
     </div>

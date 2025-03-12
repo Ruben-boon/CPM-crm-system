@@ -45,9 +45,20 @@ export function RefField({
       prevValueRef.current = value;
     }
   }, [value]);
+  
   // Fetch and display name when value changes
   useEffect(() => {
     async function fetchDisplayName() {
+      // Skip if we already have a display value for this ID
+      if (value && displayValue && value === prevValueRef.current) {
+        if (!loadCompleteCalledRef.current) {
+          loadCompleteCalledRef.current = true;
+          onLoadComplete?.(true);
+        }
+        setIsLoading(false);
+        return;
+      }
+      
       // Reset display value if no ID
       if (!value) {
         setIsLoading(false);
@@ -123,7 +134,7 @@ export function RefField({
       loadCompleteCalledRef.current = true;
       onLoadComplete?.(true);
     }
-  }, [value, collectionName, displayFields, onLoadComplete]);
+  }, [value, collectionName, displayFields, onLoadComplete, displayValue]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -178,6 +189,7 @@ export function RefField({
     loadCompleteCalledRef.current = true;
     prevValueRef.current = result._id;  
     setDisplayValue(display);
+    setIsLoading(false); // Explicitly clear loading state
     onChange(result._id, display);
     setSearchTerm("");
     setIsSearching(false);
@@ -192,6 +204,7 @@ export function RefField({
     prevValueRef.current = "";
     setDisplayValue("");
     setSearchTerm("");
+    setIsLoading(false); // Explicitly clear loading state
     onChange("", "");
     setIsSearching(false);
     
@@ -234,7 +247,7 @@ export function RefField({
         {value ? (
           <div className="selected-value-container">
             <div className={`selected-value ${className}`}>
-              {isLoading ? "Loading..." : displayValue || "Loading..."}
+              {isLoading ? "Loading..." : displayValue || "-"}
             </div>
             <button
               type="button"

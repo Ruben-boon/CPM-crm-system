@@ -3,7 +3,7 @@ import { LucideIcon, Loader2 } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "sm" | "md" | "lg";
-  intent?: "primary" | "secondary" | "outline" | "ghost";
+  intent?: "primary" | "secondary" | "outline" | "ghost" | "danger";
   icon?: LucideIcon;
   isLoading?: boolean;
   iconAfter?: boolean;

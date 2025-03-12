@@ -6,12 +6,30 @@ interface LoadingSpinnerProps {
   minDuration?: number;
 }
 
-export function LoadingSpinner({ isLoading, minDuration = 500 }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  isLoading,
+  minDuration = 340,
+}: LoadingSpinnerProps) {
   const [showSpinner, setShowSpinner] = useState(false);
-  
+  const [spinnerColor, setSpinnerColor] = useState("#ff5722"); // Default orange color
+
+  // Generate a random color when the spinner is shown
+  useEffect(() => {
+    if (isLoading) {
+      // Array of bright, vibrant colors that work well with white text
+      const colors = [
+        "#ff5722", // Orange (like your logo)
+      ];
+      
+      // Pick a random color from the array
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      setSpinnerColor(randomColor);
+    }
+  }, [isLoading]);
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
+
     if (isLoading) {
       setShowSpinner(true);
     } else if (showSpinner) {
@@ -20,14 +38,14 @@ export function LoadingSpinner({ isLoading, minDuration = 500 }: LoadingSpinnerP
         setShowSpinner(false);
       }, minDuration);
     }
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isLoading, minDuration, showSpinner]);
-  
+
   if (!showSpinner) return null;
-  
+
   return (
     <div className="spinner-overlay">
       <span className="loader"></span>
@@ -41,50 +59,65 @@ export function LoadingSpinner({ isLoading, minDuration = 500 }: LoadingSpinnerP
           display: flex;
           justify-content: center;
           align-items: center;
-          background-color: white;
+          background-color: #f6f6f8;
           z-index: 1000;
         }
-        
         .loader {
-          color: #black;
-          font-size: 45px;
-          text-indent: -9999em;
-          overflow: hidden;
-          width: 1em;
-          height: 1em;
-          border-radius: 50%;
+          width: 48px;
+          height: 48px;
+          margin: auto;
           position: relative;
-          transform: translateZ(0);
-          animation: mltShdSpin 1.7s infinite ease, round 1.7s infinite ease;
         }
-        
-        @keyframes mltShdSpin {
-          0% {
-            box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+        .loader:before {
+          content: "";
+          width: 48px;
+          height: 5px;
+          background: #000;
+          opacity: 0.15;
+          position: absolute;
+          top: 60px;
+          left: 0;
+          border-radius: 50%;
+          animation: shadow 0.5s linear infinite;
+        }
+        .loader:after {
+          content: "";
+          width: 100%;
+          height: 100%;
+          background: ${spinnerColor};
+          animation: bxSpin 0.5s linear infinite;
+          position: absolute;
+          top: 0;
+          left: 0;
+          border-radius: 4px;
+          z-index: 0;
+        }
+        @keyframes bxSpin {
+          17% {
+            border-bottom-right-radius: 3px;
           }
-          5%, 95% {
-            box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+          25% {
+            transform: translateY(9px) rotate(22.5deg);
           }
-          10%, 59% {
-            box-shadow: 0 -0.83em 0 -0.4em, -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em, -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;
+          50% {
+            transform: translateY(18px) scale(1, 0.9) rotate(45deg);
+            border-bottom-right-radius: 40px;
           }
-          20% {
-            box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em, -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em, -0.749em -0.34em 0 -0.477em;
-          }
-          38% {
-            box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em, -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em, -0.82em -0.09em 0 -0.477em;
+          75% {
+            transform: translateY(9px) rotate(67.5deg);
           }
           100% {
-            box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            transform: translateY(0) rotate(90deg);
           }
         }
-        
-        @keyframes round {
-          0% {
-            transform: rotate(0deg)
-          }
+
+        @keyframes shadow {
+          0%,
           100% {
-            transform: rotate(360deg)
+            transform: scale(1, 1);
+          }
+          50% {
+            transform: scale(1.2, 1);
           }
         }
       `}</style>

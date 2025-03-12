@@ -7,24 +7,26 @@ interface Option {
 
 interface DropdownFieldProps {
   label: string;
-  value: string;
+  value?: string; // Make optional
   onChange: (value: string) => void;
   options: Option[];
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
   placeholder?: string;
+  className?: string; // Add className support
 }
 
 export function DropdownField({
   label,
-  value,
+  value = "", // Default to empty string
   onChange,
   options,
   required = false,
   disabled,
   isEditing,
   placeholder = "Select an option",
+  className = "", // Default to empty string
 }: DropdownFieldProps) {
   return (
     <div className="form-field">
@@ -34,9 +36,9 @@ export function DropdownField({
       </label>
       {isEditing ? (
         <select
-          value={value || ""}
+          value={value} // No need for value || "" since we default to "" 
           onChange={(e) => onChange(e.target.value)}
-          className="input-base input-style"
+          className={`input-base input-style ${className}`} // Add className support
           required={required}
           disabled={disabled}
         >
@@ -50,8 +52,11 @@ export function DropdownField({
           ))}
         </select>
       ) : (
-        <input disabled value={options.find(opt => opt.value === value)?.label} className="input-base">
-        </input>
+        <input 
+          disabled 
+          value={options.find(opt => opt.value === value)?.label || ""} 
+          className={`input-base ${className}`} // Add className support
+        />
       )}
     </div>
   );

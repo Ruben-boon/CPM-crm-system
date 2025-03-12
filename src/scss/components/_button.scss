@@ -94,3 +94,51 @@
     transform: translateY(1px);
   }
 }
+
+/* Existing button styles... */
+
+/* Danger intent styles */
+.button--danger {
+  background-color: #e11d48;
+  color: white;
+  border: 1px solid #e11d48;
+}
+
+.button--danger:hover:not(:disabled) {
+  background-color: #be123c;
+  border-color: #be123c;
+}
+
+.button--danger:active:not(:disabled) {
+  background-color: #9f1239;
+  border-color: #9f1239;
+}
+
+.button--danger:disabled {
+  background-color: #fda4af;
+  border-color: #fda4af;
+  color: #f8fafc;
+  cursor: not-allowed;
+}
+
+/* For outline variant with danger intent */
+.button--outline.button--danger {
+  background-color: transparent;
+  color: #e11d48;
+  border-color: #e11d48;
+}
+
+.button--outline.button--danger:hover:not(:disabled) {
+  background-color: rgba(225, 29, 72, 0.05);
+}
+
+/* For ghost variant with danger intent */
+.button--ghost.button--danger {
+  background-color: transparent;
+  color: #e11d48;
+  border-color: transparent;
+}
+
+.button--ghost.button--danger:hover:not(:disabled) {
+  background-color: rgba(225, 29, 72, 0.05);
+}

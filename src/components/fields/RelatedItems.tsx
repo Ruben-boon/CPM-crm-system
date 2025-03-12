@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { ExternalLink } from "lucide-react";
 import { LoadingSpinner } from "../loadingSpinner";
@@ -17,6 +17,7 @@ interface RelatedItemsProps {
   title: string; // Title for the section (e.g., "Related Contacts")
   emptyMessage?: string; // Message to show when no items are found
   onItemClick?: (id: string, collection: string) => void;
+  onLoadingChange?: (isLoading: boolean) => void; // Callback for loading state changes
 }
 
 export function RelatedItems({
@@ -27,6 +28,7 @@ export function RelatedItems({
   title,
   emptyMessage = "No items found",
   onItemClick,
+  onLoadingChange,
 }: RelatedItemsProps) {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +36,8 @@ export function RelatedItems({
 
   // Load related items when component mounts or ID changes
   useEffect(() => {
+    let isMounted = true;
+
     const loadRelatedItems = async () => {
       if (!id) {
         setItems([]);
@@ -41,6 +45,9 @@ export function RelatedItems({
       }
 
       setIsLoading(true);
+      if (onLoadingChange) {
+        onLoadingChange(true);
+      }
       setError(null);
 
       try {
@@ -50,17 +57,31 @@ export function RelatedItems({
           referenceField
         );
 
-        setItems(results);
+        if (isMounted) {
+          setItems(results);
+        }
       } catch (err) {
         console.error(`Error loading related ${collectionName}:`, err);
-        setError(`Failed to load ${collectionName}`);
+        if (isMounted) {
+          setError(`Failed to load ${collectionName}`);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          if (onLoadingChange) {
+            onLoadingChange(false);
+          }
+        }
       }
     };
 
     loadRelatedItems();
-  }, [id, referenceField, collectionName]);
+
+    // Cleanup function to handle unmounting
+    return () => {
+      isMounted = false;
+    };
+  }, [id, referenceField, collectionName]); // Remove onLoadingChange from dependency array
 
   // Helper function to get a value from an object using a path string
   const getNestedValue = (obj: any, path: string): string => {
