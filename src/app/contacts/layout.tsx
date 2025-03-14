@@ -5,13 +5,14 @@ import Button from "@/components/Button";
 import SearchBar from "@/components/search/SearchBar";
 import SearchResults from "@/components/search/SearchResults";
 import { ContactsProvider, useContactsData } from "@/context/DataContext";
-import { Plus } from "lucide-react";
+import { Plus, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { RoleFilter } from "@/components/search/RoleFilter";
+import { searchDocuments } from "@/app/actions/crudActions";
 
 function ContactsLayoutContent({ children }) {
-  const { items, isLoading, searchItems, roleFilter, setRoleFilter } =
+  const { items, isLoading, searchItems, roleFilter, setRoleFilter, selectItem } =
     useContactsData();
 
   const router = useRouter();
@@ -27,6 +28,38 @@ function ContactsLayoutContent({ children }) {
     }
   };
 
+  // Handle copying a contact - similar to the company copy functionality
+  const handleCopyContact = async (contact) => {
+    try {
+      // First navigate to the new page
+      router.push("/contacts/new");
+      
+      // Then fetch the full contact data to ensure we have all fields
+      const result = await searchDocuments("contacts", contact._id.toString(), "_id");
+      
+      if (Array.isArray(result) && result.length > 0) {
+        // Make a deep clone of the source contact
+        const sourceContact = JSON.parse(JSON.stringify(result[0]));
+        
+        // Remove the _id to create a new contact
+        delete sourceContact._id;
+        
+        // Update the name to indicate it's a copy
+        if (sourceContact.general?.firstName) {
+          sourceContact.general.firstName = `${sourceContact.general.firstName} (Copy)`;
+        }
+        
+        // Use setTimeout to ensure this runs after navigation is complete
+        setTimeout(() => {
+          // Select the contact with edit mode enabled
+          selectItem(sourceContact, true);
+        }, 100);
+      }
+    } catch (error) {
+      console.error("Error creating contact copy:", error);
+    }
+  };
+
   // Re-run search when role filters change
   useEffect(() => {
     searchItems();
@@ -36,7 +69,7 @@ function ContactsLayoutContent({ children }) {
     <>
       <div className="search-area">
         <div className="search-panel">
-          <SearchBar onSearch={searchItems} isLoading={isLoading} />
+          <SearchBar onSearch={searchItems} isLoading={isLoading} type="contacts" />
 
           <div className="filter-search-container">
             <RoleFilter
@@ -57,7 +90,12 @@ function ContactsLayoutContent({ children }) {
             </div>
           </div>
 
-          <SearchResults items={items} onSelect={handleSelectContact} />
+          <SearchResults 
+            items={items} 
+            onSelect={handleSelectContact} 
+            onCopy={handleCopyContact}
+            type="contacts"
+          />
         </div>
       </div>
 

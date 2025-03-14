@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface SearchBarProps {
   onSearch: (searchTerm: string, searchField: string) => void;
   isLoading?: boolean;
-  type?: "contacts" | "companies" | "bookings";
+  type?: "contacts" | "companies" | "bookings" | "hotels" | "stays";
 }
 
 export default function SearchBar({
@@ -37,11 +37,37 @@ export default function SearchBar({
     { value: "hotelConfirmationNo", label: "Confirmation No." },
   ] as const;
 
-  const searchableFields = type === "contacts" 
-    ? contactFields 
-    : type === "companies" 
-    ? companyFields
-    : bookingFields;
+  const hotelFields = [
+    { value: "name", label: "Name" },
+    { value: "address", label: "Address" },
+    { value: "city", label: "City" },
+    { value: "country", label: "Country" },
+    { value: "postal_code", label: "Postal Code" },
+    { value: "email", label: "Email" },
+    { value: "phone", label: "Phone" },
+  ] as const;
+
+  const stayFields = [
+    { value: "reference", label: "Reference" },
+    { value: "roomNumber", label: "Room Number" },
+    { value: "checkInDate", label: "Check-in Date" },
+    { value: "checkOutDate", label: "Check-out Date" },
+    { value: "status", label: "Status" },
+    { value: "guestName", label: "Guest Name" },
+  ] as const;
+
+  const getSearchableFields = () => {
+    switch(type) {
+      case "contacts": return contactFields;
+      case "companies": return companyFields;
+      case "bookings": return bookingFields;
+      case "hotels": return hotelFields;
+      case "stays": return stayFields;
+      default: return contactFields;
+    }
+  };
+
+  const searchableFields = getSearchableFields();
 
   const [searchField, setSearchField] = useState(searchableFields[0].value);
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,7 +78,7 @@ export default function SearchBar({
 
   // Reset search field when type changes
   useEffect(() => {
-    setSearchField(searchableFields[0].value);
+    setSearchField(getSearchableFields()[0].value);
   }, [type]);
 
   const handleSearch = () => {

@@ -5,7 +5,7 @@ import {
   createDocument,
   searchDocuments,
   updateDocument,
-  deleteDocument
+  deleteDocument,
 } from "@/app/actions/crudActions";
 
 interface RoleFilter {
@@ -40,16 +40,18 @@ function createDataContext(collectionName: string) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<Record<string, ChangeRecord>>({});
+    const [pendingChanges, setPendingChanges] = useState<
+      Record<string, ChangeRecord>
+    >({});
     const [roleFilter, setRoleFilterState] = useState<RoleFilter>({
       bookerChecked: false,
-      guestChecked: false
+      guestChecked: false,
     });
 
     const setRoleFilter = (filter: Partial<RoleFilter>) => {
-      setRoleFilterState(prev => ({
+      setRoleFilterState((prev) => ({
         ...prev,
-        ...filter
+        ...filter,
       }));
     };
 
@@ -67,19 +69,25 @@ function createDataContext(collectionName: string) {
           searchTerm,
           searchField
         );
-        
+
         // role filtering for contacts
         let filteredResults = [...results];
-        if (collectionName === "contacts" && (roleFilter.bookerChecked || roleFilter.guestChecked)) {
-          filteredResults = results.filter(item => {
+        if (
+          collectionName === "contacts" &&
+          (roleFilter.bookerChecked || roleFilter.guestChecked)
+        ) {
+          filteredResults = results.filter((item) => {
             const role = item.general?.role;
-            const includeBooker = roleFilter.bookerChecked && (role === "booker" || role === "both");
-            const includeGuest = roleFilter.guestChecked && (role === "guest" || role === "both");
+            const includeBooker =
+              roleFilter.bookerChecked &&
+              (role === "booker" || role === "both");
+            const includeGuest =
+              roleFilter.guestChecked && (role === "guest" || role === "both");
 
             return includeBooker || includeGuest;
           });
         }
-        
+
         setItems(filteredResults);
         setError(null);
       } catch (error) {
@@ -200,15 +208,12 @@ export const { DataProvider: ContactsProvider, useData: useContactsData } =
 
 export const { DataProvider: CompaniesProvider, useData: useCompaniesData } =
   createDataContext("companies");
-  
+
 export const { DataProvider: BookingsProvider, useData: useBookingsData } =
   createDataContext("bookings");
 
-// export const { DataProvider: VariableProvider, useData: useVariableData } =
-//   createDataContext("variables");
+export const { DataProvider: HotelsProvider, useData: useHotelsData } =
+  createDataContext("hotels");
 
-// export const { DataProvider: WoningenProvider, useData: useWoningenData } =
-//   createDataContext("woningen");
-
-// export const { DataProvider: TypesProvider, useData: useTypesData } =
-//   createDataContext("types");
+export const { DataProvider: StaysProvider, useData: useStaysData } =
+  createDataContext("stays");

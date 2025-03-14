@@ -25,6 +25,19 @@
       display: flex;
       flex-direction: column;
     }
+    &__copy-btn {
+      background-color: transparent;
+      border: 1px solid hsl(240 5.9% 90%);
+      color: hsl(240 5.9% 65%);
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.25rem;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+      &:hover {
+        background-color: hsl(240 5.9% 95%);
+        border-color: hsl(240 5.9% 80%);
+      }
+    }
     &__header {
       display: flex;
       justify-content: space-between;
@@ -34,19 +47,7 @@
         color: hsl(240 10% 3.9%);
       }
 
-      &-copy-btn {
-        background-color: transparent;
-        border: 1px solid hsl(240 5.9% 90%);
-        color: hsl(240 5.9% 65%);
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        transition: all 0.2s ease-in-out;
-        cursor: pointer;
-        &:hover {
-          background-color: hsl(240 5.9% 95%);
-          border-color: hsl(240 5.9% 80%);
-        }
-      }
+   
     }
     &__details {
       display: grid;

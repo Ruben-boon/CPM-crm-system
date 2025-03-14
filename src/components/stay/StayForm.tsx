@@ -1,14 +1,14 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit, Trash2 } from "lucide-react"; // Added Trash2 icon
+import { Save, X, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useContactsData } from "@/context/DataContext";
+import { useStaysData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
-import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
+import { DropdownField } from "../fields/DropdownField";
 
 //delete confirmation
 function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
@@ -18,7 +18,7 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
     <div className="delete-confirmation-overlay">
       <div className="delete-confirmation-dialog">
         <h3>Confirm Deletion</h3>
-        <p>Are you sure you want to delete {itemName || "this contact"}?</p>
+        <p>Are you sure you want to delete {itemName || "this stay"}?</p>
         <p className="warning-text">This action cannot be undone.</p>
         <div className="dialog-buttons">
           <Button intent="secondary" onClick={onClose}>
@@ -78,88 +78,97 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
   );
 }
 
-interface ContactFormData {
-  entityName: string;
-  entityLabel: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: string;
-  companyId: string;
+interface StayFormData {
+  reference: string;
+  bookingId: string;
+  guestId: string;
+  roomNumber: string;
+  roomType: string;
+  checkInDate: string;
+  checkOutDate: string;
+  status: string;
+  specialRequests: string;
 }
 
 interface FieldLoadingState {
-  companyId: boolean;
+  bookingId: boolean;
+  guestId: boolean;
 }
 
-const INITIAL_FORM_STATE: ContactFormData = {
-  entityName: "",
-  entityLabel: "",
-  title: "",
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  role: "",
-  companyId: "",
+const INITIAL_FORM_STATE: StayFormData = {
+  reference: "",
+  bookingId: "",
+  guestId: "",
+  roomNumber: "",
+  roomType: "",
+  checkInDate: "",
+  checkOutDate: "",
+  status: "",
+  specialRequests: ""
 };
 
 const INITIAL_LOADING_STATE: FieldLoadingState = {
-  companyId: false,
+  bookingId: false,
+  guestId: false
 };
 
-const OPTIONS = {
-  role: [
-    { value: "booker", label: "Booker" },
-    { value: "guest", label: "Guest" },
-  ],
-  title: [
-    { value: "mr", label: "Mr." },
-    { value: "ms", label: "Ms." },
-  ],
-};
+const STATUS_OPTIONS = [
+  { value: "confirmed", label: "Confirmed" },
+  { value: "checked_in", label: "Checked In" },
+  { value: "checked_out", label: "Checked Out" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "no_show", label: "No Show" }
+];
 
-export function ContactForm() {
+const ROOM_TYPE_OPTIONS = [
+  { value: "single", label: "Single" },
+  { value: "double", label: "Double" },
+  { value: "suite", label: "Suite" },
+  { value: "deluxe", label: "Deluxe" }
+];
+
+export function StayForm() {
   const {
     selectedItem,
     updateItem,
     createItem,
-    deleteItem, 
+    deleteItem,
     setIsEditing,
     isEditing,
     pendingChanges,
     setPendingChanges,
-  } = useContactsData();
+  } = useStaysData();
 
   const router = useRouter();
 
-  const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
+  const [formData, setFormData] = useState<StayFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
     INITIAL_LOADING_STATE
   );
-  const [isFormLoading, setIsFormLoading] = useState(true);
-
+  const [isFormLoading, setIsFormLoading] = useState(false);
+  
   // Add these for delete functionality
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Function to check if all reference fields are loaded
   const checkAllFieldsLoaded = () => {
-    const isCompanyLoaded = !formData.companyId || fieldsLoaded.companyId;
-    return isCompanyLoaded;
+    const isBookingLoaded = !formData.bookingId || fieldsLoaded.bookingId;
+    const isGuestLoaded = !formData.guestId || fieldsLoaded.guestId;
+    return isBookingLoaded && isGuestLoaded;
   };
 
   // Update form loading state when fields load status changes
   useEffect(() => {
-    const shouldShowLoading = formData.companyId && !fieldsLoaded.companyId;
+    const shouldShowLoading = 
+      (formData.bookingId && !fieldsLoaded.bookingId) || 
+      (formData.guestId && !fieldsLoaded.guestId);
     setIsFormLoading(shouldShowLoading);
-  }, [formData.companyId, fieldsLoaded.companyId]);
+  }, [formData.bookingId, formData.guestId, fieldsLoaded.bookingId, fieldsLoaded.guestId]);
 
-  // Load form data when selected item changes
+  // Load stay data when component mounts or selectedItem changes
   useEffect(() => {
     if (selectedItem) {
       setIsCreating(false);
@@ -169,86 +178,89 @@ export function ContactForm() {
       }
 
       setFieldsLoaded(INITIAL_LOADING_STATE);
-      setIsFormLoading(!!selectedItem.general?.companyId);
+      setIsFormLoading(!!selectedItem.bookingId || !!selectedItem.guestId);
 
+      // Set form data
       setFormData({
-        entityName: selectedItem.entityName || "",
-        entityLabel: selectedItem.entityLabel || "",
-        title: selectedItem.general?.title || "",
-        firstName: selectedItem.general?.firstName || "",
-        lastName: selectedItem.general?.lastName || "",
-        email: selectedItem.general?.email || "",
-        phone: selectedItem.general?.phone || "",
-        role: selectedItem.general?.role || "",
-        companyId: selectedItem.general?.companyId || "",
+        reference: selectedItem.reference || "",
+        bookingId: selectedItem.bookingId || "",
+        guestId: selectedItem.guestId || "",
+        roomNumber: selectedItem.roomNumber || "",
+        roomType: selectedItem.roomType || "",
+        checkInDate: selectedItem.checkInDate || "",
+        checkOutDate: selectedItem.checkOutDate || "",
+        status: selectedItem.status || "",
+        specialRequests: selectedItem.specialRequests || ""
       });
     }
   }, [selectedItem]);
 
   const handleChange = (
-    field: keyof ContactFormData,
+    field: keyof StayFormData,
     value: string | string[],
-    displayValue?: string | string[]
+    displayValue?: string
   ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-      ...(displayValue && field === "entityName"
-        ? { entityLabel: displayValue }
-        : {}),
     }));
 
-    if (field === "companyId") {
+    if (field === "bookingId") {
       setFieldsLoaded((prev) => ({
         ...prev,
-        companyId: false,
+        bookingId: false,
+      }));
+      setIsFormLoading(!!value);
+    } else if (field === "guestId") {
+      setFieldsLoaded((prev) => ({
+        ...prev,
+        guestId: false,
       }));
       setIsFormLoading(!!value);
     }
 
-    setPendingChanges((prev) => {
-      const oldValue =
-        field === "companyId" ||
-        field === "title" ||
-        field === "firstName" ||
-        field === "lastName" ||
-        field === "email" ||
-        field === "phone" ||
-        field === "role"
-          ? selectedItem?.general?.[field] || ""
-          : selectedItem?.[field] || "";
-
-      return {
-        ...prev,
-        [field]: {
-          oldValue,
-          newValue: value,
-        },
-      };
-    });
+    setPendingChanges((prev) => ({
+      ...prev,
+      [field]: {
+        oldValue: selectedItem?.[field] || "",
+        newValue: value,
+      },
+    }));
   };
 
-  const handleCompanyLoadComplete = (loaded: boolean, error?: string) => {
+  const handleBookingLoadComplete = (loaded: boolean, error?: string) => {
     if (error) {
-      console.error("Company field load error:", error);
-      toast.error(`Error loading company information`);
+      console.error("Booking field load error:", error);
+      toast.error(`Error loading booking information`);
     }
 
     setFieldsLoaded((prev) => ({
       ...prev,
-      companyId: loaded,
+      bookingId: loaded,
     }));
+  };
 
-    setIsFormLoading(false);
+  const handleGuestLoadComplete = (loaded: boolean, error?: string) => {
+    if (error) {
+      console.error("Guest field load error:", error);
+      toast.error(`Error loading guest information`);
+    }
+
+    setFieldsLoaded((prev) => ({
+      ...prev,
+      guestId: loaded,
+    }));
   };
 
   const handleClose = () => {
+    // Reset state
     setPendingChanges({});
     if (isEditing) {
       setIsEditing(false);
     }
 
-    router.push("/contacts");
+    // Navigate
+    router.push("/stays");
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -258,16 +270,7 @@ export function ContactForm() {
     try {
       const itemData = {
         ...selectedItem,
-        entityName: formData.entityName,
-        general: {
-          title: formData.title,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          companyId: formData.companyId,
-        },
+        ...formData,
       };
 
       const isUpdate = !!selectedItem?._id;
@@ -277,17 +280,18 @@ export function ContactForm() {
 
       if (success) {
         toast.success(
-          `Contact ${isUpdate ? "updated" : "created"} successfully`
+          `Stay ${isUpdate ? "updated" : "created"} successfully`
         );
         setIsEditing(false);
         setIsCreating(false);
         setPendingChanges({});
 
+        // For new stays, navigate to the detail view with the new ID
         if (!isUpdate && itemData._id) {
-          router.push(`/contacts/${itemData._id}`);
+          router.push(`/stays/${itemData._id}`);
         }
       } else {
-        toast.error(`Failed to ${isUpdate ? "update" : "create"} contact`);
+        toast.error(`Failed to ${isUpdate ? "update" : "create"} stay`);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -299,15 +303,15 @@ export function ContactForm() {
   const handleCancel = () => {
     if (selectedItem) {
       setFormData({
-        entityName: selectedItem.entityName || "",
-        entityLabel: selectedItem.entityLabel || "",
-        title: selectedItem.general?.title || "",
-        firstName: selectedItem.general?.firstName || "",
-        lastName: selectedItem.general?.lastName || "",
-        email: selectedItem.general?.email || "",
-        phone: selectedItem.general?.phone || "",
-        role: selectedItem.general?.role || "",
-        companyId: selectedItem.general?.companyId || "",
+        reference: selectedItem.reference || "",
+        bookingId: selectedItem.bookingId || "",
+        guestId: selectedItem.guestId || "",
+        roomNumber: selectedItem.roomNumber || "",
+        roomType: selectedItem.roomType || "",
+        checkInDate: selectedItem.checkInDate || "",
+        checkOutDate: selectedItem.checkOutDate || "",
+        status: selectedItem.status || "",
+        specialRequests: selectedItem.specialRequests || ""
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
@@ -317,7 +321,7 @@ export function ContactForm() {
     setIsCreating(false);
 
     if (isCreating) {
-      router.push("/contacts");
+      router.push("/stays");
     }
   };
 
@@ -351,10 +355,10 @@ export function ContactForm() {
       const success = await deleteItem(selectedItem._id);
       
       if (success) {
-        toast.success("Contact deleted successfully");
-        router.push("/contacts");
+        toast.success("Stay deleted successfully");
+        router.push("/stays");
       } else {
-        toast.error("Failed to delete contact");
+        toast.error("Failed to delete stay");
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -366,39 +370,36 @@ export function ContactForm() {
   };
 
   // Helper function to create field props
-  const fieldProps = (field: keyof ContactFormData, required = false) => ({
-    value: formData[field] as string,
+  const fieldProps = (field: keyof StayFormData, required = false) => ({
+    value: formData[field],
     onChange: (value: string) => handleChange(field, value),
     isEditing: isEditing || isCreating,
     className: pendingChanges[field] ? "field-changed" : "",
     required,
   });
 
-  // Get contact name for confirmation dialog
-  const contactName =
-    formData.firstName && formData.lastName
-      ? `${formData.firstName} ${formData.lastName}`
-      : "this contact";
+  // Get stay reference for confirmation dialog
+  const stayReference = formData.reference || "this stay";
 
   return (
     <div className="detail-wrapper">
       <LoadingSpinner isLoading={isFormLoading || isDeleting} />
-
+      
       {/* Add delete confirmation dialog */}
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirmation}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
-        itemName={contactName}
+        itemName={stayReference}
       />
-
+      
       <form
         onSubmit={handleSave}
-        className={`contact-form ${!isFormLoading ? "done-loading" : ""}`}
+        className={`stay-form ${!isFormLoading ? "done-loading" : ""}`}
       >
         <div className="top-bar">
           <div className="top-bar__title">
-            {selectedItem?._id ? "Contact Details" : "New Contact"}
+            {selectedItem?._id ? "Stay Details" : "New Stay"}
           </div>
           <div className="top-bar__edit">
             {!isEditing && selectedItem?._id && (
@@ -443,39 +444,65 @@ export function ContactForm() {
             )}
           </div>
         </div>
-        <div className="details-content">
+        <div className="detail-content">
           <div className="col-third">
-            <DropdownField
-              label="Title"
-              options={OPTIONS.title}
-              {...fieldProps("title")}
-            />
-            <TextField label="First Name" {...fieldProps("firstName", true)} />
-            <TextField label="Last Name" {...fieldProps("lastName", true)} />
-            <TextField label="E-mail" type="email" {...fieldProps("email")} />
-            <TextField label="Phone" type="tel" {...fieldProps("phone")} />
-            <DropdownField
-              label="Role"
-              options={OPTIONS.role}
-              {...fieldProps("role", true)}
-            />
+            <TextField label="Reference" {...fieldProps("reference", true)} />
             <RefField
-              label="Company"
-              value={formData.companyId}
+              label="Booking"
+              value={formData.bookingId}
               onChange={(value, displayValue) =>
-                handleChange("companyId", value, displayValue)
+                handleChange("bookingId", value, displayValue)
               }
               isEditing={isEditing || isCreating}
-              className={pendingChanges["companyId"] ? "field-changed" : ""}
-              collectionName="companies"
-              displayFields={["name"]}
-              onLoadComplete={handleCompanyLoadComplete}
+              className={pendingChanges["bookingId"] ? "field-changed" : ""}
+              collectionName="bookings"
+              displayFields={["hotelConfirmationNo", "arrivalDate"]}
+              onLoadComplete={handleBookingLoadComplete}
+            />
+            <RefField
+              label="Guest"
+              value={formData.guestId}
+              onChange={(value, displayValue) =>
+                handleChange("guestId", value, displayValue)
+              }
+              isEditing={isEditing || isCreating}
+              className={pendingChanges["guestId"] ? "field-changed" : ""}
+              collectionName="contacts"
+              displayFields={["general.firstName", "general.lastName"]}
+              onLoadComplete={handleGuestLoadComplete}
+            />
+            <TextField label="Room Number" {...fieldProps("roomNumber")} />
+            <DropdownField
+              label="Room Type"
+              options={ROOM_TYPE_OPTIONS}
+              {...fieldProps("roomType")}
+            />
+            <TextField 
+              label="Check-in Date" 
+              type="date" 
+              {...fieldProps("checkInDate", true)} 
+            />
+            <TextField 
+              label="Check-out Date" 
+              type="date" 
+              {...fieldProps("checkOutDate", true)} 
+            />
+            <DropdownField
+              label="Status"
+              options={STATUS_OPTIONS}
+              {...fieldProps("status", true)}
+            />
+            <TextField 
+              label="Special Requests" 
+              {...fieldProps("specialRequests")} 
             />
           </div>
-          <div className="col-third"></div>
+          <div className="col-third">
+            {/* You can add additional fields or sections here */}
+          </div>
         </div>
         <div className="bottom-bar">
-        {isEditing && !isCreating && selectedItem?._id && (
+          {isEditing && !isCreating && selectedItem?._id && (
             <Button
               intent="danger"
               icon={Trash2}
@@ -487,6 +514,14 @@ export function ContactForm() {
           )}
         </div>
       </form>
+
+      <style jsx>{`
+        .bottom-bar {
+          margin-top: 1.5rem;
+          display: flex;
+          justify-content: flex-start;
+        }
+      `}</style>
     </div>
   );
 }

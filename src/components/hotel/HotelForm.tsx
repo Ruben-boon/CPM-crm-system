@@ -1,14 +1,14 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit, Trash2 } from "lucide-react"; // Added Trash2 icon
+import { Save, X, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useContactsData } from "@/context/DataContext";
+import { useHotelsData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
-import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
+import { RelatedItems } from "../fields/RelatedItems";
 
 //delete confirmation
 function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
@@ -18,7 +18,7 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
     <div className="delete-confirmation-overlay">
       <div className="delete-confirmation-dialog">
         <h3>Confirm Deletion</h3>
-        <p>Are you sure you want to delete {itemName || "this contact"}?</p>
+        <p>Are you sure you want to delete {itemName || "this hotel"}?</p>
         <p className="warning-text">This action cannot be undone.</p>
         <div className="dialog-buttons">
           <Button intent="secondary" onClick={onClose}>
@@ -78,88 +78,52 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
   );
 }
 
-interface ContactFormData {
-  entityName: string;
-  entityLabel: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+interface HotelFormData {
+  name: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  country: string;
   phone: string;
-  role: string;
-  companyId: string;
+  email: string;
+  website: string;
 }
 
-interface FieldLoadingState {
-  companyId: boolean;
-}
-
-const INITIAL_FORM_STATE: ContactFormData = {
-  entityName: "",
-  entityLabel: "",
-  title: "",
-  firstName: "",
-  lastName: "",
-  email: "",
+const INITIAL_FORM_STATE: HotelFormData = {
+  name: "",
+  address: "",
+  postal_code: "",
+  city: "",
+  country: "",
   phone: "",
-  role: "",
-  companyId: "",
+  email: "",
+  website: ""
 };
 
-const INITIAL_LOADING_STATE: FieldLoadingState = {
-  companyId: false,
-};
-
-const OPTIONS = {
-  role: [
-    { value: "booker", label: "Booker" },
-    { value: "guest", label: "Guest" },
-  ],
-  title: [
-    { value: "mr", label: "Mr." },
-    { value: "ms", label: "Ms." },
-  ],
-};
-
-export function ContactForm() {
+export function HotelForm() {
   const {
     selectedItem,
     updateItem,
     createItem,
-    deleteItem, 
+    deleteItem,
     setIsEditing,
     isEditing,
     pendingChanges,
     setPendingChanges,
-  } = useContactsData();
+  } = useHotelsData();
 
   const router = useRouter();
 
-  const [formData, setFormData] = useState<ContactFormData>(INITIAL_FORM_STATE);
+  const [formData, setFormData] = useState<HotelFormData>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
-    INITIAL_LOADING_STATE
-  );
-  const [isFormLoading, setIsFormLoading] = useState(true);
-
+  const [isRelatedItemsLoading, setIsRelatedItemsLoading] = useState(false);
+  
   // Add these for delete functionality
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Function to check if all reference fields are loaded
-  const checkAllFieldsLoaded = () => {
-    const isCompanyLoaded = !formData.companyId || fieldsLoaded.companyId;
-    return isCompanyLoaded;
-  };
-
-  // Update form loading state when fields load status changes
-  useEffect(() => {
-    const shouldShowLoading = formData.companyId && !fieldsLoaded.companyId;
-    setIsFormLoading(shouldShowLoading);
-  }, [formData.companyId, fieldsLoaded.companyId]);
-
-  // Load form data when selected item changes
+  // Load hotel data when component mounts or selectedItem changes
   useEffect(() => {
     if (selectedItem) {
       setIsCreating(false);
@@ -168,87 +132,48 @@ export function ContactForm() {
         setIsEditing(true);
       }
 
-      setFieldsLoaded(INITIAL_LOADING_STATE);
-      setIsFormLoading(!!selectedItem.general?.companyId);
-
+      // Set form data
       setFormData({
-        entityName: selectedItem.entityName || "",
-        entityLabel: selectedItem.entityLabel || "",
-        title: selectedItem.general?.title || "",
-        firstName: selectedItem.general?.firstName || "",
-        lastName: selectedItem.general?.lastName || "",
-        email: selectedItem.general?.email || "",
-        phone: selectedItem.general?.phone || "",
-        role: selectedItem.general?.role || "",
-        companyId: selectedItem.general?.companyId || "",
+        name: selectedItem.name || "",
+        address: selectedItem.address || "",
+        postal_code: selectedItem.postal_code || "",
+        city: selectedItem.city || "",
+        country: selectedItem.country || "",
+        phone: selectedItem.phone || "",
+        email: selectedItem.email || "",
+        website: selectedItem.website || ""
       });
     }
   }, [selectedItem]);
 
   const handleChange = (
-    field: keyof ContactFormData,
+    field: keyof HotelFormData,
     value: string | string[],
-    displayValue?: string | string[]
+    displayValue?: string
   ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-      ...(displayValue && field === "entityName"
-        ? { entityLabel: displayValue }
-        : {}),
     }));
 
-    if (field === "companyId") {
-      setFieldsLoaded((prev) => ({
-        ...prev,
-        companyId: false,
-      }));
-      setIsFormLoading(!!value);
-    }
-
-    setPendingChanges((prev) => {
-      const oldValue =
-        field === "companyId" ||
-        field === "title" ||
-        field === "firstName" ||
-        field === "lastName" ||
-        field === "email" ||
-        field === "phone" ||
-        field === "role"
-          ? selectedItem?.general?.[field] || ""
-          : selectedItem?.[field] || "";
-
-      return {
-        ...prev,
-        [field]: {
-          oldValue,
-          newValue: value,
-        },
-      };
-    });
-  };
-
-  const handleCompanyLoadComplete = (loaded: boolean, error?: string) => {
-    if (error) {
-      console.error("Company field load error:", error);
-      toast.error(`Error loading company information`);
-    }
-
-    setFieldsLoaded((prev) => ({
+    setPendingChanges((prev) => ({
       ...prev,
-      companyId: loaded,
+      [field]: {
+        oldValue: selectedItem?.[field] || "",
+        newValue: value,
+      },
     }));
-
-    setIsFormLoading(false);
   };
 
   const handleClose = () => {
+    // Reset state
     setPendingChanges({});
     if (isEditing) {
       setIsEditing(false);
     }
 
-    router.push("/contacts");
+    // Navigate
+    router.push("/hotels");
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -258,16 +183,7 @@ export function ContactForm() {
     try {
       const itemData = {
         ...selectedItem,
-        entityName: formData.entityName,
-        general: {
-          title: formData.title,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          companyId: formData.companyId,
-        },
+        ...formData,
       };
 
       const isUpdate = !!selectedItem?._id;
@@ -277,17 +193,18 @@ export function ContactForm() {
 
       if (success) {
         toast.success(
-          `Contact ${isUpdate ? "updated" : "created"} successfully`
+          `Hotel ${isUpdate ? "updated" : "created"} successfully`
         );
         setIsEditing(false);
         setIsCreating(false);
         setPendingChanges({});
 
+        // For new hotels, navigate to the detail view with the new ID
         if (!isUpdate && itemData._id) {
-          router.push(`/contacts/${itemData._id}`);
+          router.push(`/hotels/${itemData._id}`);
         }
       } else {
-        toast.error(`Failed to ${isUpdate ? "update" : "create"} contact`);
+        toast.error(`Failed to ${isUpdate ? "update" : "create"} hotel`);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -299,15 +216,14 @@ export function ContactForm() {
   const handleCancel = () => {
     if (selectedItem) {
       setFormData({
-        entityName: selectedItem.entityName || "",
-        entityLabel: selectedItem.entityLabel || "",
-        title: selectedItem.general?.title || "",
-        firstName: selectedItem.general?.firstName || "",
-        lastName: selectedItem.general?.lastName || "",
-        email: selectedItem.general?.email || "",
-        phone: selectedItem.general?.phone || "",
-        role: selectedItem.general?.role || "",
-        companyId: selectedItem.general?.companyId || "",
+        name: selectedItem.name || "",
+        address: selectedItem.address || "",
+        postal_code: selectedItem.postal_code || "",
+        city: selectedItem.city || "",
+        country: selectedItem.country || "",
+        phone: selectedItem.phone || "",
+        email: selectedItem.email || "",
+        website: selectedItem.website || ""
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
@@ -317,7 +233,7 @@ export function ContactForm() {
     setIsCreating(false);
 
     if (isCreating) {
-      router.push("/contacts");
+      router.push("/hotels");
     }
   };
 
@@ -351,10 +267,10 @@ export function ContactForm() {
       const success = await deleteItem(selectedItem._id);
       
       if (success) {
-        toast.success("Contact deleted successfully");
-        router.push("/contacts");
+        toast.success("Hotel deleted successfully");
+        router.push("/hotels");
       } else {
-        toast.error("Failed to delete contact");
+        toast.error("Failed to delete hotel");
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -365,40 +281,40 @@ export function ContactForm() {
     }
   };
 
+  // Handle navigation to related items
+  const handleRelationClick = (itemId: string, collection: string) => {
+    router.push(`/${collection}/${itemId}`);
+  };
+
   // Helper function to create field props
-  const fieldProps = (field: keyof ContactFormData, required = false) => ({
-    value: formData[field] as string,
+  const fieldProps = (field: keyof HotelFormData, required = false) => ({
+    value: formData[field],
     onChange: (value: string) => handleChange(field, value),
     isEditing: isEditing || isCreating,
     className: pendingChanges[field] ? "field-changed" : "",
     required,
   });
 
-  // Get contact name for confirmation dialog
-  const contactName =
-    formData.firstName && formData.lastName
-      ? `${formData.firstName} ${formData.lastName}`
-      : "this contact";
+  // Get hotel name for confirmation dialog
+  const hotelName = formData.name || "this hotel";
 
   return (
     <div className="detail-wrapper">
-      <LoadingSpinner isLoading={isFormLoading || isDeleting} />
-
+      {!isEditing && <LoadingSpinner isLoading={isRelatedItemsLoading} />}
+      <LoadingSpinner isLoading={isDeleting} />
+      
       {/* Add delete confirmation dialog */}
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirmation}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
-        itemName={contactName}
+        itemName={hotelName}
       />
-
-      <form
-        onSubmit={handleSave}
-        className={`contact-form ${!isFormLoading ? "done-loading" : ""}`}
-      >
+      
+      <form onSubmit={handleSave} className="hotel-form">
         <div className="top-bar">
           <div className="top-bar__title">
-            {selectedItem?._id ? "Contact Details" : "New Contact"}
+            {selectedItem?._id ? "Hotel Details" : "New Hotel"}
           </div>
           <div className="top-bar__edit">
             {!isEditing && selectedItem?._id && (
@@ -432,9 +348,7 @@ export function ContactForm() {
                   type="submit"
                   disabled={
                     isSubmitting ||
-                    (!isCreating && Object.keys(pendingChanges).length === 0) ||
-                    isFormLoading ||
-                    !checkAllFieldsLoaded()
+                    (!isCreating && Object.keys(pendingChanges).length === 0) 
                   }
                 >
                   Save
@@ -443,39 +357,42 @@ export function ContactForm() {
             )}
           </div>
         </div>
-        <div className="details-content">
+        <div className="detail-content">
           <div className="col-third">
-            <DropdownField
-              label="Title"
-              options={OPTIONS.title}
-              {...fieldProps("title")}
-            />
-            <TextField label="First Name" {...fieldProps("firstName", true)} />
-            <TextField label="Last Name" {...fieldProps("lastName", true)} />
-            <TextField label="E-mail" type="email" {...fieldProps("email")} />
-            <TextField label="Phone" type="tel" {...fieldProps("phone")} />
-            <DropdownField
-              label="Role"
-              options={OPTIONS.role}
-              {...fieldProps("role", true)}
-            />
-            <RefField
-              label="Company"
-              value={formData.companyId}
-              onChange={(value, displayValue) =>
-                handleChange("companyId", value, displayValue)
-              }
-              isEditing={isEditing || isCreating}
-              className={pendingChanges["companyId"] ? "field-changed" : ""}
-              collectionName="companies"
-              displayFields={["name"]}
-              onLoadComplete={handleCompanyLoadComplete}
-            />
+            <TextField label="Name" {...fieldProps("name", true)} />
+            <TextField label="Address" {...fieldProps("address")} />
+            <TextField label="Postal Code" {...fieldProps("postal_code")} />
+            <TextField label="City" {...fieldProps("city")} />
+            <TextField label="Country" {...fieldProps("country")} />
+            <TextField label="Phone" {...fieldProps("phone")} />
+            <TextField label="Email" type="email" {...fieldProps("email")} />
+            <TextField label="Website" {...fieldProps("website")} />
+
+            {/* Related bookings - only show when there's a hotel selected and we're not creating a new one */}
+            {selectedItem?._id && !isCreating && (
+              <div className="related-section">
+                <RelatedItems
+                  id={selectedItem._id}
+                  referenceField="hotelId"
+                  collectionName="bookings"
+                  displayFields={[
+                    { path: "hotelConfirmationNo" }, 
+                    { path: "arrivalDate", label: "Arrival" }
+                  ]}
+                  title="Bookings"
+                  emptyMessage="No bookings found for this hotel"
+                  onItemClick={handleRelationClick}
+                  onLoadingChange={(loading) => setIsRelatedItemsLoading(loading)}
+                />
+              </div>
+            )}
           </div>
-          <div className="col-third"></div>
+          <div className="col-third">
+            {/* You can add additional fields or sections here */}
+          </div>
         </div>
         <div className="bottom-bar">
-        {isEditing && !isCreating && selectedItem?._id && (
+          {isEditing && !isCreating && selectedItem?._id && (
             <Button
               intent="danger"
               icon={Trash2}
@@ -487,6 +404,17 @@ export function ContactForm() {
           )}
         </div>
       </form>
+
+      <style jsx>{`
+        .related-section {
+          margin-top: 2rem;
+        }
+        .bottom-bar {
+          margin-top: 1.5rem;
+          display: flex;
+          justify-content: flex-start;
+        }
+      `}</style>
     </div>
   );
 }

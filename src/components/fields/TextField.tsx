@@ -4,11 +4,11 @@ interface TextFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: "text" | "email" | "number" | "tel";
+  type?: "text" | "email" | "number" | "tel" | "date";
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
-  className?: string; // Add className to props
+  className?: string;
 }
 
 export function TextField({
@@ -19,7 +19,7 @@ export function TextField({
   required = false,
   disabled,
   isEditing,
-  className = "", // Default to empty string
+  className = "",
 }: TextFieldProps) {
   return (
     <div className="form-field">
@@ -32,15 +32,18 @@ export function TextField({
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
-          className={`input-base ${className}`} // Combine with existing class
+          onKeyDown={(e) => type !== "date" && e.key === "Enter" && e.preventDefault()}
+          className={`input-base ${className}`}
           required={required}
           disabled={disabled}
           autoFocus={isEditing}
         />
       ) : (
-        <input disabled value={value} className={`input-base ${className}`}>
-        </input>
+        <input 
+          disabled 
+          value={type === "date" && value ? new Date(value).toLocaleDateString() : value} 
+          className={`input-base ${className}`}
+        />
       )}
     </div>
   );

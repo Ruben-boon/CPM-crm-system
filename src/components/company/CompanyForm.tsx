@@ -1,6 +1,6 @@
 "use client";
 import Button from "@/components/common/Button";
-import { Save, X, Edit } from "lucide-react";
+import { Save, X, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCompaniesData } from "@/context/DataContext";
 import { toast } from "sonner";
@@ -9,6 +9,74 @@ import { RefField } from "../fields/RefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
 import { RelatedItems } from "../fields/RelatedItems";
+
+//delete confirmation
+function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="delete-confirmation-overlay">
+      <div className="delete-confirmation-dialog">
+        <h3>Confirm Deletion</h3>
+        <p>Are you sure you want to delete {itemName || "this company"}?</p>
+        <p className="warning-text">This action cannot be undone.</p>
+        <div className="dialog-buttons">
+          <Button intent="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button intent="danger" onClick={onConfirm}>
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .delete-confirmation-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .delete-confirmation-dialog {
+          background-color: white;
+          border-radius: 8px;
+          padding: 24px;
+          width: 400px;
+          max-width: 90vw;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        h3 {
+          margin-top: 0;
+          margin-bottom: 16px;
+          font-size: 18px;
+        }
+
+        p {
+          margin-bottom: 16px;
+        }
+
+        .warning-text {
+          color: #e11d48;
+          font-weight: 500;
+        }
+
+        .dialog-buttons {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 interface CompanyFormData {
   name: string;
@@ -41,6 +109,7 @@ export function CompanyForm() {
     selectedItem,
     updateItem,
     createItem,
+    deleteItem,
     setIsEditing,
     isEditing,
     pendingChanges,
@@ -53,7 +122,10 @@ export function CompanyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isRelatedItemsLoading, setIsRelatedItemsLoading] = useState(false);
-
+  
+  // Add these for delete functionality
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
 
   // Load company data when component mounts or selectedItem changes
@@ -166,12 +238,54 @@ export function CompanyForm() {
     }
   };
 
+  const handleDeleteClick = (e) => {
+    // If there's an event, prevent default behavior (like form submission)
+    if (e) e.preventDefault();
+    
+    // Cancel editing mode first to avoid update conflict
+    if (isEditing) {
+      setIsEditing(false);
+      setPendingChanges({});
+    }
+    
+    // Show confirmation dialog
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmation(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedItem?._id) {
+      toast.error("No item selected to delete");
+      setShowDeleteConfirmation(false);
+      return;
+    }
+  
+    setIsDeleting(true);
+    try {
+      const success = await deleteItem(selectedItem._id);
+      
+      if (success) {
+        toast.success("Company deleted successfully");
+        router.push("/companies");
+      } else {
+        toast.error("Failed to delete company");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("An unexpected error occurred during deletion");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
   // Handle navigation to child company
   const handleRelationClick = (companyId: string, collection:string) => {
     router.push(`/${collection}/${companyId}`);
   };
-
-
 
   // Helper function to create field props
   const fieldProps = (field: keyof CompanyFormData, required = false) => ({
@@ -182,9 +296,22 @@ export function CompanyForm() {
     required,
   });
 
+  // Get company name for confirmation dialog
+  const companyName = formData.name || "this company";
+
   return (
     <div className="detail-wrapper">
       {!isEditing && <LoadingSpinner isLoading={isRelatedItemsLoading} />}
+      <LoadingSpinner isLoading={isDeleting} />
+      
+      {/* Add delete confirmation dialog */}
+      <DeleteConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        itemName={companyName}
+      />
+      
     {/* this is reallllly janky atm if you double click it get stuck for example make this better */}
       <form onSubmit={handleSave} className="company-form">
         <div className="top-bar">
@@ -286,11 +413,28 @@ export function CompanyForm() {
             {/* You can add additional fields or sections here */}
           </div>
         </div>
+        <div className="bottom-bar">
+          {isEditing && !isCreating && selectedItem?._id && (
+            <Button
+              intent="danger"
+              icon={Trash2}
+              onClick={handleDeleteClick}
+              disabled={isDeleting}
+            >
+              Delete
+            </Button>
+          )}
+        </div>
       </form>
 
       <style jsx>{`
         .related-section {
           margin-top: 2rem;
+        }
+        .bottom-bar {
+          margin-top: 1.5rem;
+          display: flex;
+          justify-content: flex-start;
         }
       `}</style>
     </div>
