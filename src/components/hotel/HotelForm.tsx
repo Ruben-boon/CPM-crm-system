@@ -5,10 +5,10 @@ import { useState, useEffect } from "react";
 import { useHotelsData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
-import { RefField } from "../fields/RefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
 import { RelatedItems } from "../fields/RelatedItems";
+import { MultiTextField } from "../fields/MultiTextFields";
 
 //delete confirmation
 function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
@@ -84,9 +84,7 @@ interface HotelFormData {
   postal_code: string;
   city: string;
   country: string;
-  phone: string;
-  email: string;
-  website: string;
+  roomTypes: string[];
 }
 
 const INITIAL_FORM_STATE: HotelFormData = {
@@ -95,9 +93,7 @@ const INITIAL_FORM_STATE: HotelFormData = {
   postal_code: "",
   city: "",
   country: "",
-  phone: "",
-  email: "",
-  website: ""
+  roomTypes: []
 };
 
 export function HotelForm() {
@@ -139,9 +135,7 @@ export function HotelForm() {
         postal_code: selectedItem.postal_code || "",
         city: selectedItem.city || "",
         country: selectedItem.country || "",
-        phone: selectedItem.phone || "",
-        email: selectedItem.email || "",
-        website: selectedItem.website || ""
+        roomTypes: selectedItem.roomTypes || [],
       });
     }
   }, [selectedItem]);
@@ -221,9 +215,7 @@ export function HotelForm() {
         postal_code: selectedItem.postal_code || "",
         city: selectedItem.city || "",
         country: selectedItem.country || "",
-        phone: selectedItem.phone || "",
-        email: selectedItem.email || "",
-        website: selectedItem.website || ""
+        roomTypes: selectedItem.roomTypes || []
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
@@ -289,7 +281,7 @@ export function HotelForm() {
   // Helper function to create field props
   const fieldProps = (field: keyof HotelFormData, required = false) => ({
     value: formData[field],
-    onChange: (value: string) => handleChange(field, value),
+    onChange: (value: string | string[]) => handleChange(field, value),
     isEditing: isEditing || isCreating,
     className: pendingChanges[field] ? "field-changed" : "",
     required,
@@ -364,9 +356,11 @@ export function HotelForm() {
             <TextField label="Postal Code" {...fieldProps("postal_code")} />
             <TextField label="City" {...fieldProps("city")} />
             <TextField label="Country" {...fieldProps("country")} />
-            <TextField label="Phone" {...fieldProps("phone")} />
-            <TextField label="Email" type="email" {...fieldProps("email")} />
-            <TextField label="Website" {...fieldProps("website")} />
+            <MultiTextField
+              label="Room Types" 
+              {...fieldProps("roomTypes")} 
+              placeholder="Add a room type..."
+            />
 
             {/* Related bookings - only show when there's a hotel selected and we're not creating a new one */}
             {selectedItem?._id && !isCreating && (

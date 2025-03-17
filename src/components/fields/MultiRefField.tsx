@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Plus } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
+import Button from "@/components/common/Button";
+import { QuickAddContactModal } from "../hotel/QuickAddContactModal";
 
 interface MultiRefFieldProps {
   label: string;
@@ -13,6 +15,7 @@ interface MultiRefFieldProps {
   collectionName: string;
   displayFields?: string[];
   selectedLabels?: string[];
+  showQuickAdd?: boolean; // New prop to control quick add button visibility
 }
 
 interface SearchResult {
@@ -31,12 +34,16 @@ export function MultiRefField({
   collectionName,
   displayFields = ["name"],
   selectedLabels = [],
+  showQuickAdd = false, // Default to false
 }: MultiRefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [displayValues, setDisplayValues] = useState<string[]>(selectedLabels);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // State for quick add modal
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
   // Load reference details when value changes or component mounts
   useEffect(() => {
@@ -148,6 +155,22 @@ export function MultiRefField({
     onChange(newValue, newDisplayValues);
   };
 
+  // Handler for quick add modal
+  const handleQuickAddToggle = () => {
+    setIsQuickAddOpen(!isQuickAddOpen);
+  };
+
+  const handleContactCreated = (contactId: string, displayName: string) => {
+    // Add the newly created contact to the selection
+    const newValue = [...value, contactId];
+    const newDisplayValues = [...displayValues, displayName];
+    setDisplayValues(newDisplayValues);
+    onChange(newValue, newDisplayValues);
+  };
+
+  // Only show quick add for contacts collection
+  const shouldShowQuickAdd = showQuickAdd && collectionName === "contacts" && isEditing;
+
   return (
     <div className="ref-field multi-ref-field">
       <label className="field-label">
@@ -172,15 +195,31 @@ export function MultiRefField({
               ))}
             </div>
             <div className="search-container">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className={`search-input ${className}`}
-                placeholder="Search..."
-                disabled={disabled}
-              />
-              <Search className="search-icon" />
+              <div className="search-input-container">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className={`search-input ${className}`}
+                  placeholder="Search..."
+                  disabled={disabled}
+                />
+                <Search className="search-icon" />
+                
+                {shouldShowQuickAdd && (
+                  <Button 
+                    type="button"
+                    size="sm"
+                    intent="secondary"
+                    icon={Plus} 
+                    onClick={handleQuickAddToggle}
+                    className="quick-add-button"
+                  >
+                    Add New
+                  </Button>
+                )}
+              </div>
+              
               {isSearching && results.length > 0 && (
                 <div className="search-results">
                   {results.map((result) => (
@@ -213,6 +252,31 @@ export function MultiRefField({
           </div>
         )}
       </div>
+
+      {/* Quick Add Contact Modal */}
+      {isQuickAddOpen && (
+        <QuickAddContactModal
+          isOpen={isQuickAddOpen}
+          onClose={handleQuickAddToggle}
+          onContactCreated={handleContactCreated}
+        />
+      )}
+
+      <style jsx>{`
+        .search-input-container {
+          display: flex;
+          gap: 8px;
+          width: 100%;
+        }
+
+        .search-input {
+          flex: 1;
+        }
+
+        .quick-add-button {
+          white-space: nowrap;
+        }
+      `}</style>
     </div>
   );
 }

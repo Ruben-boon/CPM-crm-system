@@ -35,6 +35,9 @@ export function RefField({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const prevValueRef = useRef<string>(value);
   const loadCompleteCalledRef = useRef<boolean>(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+  const retryDelay = process.env.NODE_ENV === 'production' ? 1000 : 0;
 
   // Reset the load complete flag when value changes
   useEffect(() => {
@@ -42,75 +45,80 @@ export function RefField({
     if (value !== prevValueRef.current) {
       loadCompleteCalledRef.current = false;
       setDisplayValue("");
+      setRetryCount(0);
       prevValueRef.current = value;
     }
   }, [value]);
-  
-  // Fetch and display name when value changes
-  useEffect(() => {
-    async function fetchDisplayName() {
-      // Skip if we already have a display value for this ID
-      if (value && displayValue && value === prevValueRef.current) {
-        if (!loadCompleteCalledRef.current) {
-          loadCompleteCalledRef.current = true;
-          onLoadComplete?.(true);
-        }
-        setIsLoading(false);
-        return;
+
+  // Define fetchDisplayName at the component level so it's accessible everywhere
+  async function fetchDisplayName() {
+    // Skip if we already have a display value for this ID
+    if (value && displayValue && value === prevValueRef.current) {
+      if (!loadCompleteCalledRef.current) {
+        loadCompleteCalledRef.current = true;
+        onLoadComplete?.(true);
+      }
+      setIsLoading(false);
+      return;
+    }
+    
+    // Reset display value if no ID
+    if (!value) {
+      setIsLoading(false);
+      
+      // Only signal complete if we haven't already for this value
+      if (!loadCompleteCalledRef.current) {
+        loadCompleteCalledRef.current = true;
+        onLoadComplete?.(true);
+      }
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await searchDocuments(collectionName, value, "_id");
+      const parsedResults = typeof response === "string" ? JSON.parse(response) : response;
+      const resultArray = Array.isArray(parsedResults) ? parsedResults : [];
+      
+      // Only proceed if this is still the current value
+      if (value !== prevValueRef.current) return;
+      
+      if (resultArray.length > 0) {
+        // Get display string from fields
+        const display = displayFields
+          .map(field => {
+            const parts = field.split(".");
+            let val = resultArray[0];
+            for (const part of parts) {
+              val = val?.[part];
+              if (val === undefined) break;
+            }
+            return val;
+          })
+          .filter(Boolean)
+          .join(" ");
+          
+        setDisplayValue(display);
+      } else {
+        setDisplayValue("");
       }
       
-      // Reset display value if no ID
-      if (!value) {
-        setIsLoading(false);
-        
-        // Only signal complete if we haven't already for this value
-        if (!loadCompleteCalledRef.current) {
-          loadCompleteCalledRef.current = true;
-          onLoadComplete?.(true);
-        }
-        return;
+      // Signal load complete only once per value
+      if (!loadCompleteCalledRef.current) {
+        loadCompleteCalledRef.current = true;
+        onLoadComplete?.(true);
       }
-
-      try {
-        setIsLoading(true);
-        const response = await searchDocuments(collectionName, value, "_id");
-        const parsedResults = typeof response === "string" ? JSON.parse(response) : response;
-        const resultArray = Array.isArray(parsedResults) ? parsedResults : [];
+    } catch (error) {
+      console.error(`Failed to load ${collectionName} details:`, error);
+      
+      // Only handle error for current value
+      if (value === prevValueRef.current) {
+        // Increase retry count but don't set displayValue yet to allow retries
+        setRetryCount(prev => prev + 1);
         
-        // Only proceed if this is still the current value
-        if (value !== prevValueRef.current) return;
-        
-        if (resultArray.length > 0) {
-          // Get display string from fields
-          const display = displayFields
-            .map(field => {
-              const parts = field.split(".");
-              let val = resultArray[0];
-              for (const part of parts) {
-                val = val?.[part];
-                if (val === undefined) break;
-              }
-              return val;
-            })
-            .filter(Boolean)
-            .join(" ");
-            
-          setDisplayValue(display);
-        } else {
-          setDisplayValue("");
-        }
-        
-        // Signal load complete only once per value
-        if (!loadCompleteCalledRef.current) {
-          loadCompleteCalledRef.current = true;
-          onLoadComplete?.(true);
-        }
-      } catch (error) {
-        console.error(`Failed to load ${collectionName} details:`, error);
-        
-        // Only handle error for current value
-        if (value === prevValueRef.current) {
-          setDisplayValue("");
+        // Only on final retry, set a display value
+        if (retryCount >= MAX_RETRIES - 1) {
+          setDisplayValue(`[Unable to load ${collectionName}]`);
           
           // Signal load error only once per value
           if (!loadCompleteCalledRef.current) {
@@ -118,23 +126,32 @@ export function RefField({
             onLoadComplete?.(false, `Failed to load ${collectionName} details`);
           }
         }
-      } finally {
-        // Only update loading state if this is for the current value
-        if (value === prevValueRef.current) {
-          setIsLoading(false);
-        }
+      }
+    } finally {
+      // Only update loading state if this is for the current value
+      if (value === prevValueRef.current) {
+        setIsLoading(false);
       }
     }
+  }
 
-    // Only fetch if we have a value and haven't already completed loading for this value
+  // Single effect for loading with retry logic
+  useEffect(() => {
     if (value && !loadCompleteCalledRef.current) {
-      fetchDisplayName();
+      const timeoutId = setTimeout(() => {
+        fetchDisplayName().catch((error) => {
+          console.error("Error in fetchDisplayName:", error);
+          // Retry logic is handled inside fetchDisplayName
+        });
+      }, retryCount * retryDelay);
+      
+      return () => clearTimeout(timeoutId);
     } else if (!value && !loadCompleteCalledRef.current) {
       // For empty values, signal complete immediately
       loadCompleteCalledRef.current = true;
       onLoadComplete?.(true);
     }
-  }, [value, collectionName, displayFields, onLoadComplete, displayValue]);
+  }, [value, retryCount, collectionName, displayFields, onLoadComplete]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -246,7 +263,7 @@ export function RefField({
       <div className="ref-field-container" ref={dropdownRef}>
         {value ? (
           <div className="selected-value-container">
-            <div className={`selected-value ${className}`}>
+            <div className={`selected-value ${displayValue && displayValue.startsWith("[Unable") ? "error-value" : ""} ${className}`}>
               {isLoading ? "Loading..." : displayValue || "-"}
             </div>
             <button

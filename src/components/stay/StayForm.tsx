@@ -6,9 +6,11 @@ import { useStaysData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
 import { RefField } from "../fields/RefField";
+import { MultiRefField } from "../fields/MultiRefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
 import { DropdownField } from "../fields/DropdownField";
+import { searchDocuments } from "@/app/actions/crudActions";
 
 //delete confirmation
 function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
@@ -81,9 +83,12 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
 interface StayFormData {
   reference: string;
   bookingId: string;
-  guestId: string;
+  guestIds: string[];
+  hotelId: string;
   roomNumber: string;
   roomType: string;
+  roomPrice: string;
+  roomNotes: string;
   checkInDate: string;
   checkOutDate: string;
   status: string;
@@ -92,15 +97,19 @@ interface StayFormData {
 
 interface FieldLoadingState {
   bookingId: boolean;
-  guestId: boolean;
+  guestIds: boolean;
+  hotelId: boolean;
 }
 
 const INITIAL_FORM_STATE: StayFormData = {
   reference: "",
   bookingId: "",
-  guestId: "",
+  guestIds: [],
+  hotelId: "",
   roomNumber: "",
   roomType: "",
+  roomPrice: "",
+  roomNotes: "",
   checkInDate: "",
   checkOutDate: "",
   status: "",
@@ -109,7 +118,8 @@ const INITIAL_FORM_STATE: StayFormData = {
 
 const INITIAL_LOADING_STATE: FieldLoadingState = {
   bookingId: false,
-  guestId: false
+  guestIds: false,
+  hotelId: false
 };
 
 const STATUS_OPTIONS = [
@@ -120,7 +130,8 @@ const STATUS_OPTIONS = [
   { value: "no_show", label: "No Show" }
 ];
 
-const ROOM_TYPE_OPTIONS = [
+// Fallback room types if hotel doesn't have any defined
+const DEFAULT_ROOM_TYPE_OPTIONS = [
   { value: "single", label: "Single" },
   { value: "double", label: "Double" },
   { value: "suite", label: "Suite" },
@@ -152,21 +163,87 @@ export function StayForm() {
   // Add these for delete functionality
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Room types from the selected hotel
+  const [roomTypeOptions, setRoomTypeOptions] = useState(DEFAULT_ROOM_TYPE_OPTIONS);
+  const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
 
   // Function to check if all reference fields are loaded
   const checkAllFieldsLoaded = () => {
     const isBookingLoaded = !formData.bookingId || fieldsLoaded.bookingId;
-    const isGuestLoaded = !formData.guestId || fieldsLoaded.guestId;
-    return isBookingLoaded && isGuestLoaded;
+    const isGuestLoaded = !formData.guestIds.length || fieldsLoaded.guestIds;
+    const isHotelLoaded = !formData.hotelId || fieldsLoaded.hotelId;
+    return isBookingLoaded && isGuestLoaded && isHotelLoaded;
   };
 
-  // Update form loading state when fields load status changes
+  // Update form loading state when fields load status changes - more restrictive
   useEffect(() => {
+    // Only consider reference fields that actually require loading
     const shouldShowLoading = 
       (formData.bookingId && !fieldsLoaded.bookingId) || 
-      (formData.guestId && !fieldsLoaded.guestId);
-    setIsFormLoading(shouldShowLoading);
-  }, [formData.bookingId, formData.guestId, fieldsLoaded.bookingId, fieldsLoaded.guestId]);
+      (formData.hotelId && !fieldsLoaded.hotelId);
+    
+    // Only set loading state for actual loading operations, not text field edits
+    setIsFormLoading(shouldShowLoading || loadingRoomTypes);
+  }, [
+    // Only dependencies related to loading states, not all form values
+    fieldsLoaded.bookingId, fieldsLoaded.hotelId,
+    loadingRoomTypes,
+    // Only include formData fields that are reference fields
+    formData.bookingId, formData.hotelId
+    // Removed guestIds since MultiRefField handles its own loading
+  ]);
+
+  // Load room types from the selected hotel
+  useEffect(() => {
+    const fetchRoomTypes = async () => {
+      if (!formData.hotelId) {
+        setRoomTypeOptions(DEFAULT_ROOM_TYPE_OPTIONS);
+        return;
+      }
+
+      try {
+        setLoadingRoomTypes(true);
+        const result = await searchDocuments("hotels", formData.hotelId, "_id");
+        
+        if (Array.isArray(result) && result.length > 0 && result[0].roomTypes?.length > 0) {
+          // Convert hotel roomTypes array to dropdown options format
+          const hotelRoomTypes = result[0].roomTypes.map(type => ({
+            value: type,
+            label: type
+          }));
+          setRoomTypeOptions(hotelRoomTypes);
+          
+          // If current roomType is not in the new options list, clear it
+          if (formData.roomType && !result[0].roomTypes.includes(formData.roomType)) {
+            setFormData(prev => ({
+              ...prev,
+              roomType: ""
+            }));
+            
+            // Also update pendingChanges if needed
+            if (pendingChanges["roomType"]) {
+              setPendingChanges(prev => {
+                const updated = { ...prev };
+                delete updated["roomType"];
+                return updated;
+              });
+            }
+          }
+        } else {
+          setRoomTypeOptions(DEFAULT_ROOM_TYPE_OPTIONS);
+        }
+      } catch (error) {
+        console.error("Error loading room types:", error);
+        toast.error("Could not load room types from the selected hotel");
+        setRoomTypeOptions(DEFAULT_ROOM_TYPE_OPTIONS);
+      } finally {
+        setLoadingRoomTypes(false);
+      }
+    };
+
+    fetchRoomTypes();
+  }, [formData.hotelId]); // Remove pendingChanges from dependency
 
   // Load stay data when component mounts or selectedItem changes
   useEffect(() => {
@@ -178,15 +255,20 @@ export function StayForm() {
       }
 
       setFieldsLoaded(INITIAL_LOADING_STATE);
-      setIsFormLoading(!!selectedItem.bookingId || !!selectedItem.guestId);
+      setIsFormLoading(!!selectedItem.bookingId || !!selectedItem.guestId || !!selectedItem.hotelId);
 
+      // Set form data
+      // Set form data
       // Set form data
       setFormData({
         reference: selectedItem.reference || "",
         bookingId: selectedItem.bookingId || "",
-        guestId: selectedItem.guestId || "",
+        guestIds: selectedItem.guestIds || [],
+        hotelId: selectedItem.hotelId || "",
         roomNumber: selectedItem.roomNumber || "",
         roomType: selectedItem.roomType || "",
+        roomPrice: selectedItem.roomPrice || "",
+        roomNotes: selectedItem.roomNotes || "",
         checkInDate: selectedItem.checkInDate || "",
         checkOutDate: selectedItem.checkOutDate || "",
         status: selectedItem.status || "",
@@ -195,6 +277,7 @@ export function StayForm() {
     }
   }, [selectedItem]);
 
+  // Update the pendingChanges to include displayValues for array fields
   const handleChange = (
     field: keyof StayFormData,
     value: string | string[],
@@ -205,27 +288,49 @@ export function StayForm() {
       [field]: value,
     }));
 
-    if (field === "bookingId") {
-      setFieldsLoaded((prev) => ({
-        ...prev,
-        bookingId: false,
-      }));
-      setIsFormLoading(!!value);
-    } else if (field === "guestId") {
-      setFieldsLoaded((prev) => ({
-        ...prev,
-        guestId: false,
-      }));
-      setIsFormLoading(!!value);
+    // Only set loading states for reference fields that need to fetch data
+    // This prevents loading screen from appearing when typing in regular text fields
+    const refFields = ["bookingId", "guestIds", "hotelId"];
+    
+    if (refFields.includes(field as string)) {
+      if (field === "bookingId") {
+        setFieldsLoaded((prev) => ({
+          ...prev,
+          bookingId: false,
+        }));
+        setIsFormLoading(!!value);
+      } else if (field === "guestIds") {
+        // For guestIds, we'll handle loading in the onChange callback of MultiRefField
+        // so we don't need to set loading state here
+        // The MultiRefField handles its own loading state internally
+      } else if (field === "hotelId") {
+        setFieldsLoaded((prev) => ({
+          ...prev,
+          hotelId: false,
+        }));
+        setIsFormLoading(!!value);
+      }
     }
 
-    setPendingChanges((prev) => ({
-      ...prev,
-      [field]: {
-        oldValue: selectedItem?.[field] || "",
-        newValue: value,
-      },
-    }));
+    // For array fields like guestIds, store both the array value and display values
+    if (field === "guestIds" && displayValue) {
+      setPendingChanges((prev) => ({
+        ...prev,
+        [field]: {
+          oldValue: selectedItem?.[field] || [],
+          newValue: value,
+          displayValues: displayValue.split(", ") // Convert back to array for selectedLabels
+        },
+      }));
+    } else {
+      setPendingChanges((prev) => ({
+        ...prev,
+        [field]: {
+          oldValue: selectedItem?.[field] || (field === "guestIds" ? [] : ""),
+          newValue: value,
+        },
+      }));
+    }
   };
 
   const handleBookingLoadComplete = (loaded: boolean, error?: string) => {
@@ -248,7 +353,19 @@ export function StayForm() {
 
     setFieldsLoaded((prev) => ({
       ...prev,
-      guestId: loaded,
+      guestIds: loaded,
+    }));
+  };
+
+  const handleHotelLoadComplete = (loaded: boolean, error?: string) => {
+    if (error) {
+      console.error("Hotel field load error:", error);
+      toast.error(`Error loading hotel information`);
+    }
+
+    setFieldsLoaded((prev) => ({
+      ...prev,
+      hotelId: loaded,
     }));
   };
 
@@ -305,9 +422,12 @@ export function StayForm() {
       setFormData({
         reference: selectedItem.reference || "",
         bookingId: selectedItem.bookingId || "",
-        guestId: selectedItem.guestId || "",
+        guestIds: selectedItem.guestIds || [],
+        hotelId: selectedItem.hotelId || "",
         roomNumber: selectedItem.roomNumber || "",
         roomType: selectedItem.roomType || "",
+        roomPrice: selectedItem.roomPrice || "",
+        roomNotes: selectedItem.roomNotes || "",
         checkInDate: selectedItem.checkInDate || "",
         checkOutDate: selectedItem.checkOutDate || "",
         status: selectedItem.status || "",
@@ -319,6 +439,7 @@ export function StayForm() {
     setPendingChanges({});
     setIsEditing(false);
     setIsCreating(false);
+    setIsFormLoading(false); // Ensure loading is explicitly cleared
 
     if (isCreating) {
       router.push("/stays");
@@ -459,23 +580,52 @@ export function StayForm() {
               displayFields={["hotelConfirmationNo", "arrivalDate"]}
               onLoadComplete={handleBookingLoadComplete}
             />
-            <RefField
-              label="Guest"
-              value={formData.guestId}
-              onChange={(value, displayValue) =>
-                handleChange("guestId", value, displayValue)
-              }
+            <MultiRefField
+              label="Guests"
+              value={formData.guestIds}
+              onChange={(value, displayValues) => {
+                handleChange("guestIds", value, displayValues?.join(", "));
+                // Immediately set as loaded since MultiRefField handles its own loading
+                setFieldsLoaded(prev => ({
+                  ...prev,
+                  guestIds: true
+                }));
+              }}
               isEditing={isEditing || isCreating}
-              className={pendingChanges["guestId"] ? "field-changed" : ""}
+              className={pendingChanges["guestIds"] ? "field-changed" : ""}
               collectionName="contacts"
               displayFields={["general.firstName", "general.lastName"]}
-              onLoadComplete={handleGuestLoadComplete}
+              selectedLabels={formData.guestIds.length > 0 ? pendingChanges["guestIds"]?.displayValues || [] : []}
+              showQuickAdd={true} // Enable quick add functionality
             />
-            <TextField label="Room Number" {...fieldProps("roomNumber")} />
+            {/* <TextField label="Room Number" {...fieldProps("roomNumber")} /> */}
+            <RefField
+              label="Hotel"
+              value={formData.hotelId}
+              onChange={(value, displayValue) =>
+                handleChange("hotelId", value, displayValue)
+              }
+              isEditing={isEditing || isCreating}
+              className={pendingChanges["hotelId"] ? "field-changed" : ""}
+              collectionName="hotels"
+              displayFields={["name", "address"]}
+              onLoadComplete={handleHotelLoadComplete}
+            />
             <DropdownField
               label="Room Type"
-              options={ROOM_TYPE_OPTIONS}
+              options={roomTypeOptions}
               {...fieldProps("roomType")}
+              placeholder={loadingRoomTypes ? "Loading room types..." : "Select a room type"}
+              disabled={loadingRoomTypes || !formData.hotelId}
+            />
+            <TextField 
+              label="Room Price" 
+              type="number" 
+              {...fieldProps("roomPrice")} 
+            />
+            <TextField 
+              label="Room Notes" 
+              {...fieldProps("roomNotes")} 
             />
             <TextField 
               label="Check-in Date" 
