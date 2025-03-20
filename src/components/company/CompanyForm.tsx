@@ -360,7 +360,7 @@ export function CompanyForm() {
           </div>
         </div>
         <div className="detail-content">
-          <div className="col-third">
+          <div className="col-half">
             <TextField label="Name" {...fieldProps("name", true)} />
             <TextField label="Address" {...fieldProps("address")} />
             <TextField label="Postal Code" {...fieldProps("postal_code")} />
@@ -409,7 +409,7 @@ export function CompanyForm() {
               </div>
             )}
           </div>
-          <div className="col-third">
+          <div className="col-half">
             {/* You can add additional fields or sections here */}
           </div>
         </div>

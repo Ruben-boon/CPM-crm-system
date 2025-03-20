@@ -6,39 +6,43 @@ interface Option {
 }
 
 interface DropdownFieldProps {
-  label: string;
-  value?: string; // Make optional
+  label?: string; // Make label optional
+  value?: string;
   onChange: (value: string) => void;
   options: Option[];
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
   placeholder?: string;
-  className?: string; // Add className support
+  className?: string;
+  compact?: boolean; // Add a compact mode for smaller dropdowns
 }
 
 export function DropdownField({
   label,
-  value = "", // Default to empty string
+  value = "",
   onChange,
   options,
   required = false,
   disabled,
   isEditing,
   placeholder = "Select an option",
-  className = "", // Default to empty string
+  className = "",
+  compact = false,
 }: DropdownFieldProps) {
   return (
-    <div className="form-field">
-      <label className="field-label">
-        {label}
-        {isEditing && required && <span className="required-mark"> *</span>}
-      </label>
+    <div className={`form-field ${compact ? 'form-field-compact' : ''}`}>
+      {label && ( // Only render label if provided
+        <label className="field-label">
+          {label}
+          {isEditing && required && <span className="required-mark"> *</span>}
+        </label>
+      )}
       {isEditing ? (
         <select
-          value={value} // No need for value || "" since we default to "" 
+          value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`input-base input-style ${className}`} // Add className support
+          className={`input-base input-style ${className} ${compact ? 'input-compact' : ''}`}
           required={required}
           disabled={disabled}
         >
@@ -55,7 +59,7 @@ export function DropdownField({
         <input 
           disabled 
           value={options.find(opt => opt.value === value)?.label || ""} 
-          className={`input-base ${className}`} // Add className support
+          className={`input-base ${className} ${compact ? 'input-compact' : ''}`}
         />
       )}
     </div>

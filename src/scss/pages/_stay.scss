@@ -1,0 +1,21 @@
+.bottom-bar {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-start;
+  }
+  .currency-group {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    .grouper {
+        display: flex;
+        width:178px;
+        .form-field{
+            gap:4px;
+        }
+        input, select {
+            width:100%!important;
+        }
+    }
+  }

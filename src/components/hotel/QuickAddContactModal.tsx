@@ -20,6 +20,7 @@ interface QuickContactFormData {
   lastName: string;
   email: string;
   phone: string;
+  remarks: string;
 }
 
 const INITIAL_FORM_STATE: QuickContactFormData = {
@@ -28,6 +29,7 @@ const INITIAL_FORM_STATE: QuickContactFormData = {
   lastName: "",
   email: "",
   phone: "",
+  remarks: "",
 };
 
 const TITLE_OPTIONS = [
@@ -66,6 +68,7 @@ export function QuickAddContactModal({
           lastName: formData.lastName,
           email: formData.email,
           phone: formData.phone,
+          remarks: formData.remarks,
           role: "guest", // Default role as guest
         },
       };
@@ -130,6 +133,13 @@ export function QuickAddContactModal({
           <TextField label="Last Name" {...fieldProps("lastName", true)} isEditing={true} />
           <TextField label="Email" type="email" {...fieldProps("email")} isEditing={true} />
           <TextField label="Phone" type="tel" {...fieldProps("phone")} isEditing={true} />
+          <TextField 
+            label="Remarks" 
+            multiline 
+            rows={3} 
+            {...fieldProps("remarks")} 
+            isEditing={true} 
+          />
         </div>
 
         <div className="quick-add-form-actions">

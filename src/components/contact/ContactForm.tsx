@@ -88,6 +88,7 @@ interface ContactFormData {
   phone: string;
   role: string;
   companyId: string;
+  remarks: string;
 }
 
 interface FieldLoadingState {
@@ -104,6 +105,7 @@ const INITIAL_FORM_STATE: ContactFormData = {
   phone: "",
   role: "",
   companyId: "",
+  remarks: "",
 };
 
 const INITIAL_LOADING_STATE: FieldLoadingState = {
@@ -181,6 +183,7 @@ export function ContactForm() {
         phone: selectedItem.general?.phone || "",
         role: selectedItem.general?.role || "",
         companyId: selectedItem.general?.companyId || "",
+        remarks: selectedItem.general?.remarks || "",
       });
     }
   }, [selectedItem]);
@@ -214,7 +217,8 @@ export function ContactForm() {
         field === "lastName" ||
         field === "email" ||
         field === "phone" ||
-        field === "role"
+        field === "role" ||
+        field === "remarks"
           ? selectedItem?.general?.[field] || ""
           : selectedItem?.[field] || "";
 
@@ -267,6 +271,7 @@ export function ContactForm() {
           phone: formData.phone,
           role: formData.role,
           companyId: formData.companyId,
+          remarks: formData.remarks,
         },
       };
 
@@ -308,6 +313,7 @@ export function ContactForm() {
         phone: selectedItem.general?.phone || "",
         role: selectedItem.general?.role || "",
         companyId: selectedItem.general?.companyId || "",
+        remarks: selectedItem.general?.remarks || "",
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
@@ -444,7 +450,7 @@ export function ContactForm() {
           </div>
         </div>
         <div className="details-content">
-          <div className="col-third">
+          <div className="col-half">
             <DropdownField
               label="Title"
               options={OPTIONS.title}
@@ -472,7 +478,14 @@ export function ContactForm() {
               onLoadComplete={handleCompanyLoadComplete}
             />
           </div>
-          <div className="col-third"></div>
+          <div className="col-half">
+            <TextField 
+              label="Remarks" 
+              multiline 
+              rows={4} 
+              {...fieldProps("remarks")} 
+            />
+          </div>
         </div>
         <div className="bottom-bar">
         {isEditing && !isCreating && selectedItem?._id && (

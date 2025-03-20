@@ -350,7 +350,7 @@ export function HotelForm() {
           </div>
         </div>
         <div className="detail-content">
-          <div className="col-third">
+          <div className="col-half">
             <TextField label="Name" {...fieldProps("name", true)} />
             <TextField label="Address" {...fieldProps("address")} />
             <TextField label="Postal Code" {...fieldProps("postal_code")} />
@@ -362,26 +362,8 @@ export function HotelForm() {
               placeholder="Add a room type..."
             />
 
-            {/* Related bookings - only show when there's a hotel selected and we're not creating a new one */}
-            {selectedItem?._id && !isCreating && (
-              <div className="related-section">
-                <RelatedItems
-                  id={selectedItem._id}
-                  referenceField="hotelId"
-                  collectionName="bookings"
-                  displayFields={[
-                    { path: "hotelConfirmationNo" }, 
-                    { path: "arrivalDate", label: "Arrival" }
-                  ]}
-                  title="Bookings"
-                  emptyMessage="No bookings found for this hotel"
-                  onItemClick={handleRelationClick}
-                  onLoadingChange={(loading) => setIsRelatedItemsLoading(loading)}
-                />
-              </div>
-            )}
           </div>
-          <div className="col-third">
+          <div className="col-half">
             {/* You can add additional fields or sections here */}
           </div>
         </div>
