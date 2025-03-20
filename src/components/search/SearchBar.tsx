@@ -31,10 +31,13 @@ export default function SearchBar({
   ] as const;
 
   const bookingFields = [
-    { value: "hotelName", label: "Hotel Name" },
-    { value: "bookerName", label: "Booker Name" },
-    { value: "arrivalDate", label: "Arrival Date" },
-    { value: "hotelConfirmationNo", label: "Confirmation No." },
+    { value: "confirmationNo", label: "Confirmation No." },
+    { value: "travelPeriodStart", label: "Travel Start" },
+    { value: "travelPeriodEnd", label: "Travel End" },
+    { value: "companyName", label: "Company" },
+    { value: "bookerName", label: "Booker" },
+    { value: "status", label: "Status" },
+    { value: "costCentre", label: "Cost Centre" },
   ] as const;
 
   const hotelFields = [

@@ -33,9 +33,11 @@ const formatDate = (dateString: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case "confirmed": return "Confirmed";
+    case "pending": return "Pending";
+    case "cancelled": return "Cancelled";
+    case "completed": return "Completed";
     case "checked_in": return "Checked In";
     case "checked_out": return "Checked Out";
-    case "cancelled": return "Cancelled";
     case "no_show": return "No Show";
     default: return status || "-";
   }
@@ -74,7 +76,9 @@ export default function SearchResults({ items, onSelect, onCopy, type = "contact
                   ? `${item.name}`
                   : type === "stays"
                   ? `${item.reference || "Stay"} - ${item.roomNumber || "No Room"}`
-                  : `${item.hotelConfirmationNo} - ${new Date(item.arrivalDate).toLocaleDateString()}`}
+                  : type === "bookings"
+                  ? `${item.confirmationNo || "Booking"} - ${formatDate(item.travelPeriodStart)}`
+                  : `Unknown item type`}
               </div>
               {onCopy && (
                 <button 
@@ -134,20 +138,25 @@ export default function SearchResults({ items, onSelect, onCopy, type = "contact
                     </div>
                   )}
                 </>
-              ) : (
+              ) : type === "bookings" ? (
                 <>
+                  {item.companyName && (
+                    <div className="search-results__details-section">
+                      <dd>Company: {item.companyName}</dd>
+                    </div>
+                  )}
                   {item.bookerName && (
                     <div className="search-results__details-section">
                       <dd>Booker: {item.bookerName}</dd>
                     </div>
                   )}
-                  {item.nights && (
+                  {item.status && (
                     <div className="search-results__details-section">
-                      <dd>Nights: {item.nights}</dd>
+                      <dd>Status: {getStatusLabel(item.status)}</dd>
                     </div>
                   )}
                 </>
-              )}
+              ) : null}
             </dl>
           </div>
         </li>
