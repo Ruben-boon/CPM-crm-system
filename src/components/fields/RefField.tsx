@@ -13,6 +13,8 @@ interface RefFieldProps {
   collectionName: string;
   displayFields?: string[];
   onLoadComplete?: (loaded: boolean, error?: string) => void;
+  allowClear?: boolean; // New prop to control whether clearing is allowed
+  selectedLabel?: string; // Optional prop for pre-filled display value
 }
 
 export function RefField({
@@ -26,11 +28,13 @@ export function RefField({
   collectionName,
   displayFields = ["name"],
   onLoadComplete,
+  allowClear = false, // Default to false for backward compatibility
+  selectedLabel,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<any[]>([]);
-  const [displayValue, setDisplayValue] = useState("");
+  const [displayValue, setDisplayValue] = useState(selectedLabel || "");
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const prevValueRef = useRef<string>(value);
@@ -44,11 +48,11 @@ export function RefField({
     // Value has changed, we're starting a new load cycle
     if (value !== prevValueRef.current) {
       loadCompleteCalledRef.current = false;
-      setDisplayValue("");
+      setDisplayValue(selectedLabel || "");
       setRetryCount(0);
       prevValueRef.current = value;
     }
-  }, [value]);
+  }, [value, selectedLabel]);
 
   // Define fetchDisplayName at the component level so it's accessible everywhere
   async function fetchDisplayName() {
@@ -266,14 +270,17 @@ export function RefField({
             <div className={`selected-value ${displayValue && displayValue.startsWith("[Unable") ? "error-value" : ""} ${className}`}>
               {isLoading ? "Loading..." : displayValue || "-"}
             </div>
-            <button
-              type="button"
-              className="clear-button"
-              onClick={handleClear}
-              aria-label="Clear selection"
-            >
-              <X size={16} />
-            </button>
+            {/* Only show clear button if allowClear is true */}
+            {allowClear && (
+              <button
+                type="button"
+                className="clear-button"
+                onClick={handleClear}
+                aria-label="Clear selection"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         ) : (
           <div className="search-container">

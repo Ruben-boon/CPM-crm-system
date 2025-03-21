@@ -5,11 +5,11 @@ import { useState, useEffect } from "react";
 import { useStaysData } from "@/context/DataContext";
 import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
+import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { MultiRefField } from "../fields/MultiRefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
-import { DropdownField } from "../fields/DropdownField";
 import { searchDocuments } from "@/app/actions/crudActions";
 
 //delete confirmation
@@ -83,8 +83,11 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
 interface StayFormData {
   reference: string;
   bookingId: string;
+  bookingReference: string;
   guestIds: string[];
+  guestNames: string[];
   hotelId: string;
+  hotelName: string;
   roomNumber: string;
   roomType: string;
   roomPrice: string;
@@ -108,8 +111,11 @@ interface FieldLoadingState {
 const INITIAL_FORM_STATE: StayFormData = {
   reference: "",
   bookingId: "",
+  bookingReference: "",
   guestIds: [],
+  guestNames: [],
   hotelId: "",
+  hotelName: "",
   roomNumber: "",
   roomType: "",
   roomPrice: "",
@@ -122,6 +128,12 @@ const INITIAL_FORM_STATE: StayFormData = {
   paymentInstructions: "",
   cancellations: "",
   roomCurrency: "EUR",
+};
+
+const INITIAL_LOADING_STATE: FieldLoadingState = {
+  bookingId: false,
+  guestIds: false,
+  hotelId: false,
 };
 
 const CURRENCY_OPTIONS = [
@@ -151,12 +163,6 @@ const CANCELLATION_OPTIONS = [
     label: "72h",
   },
 ];
-
-const INITIAL_LOADING_STATE: FieldLoadingState = {
-  bookingId: false,
-  guestIds: false,
-  hotelId: false,
-};
 
 // First, add the payment instruction options
 const PAYMENT_INSTRUCTION_OPTIONS = [
@@ -349,8 +355,11 @@ export function StayForm() {
       setFormData({
         reference: selectedItem.reference || "",
         bookingId: selectedItem.bookingId || "",
+        bookingReference: selectedItem.bookingReference || "",
         guestIds: selectedItem.guestIds || [],
+        guestNames: selectedItem.guestNames || [],
         hotelId: selectedItem.hotelId || "",
+        hotelName: selectedItem.hotelName || "",
         roomNumber: selectedItem.roomNumber || "",
         roomType: selectedItem.roomType || "",
         roomPrice: selectedItem.roomPrice || "",
@@ -371,11 +380,20 @@ export function StayForm() {
   const handleChange = (
     field: keyof StayFormData,
     value: string | string[],
-    displayValue?: string
+    displayValue?: string | string[]
   ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
+      ...(displayValue && field === "bookingId"
+        ? { bookingReference: displayValue }
+        : {}),
+      ...(displayValue && field === "hotelId"
+        ? { hotelName: displayValue }
+        : {}),
+      ...(displayValue && field === "guestIds"
+        ? { guestNames: displayValue }
+        : {}),
     }));
 
     // Only set loading states for reference fields that need to fetch data
@@ -423,29 +441,17 @@ export function StayForm() {
     }
   };
 
-  // const handleBookingLoadComplete = (loaded: boolean, error?: string) => {
-  //   if (error) {
-  //     console.error("Booking field load error:", error);
-  //     toast.error(`Error loading booking information`);
-  //   }
+  const handleBookingLoadComplete = (loaded: boolean, error?: string) => {
+    if (error) {
+      console.error("Booking field load error:", error);
+      toast.error(`Error loading booking information`);
+    }
 
-  //   setFieldsLoaded((prev) => ({
-  //     ...prev,
-  //     bookingId: loaded,
-  //   }));
-  // };
-
-  // const handleGuestLoadComplete = (loaded: boolean, error?: string) => {
-  //   if (error) {
-  //     console.error("Guest field load error:", error);
-  //     toast.error(`Error loading guest information`);
-  //   }
-
-  //   setFieldsLoaded((prev) => ({
-  //     ...prev,
-  //     guestIds: loaded,
-  //   }));
-  // };
+    setFieldsLoaded((prev) => ({
+      ...prev,
+      bookingId: loaded,
+    }));
+  };
 
   const handleHotelLoadComplete = (loaded: boolean, error?: string) => {
     if (error) {
@@ -510,8 +516,11 @@ export function StayForm() {
       setFormData({
         reference: selectedItem.reference || "",
         bookingId: selectedItem.bookingId || "",
+        bookingReference: selectedItem.bookingReference || "",
         guestIds: selectedItem.guestIds || [],
+        guestNames: selectedItem.guestNames || [],
         hotelId: selectedItem.hotelId || "",
+        hotelName: selectedItem.hotelName || "",
         roomNumber: selectedItem.roomNumber || "",
         roomType: selectedItem.roomType || "",
         roomPrice: selectedItem.roomPrice || "",
@@ -523,6 +532,7 @@ export function StayForm() {
         remarks: selectedItem.remarks || "",
         paymentInstructions: selectedItem.paymentInstructions || "",
         cancellations: selectedItem.cancellations || "",
+        roomCurrency: selectedItem.roomCurrency || "EUR",
       });
     } else {
       setFormData(INITIAL_FORM_STATE);
@@ -659,27 +669,31 @@ export function StayForm() {
         <div className="detail-content">
           <div className="col-half">
             <TextField
-              label="Check-in"
+              label="Check-in Date"
               type="date"
               {...fieldProps("checkInDate", true)}
             />
             <TextField
-              label="Check-out"
+              label="Check-out Date"
               type="date"
               {...fieldProps("checkOutDate", true)}
             />
 
-            {/* <DropdownField
-              label="Status"
-              options={STATUS_OPTIONS}
-              {...fieldProps("status", true)}
-            /> */}
-            {/* <TextField
-              label="Special Requests"
-              {...fieldProps("specialRequests")}
-            /> */}
+            <RefField
+              label="Booking"
+              value={formData.bookingId}
+              onChange={(value, displayValue) =>
+                handleChange("bookingId", value, displayValue)
+              }
+              isEditing={isEditing || isCreating}
+              className={pendingChanges["bookingId"] ? "field-changed" : ""}
+              collectionName="bookings"
+              displayFields={["confirmationNo"]}
+              onLoadComplete={handleBookingLoadComplete}
+              allowClear={true} // Enable clearing the booking reference
+              selectedLabel={formData.bookingReference}
+            />
 
-            {/* <TextField label="Room Number" {...fieldProps("roomNumber")} /> */}
             <MultiRefField
               label="Guests"
               value={formData.guestIds}
@@ -694,7 +708,11 @@ export function StayForm() {
               isEditing={isEditing || isCreating}
               className={pendingChanges["guestIds"] ? "field-changed" : ""}
               collectionName="contacts"
-              displayFields={["general.firstName", "general.lastName", "general.remarks"]}
+              displayFields={[
+                "general.firstName",
+                "general.lastName",
+                "general.remarks",
+              ]}
               selectedLabels={
                 formData.guestIds.length > 0
                   ? pendingChanges["guestIds"]?.displayValues || []
@@ -770,8 +788,17 @@ export function StayForm() {
                 />
               </div>
             </div>
+            <TextField label="Room Number" {...fieldProps("roomNumber")} />
             <TextField label="Room Notes" {...fieldProps("roomNotes")} />
-            {/* Add the new fields to the second column */}
+            <DropdownField
+              label="Status"
+              options={STATUS_OPTIONS}
+              {...fieldProps("status")}
+            />
+            <TextField
+              label="Special Requests"
+              {...fieldProps("specialRequests")}
+            />
           </div>
         </div>
         <div className="bottom-bar">
@@ -787,6 +814,17 @@ export function StayForm() {
           )}
         </div>
       </form>
+
+      <style jsx>{`
+        .related-section {
+          margin-top: 2rem;
+        }
+        .bottom-bar {
+          margin-top: 1.5rem;
+          display: flex;
+          justify-content: flex-start;
+        }
+      `}</style>
     </div>
   );
 }

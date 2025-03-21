@@ -7,11 +7,11 @@ import { toast } from "sonner";
 import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
-import { MultiRefField } from "../fields/MultiRefField";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
+import { RelatedStays } from "./RelatedStays";
 
-//delete confirmation
+// Delete confirmation dialog
 function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, itemName }) {
   if (!isOpen) return null;
 
@@ -91,8 +91,8 @@ interface BookingFormData {
   companyName: string;
   bookerId: string;
   bookerName: string;
-  stayIds: string[];
-  stayNames: string[];
+  stayIds: string[]; // Array of stay references
+  stayNames: string[]; // Array of stay display names
 }
 
 interface FieldLoadingState {
@@ -102,7 +102,7 @@ interface FieldLoadingState {
 
 const INITIAL_FORM_STATE: BookingFormData = {
   confirmationNo: "",
-  confirmationDate: new Date().toISOString().split('T')[0],
+  confirmationDate: new Date().toISOString().split("T")[0],
   travelPeriodStart: "",
   travelPeriodEnd: "",
   costCentre: "",
@@ -156,6 +156,9 @@ export function BookingForm() {
   );
   const [isFormLoading, setIsFormLoading] = useState(true);
 
+  // State to determine if related stays should be shown
+  const [showRelatedStays, setShowRelatedStays] = useState(false);
+
   // Add these for delete functionality
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -169,19 +172,31 @@ export function BookingForm() {
 
   // Update form loading state when fields load status changes
   useEffect(() => {
-    const shouldShowLoading = 
-      (formData.companyId && !fieldsLoaded.companyId) || 
+    const shouldShowLoading =
+      (formData.companyId && !fieldsLoaded.companyId) ||
       (formData.bookerId && !fieldsLoaded.bookerId);
     setIsFormLoading(shouldShowLoading);
-  }, [formData.companyId, formData.bookerId, fieldsLoaded.companyId, fieldsLoaded.bookerId]);
+  }, [
+    formData.companyId,
+    formData.bookerId,
+    fieldsLoaded.companyId,
+    fieldsLoaded.bookerId,
+  ]);
+
+  // Show related stays only when booking has an ID (i.e., it's been saved)
+  useEffect(() => {
+    setShowRelatedStays(!!selectedItem?._id);
+  }, [selectedItem]);
 
   // Calculate days between travel period dates
   useEffect(() => {
     if (formData.travelPeriodStart && formData.travelPeriodEnd) {
       const start = new Date(formData.travelPeriodStart);
       const end = new Date(formData.travelPeriodEnd);
-      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      
+      const days = Math.ceil(
+        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
       // You could add this to form data if needed
       // setFormData(prev => ({
       //   ...prev,
@@ -205,7 +220,9 @@ export function BookingForm() {
       // Set form data from selected item
       setFormData({
         confirmationNo: selectedItem.confirmationNo || "",
-        confirmationDate: selectedItem.confirmationDate || new Date().toISOString().split('T')[0],
+        confirmationDate:
+          selectedItem.confirmationDate ||
+          new Date().toISOString().split("T")[0],
         travelPeriodStart: selectedItem.travelPeriodStart || "",
         travelPeriodEnd: selectedItem.travelPeriodEnd || "",
         costCentre: selectedItem.costCentre || "",
@@ -229,9 +246,12 @@ export function BookingForm() {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-      ...(displayValue && field === "companyId" ? { companyName: displayValue } : {}),
-      ...(displayValue && field === "bookerId" ? { bookerName: displayValue } : {}),
-      ...(displayValue && field === "stayIds" ? { stayNames: displayValue } : {}),
+      ...(displayValue && field === "companyId"
+        ? { companyName: displayValue }
+        : {}),
+      ...(displayValue && field === "bookerId"
+        ? { bookerName: displayValue }
+        : {}),
     }));
 
     if (field === "companyId") {
@@ -281,6 +301,40 @@ export function BookingForm() {
     }));
   };
 
+  const handleStaysChange = (newStayIds: string[], stayDetails: any[]) => {
+    // Update the stayIds array
+    setFormData((prev) => ({
+      ...prev,
+      stayIds: newStayIds,
+      // Extract display names from the stay details
+      stayNames: stayDetails.map((stay) => {
+        let name = "";
+        if (stay.checkInDate) {
+          name += new Date(stay.checkInDate).toLocaleDateString();
+          if (stay.checkOutDate) {
+            name += ` - ${new Date(stay.checkOutDate).toLocaleDateString()}`;
+          }
+        }
+        if (stay.hotelName) {
+          name += ` at ${stay.hotelName}`;
+        }
+        if (stay.roomNumber) {
+          name += ` (Room ${stay.roomNumber})`;
+        }
+        return name.trim() || `Stay ${stay._id.slice(-6)}`;
+      }),
+    }));
+
+    // Update pendingChanges
+    setPendingChanges((prev) => ({
+      ...prev,
+      stayIds: {
+        oldValue: selectedItem?.stayIds || [],
+        newValue: newStayIds,
+      },
+    }));
+  };
+
   const handleClose = () => {
     // Reset state
     setPendingChanges({});
@@ -308,10 +362,15 @@ export function BookingForm() {
         : await createItem(itemData);
 
       if (success) {
-        toast.success(`Booking ${isUpdate ? "updated" : "created"} successfully`);
+        toast.success(
+          `Booking ${isUpdate ? "updated" : "created"} successfully`
+        );
         setIsEditing(false);
         setIsCreating(false);
         setPendingChanges({});
+
+        // Enable the related stays section after save
+        setShowRelatedStays(true);
 
         // For new bookings, navigate to the detail view with the new ID
         if (!isUpdate && itemData._id) {
@@ -331,7 +390,9 @@ export function BookingForm() {
     if (selectedItem) {
       setFormData({
         confirmationNo: selectedItem.confirmationNo || "",
-        confirmationDate: selectedItem.confirmationDate || new Date().toISOString().split('T')[0],
+        confirmationDate:
+          selectedItem.confirmationDate ||
+          new Date().toISOString().split("T")[0],
         travelPeriodStart: selectedItem.travelPeriodStart || "",
         travelPeriodEnd: selectedItem.travelPeriodEnd || "",
         costCentre: selectedItem.costCentre || "",
@@ -359,13 +420,13 @@ export function BookingForm() {
   const handleDeleteClick = (e) => {
     // If there's an event, prevent default behavior (like form submission)
     if (e) e.preventDefault();
-    
+
     // Cancel editing mode first to avoid update conflict
     if (isEditing) {
       setIsEditing(false);
       setPendingChanges({});
     }
-    
+
     // Show confirmation dialog
     setShowDeleteConfirmation(true);
   };
@@ -380,11 +441,11 @@ export function BookingForm() {
       setShowDeleteConfirmation(false);
       return;
     }
-  
+
     setIsDeleting(true);
     try {
       const success = await deleteItem(selectedItem._id);
-      
+
       if (success) {
         toast.success("Booking deleted successfully");
         router.push("/bookings");
@@ -477,10 +538,25 @@ export function BookingForm() {
         </div>
         <div className="detail-content">
           <div className="col-half">
-            <TextField label="Confirmation No." {...fieldProps("confirmationNo", true)} />
-            <TextField label="Confirmation Date" type="date" {...fieldProps("confirmationDate")} />
-            <TextField label="Travel Period Start" type="date" {...fieldProps("travelPeriodStart", true)} />
-            <TextField label="Travel Period End" type="date" {...fieldProps("travelPeriodEnd", true)} />
+            <TextField
+              label="Confirmation No."
+              {...fieldProps("confirmationNo", true)}
+            />
+            <TextField
+              label="Confirmation Date"
+              type="date"
+              {...fieldProps("confirmationDate")}
+            />
+            <TextField
+              label="Travel Period Start"
+              type="date"
+              {...fieldProps("travelPeriodStart", true)}
+            />
+            <TextField
+              label="Travel Period End"
+              type="date"
+              {...fieldProps("travelPeriodEnd", true)}
+            />
             <DropdownField
               label="Cost Centre"
               options={COST_CENTRE_OPTIONS}
@@ -491,8 +567,8 @@ export function BookingForm() {
               options={STATUS_OPTIONS}
               {...fieldProps("status", true)}
             />
-            <TextField 
-              label="Notes" 
+            <TextField
+              label="Notes"
               {...fieldProps("notes")}
               multiline={true}
               rows={4}
@@ -523,14 +599,21 @@ export function BookingForm() {
               displayFields={["general.firstName", "general.lastName"]}
               onLoadComplete={handleBookerLoadComplete}
             />
-            {selectedItem?._id && (
-              <div className="related-section">
-                <h3 className="related-title">Related Stays</h3>
-                {/* Could show related stays here once booking is saved */}
-              </div>
-            )}
+
           </div>
         </div>
+        {showRelatedStays && selectedItem?._id && (
+          <div className="related-stays-container">
+            <RelatedStays
+              stayIds={formData.stayIds}
+              onStaysChange={handleStaysChange}
+              travelPeriodStart={formData.travelPeriodStart}
+              travelPeriodEnd={formData.travelPeriodEnd}
+              companyId={formData.companyId}
+              isEditing={isEditing}
+            />
+          </div>
+        )}
         <div className="bottom-bar">
           {isEditing && !isCreating && selectedItem?._id && (
             <Button
@@ -546,13 +629,8 @@ export function BookingForm() {
       </form>
 
       <style jsx>{`
-        .related-section {
+        .related-stays-container {
           margin-top: 2rem;
-        }
-        .related-title {
-          font-size: 1rem;
-          font-weight: 600;
-          margin-bottom: 0.5rem;
         }
         .bottom-bar {
           margin-top: 1.5rem;
