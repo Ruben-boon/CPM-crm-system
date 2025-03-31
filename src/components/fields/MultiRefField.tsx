@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X, Plus } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import Button from "@/components/common/Button";
-import { QuickAddContactModal } from "../hotel/QuickAddContactModal";
+import { useModal } from "@/context/ModalContext";
 
 interface MultiRefFieldProps {
   label: string;
@@ -15,7 +15,7 @@ interface MultiRefFieldProps {
   collectionName: string;
   displayFields?: string[];
   selectedLabels?: string[];
-  showQuickAdd?: boolean; // New prop to control quick add button visibility
+  showQuickAdd?: boolean; // Whether to show the "Add New" button
 }
 
 interface SearchResult {
@@ -34,7 +34,7 @@ export function MultiRefField({
   collectionName,
   displayFields = ["name"],
   selectedLabels = [],
-  showQuickAdd = false, // Default to false
+  showQuickAdd = false,
 }: MultiRefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -42,8 +42,8 @@ export function MultiRefField({
   const [displayValues, setDisplayValues] = useState<string[]>(selectedLabels);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // State for quick add modal
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  // Use the modal context
+  const { openModal } = useModal();
 
   // Load reference details when value changes or component mounts
   useEffect(() => {
@@ -155,9 +155,17 @@ export function MultiRefField({
     onChange(newValue, newDisplayValues);
   };
 
-  // Handler for quick add modal
-  const handleQuickAddToggle = () => {
-    setIsQuickAddOpen(!isQuickAddOpen);
+  // Handler for opening the contact modal
+  const handleQuickAdd = () => {
+    // Only show quick add for contacts collection
+    if (collectionName === "contacts") {
+      openModal("contact", {
+        initialData: {
+          general: { role: "guest" }
+        },
+        callback: handleContactCreated
+      });
+    }
   };
 
   const handleContactCreated = (contactId: string, displayName: string) => {
@@ -212,7 +220,7 @@ export function MultiRefField({
                     size="sm"
                     intent="secondary"
                     icon={Plus} 
-                    onClick={handleQuickAddToggle}
+                    onClick={handleQuickAdd}
                     className="quick-add-button"
                   >
                     Add New
@@ -252,15 +260,6 @@ export function MultiRefField({
           </div>
         )}
       </div>
-
-      {/* Quick Add Contact Modal */}
-      {isQuickAddOpen && (
-        <QuickAddContactModal
-          isOpen={isQuickAddOpen}
-          onClose={handleQuickAddToggle}
-          onContactCreated={handleContactCreated}
-        />
-      )}
 
       <style jsx>{`
         .search-input-container {
