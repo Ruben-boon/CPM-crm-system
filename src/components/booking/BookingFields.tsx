@@ -69,7 +69,9 @@ interface BookingFieldsProps {
   selectedItem: any;
   isEditing: boolean;
   pendingChanges: Record<string, { oldValue: any; newValue: any }>;
-  setPendingChanges: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
+  setPendingChanges: (
+    changes: Record<string, { oldValue: any; newValue: any }>
+  ) => void;
   onFormReset?: () => void;
   onLoadingChange: (isLoading: boolean) => void;
   onAllFieldsLoadedChange: (allLoaded: boolean) => void;
@@ -82,19 +84,21 @@ export function BookingFields({
   setPendingChanges,
   onFormReset,
   onLoadingChange,
-  onAllFieldsLoadedChange
+  onAllFieldsLoadedChange,
 }: BookingFieldsProps) {
   const [formData, setFormData] = useState<BookingFormData>(INITIAL_FORM_STATE);
-  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(INITIAL_LOADING_STATE);
+  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
+    INITIAL_LOADING_STATE
+  );
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [showRelatedStays, setShowRelatedStays] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   // Related stays state
   const [stays, setStays] = useState<any[]>([]);
   const [isLoadingStays, setIsLoadingStays] = useState(false);
   const [staysError, setStaysError] = useState<string | null>(null);
-  
+
   // Access the modal context
   const { openModal } = useModal();
 
@@ -151,7 +155,7 @@ export function BookingFields({
         stayIds: selectedItem.stayIds || [],
         stayNames: selectedItem.stayNames || [],
       });
-      
+
       // Load related stays if we have a booking ID and stay IDs
       if (selectedItem._id && selectedItem.stayIds?.length > 0) {
         loadRelatedStays(selectedItem.stayIds);
@@ -262,7 +266,7 @@ export function BookingFields({
       ...prev,
       companyId: loaded,
     }));
-    
+
     onAllFieldsLoadedChange(checkAllFieldsLoaded());
   };
 
@@ -276,7 +280,7 @@ export function BookingFields({
       ...prev,
       bookerId: loaded,
     }));
-    
+
     onAllFieldsLoadedChange(checkAllFieldsLoaded());
   };
 
@@ -305,7 +309,7 @@ export function BookingFields({
 
     try {
       const loadedStays = [];
-      
+
       // Fetch each stay by ID
       for (const stayId of stayIds) {
         const result = await searchDocuments("stays", stayId, "_id");
@@ -313,7 +317,7 @@ export function BookingFields({
           loadedStays.push(result[0]);
         }
       }
-      
+
       setStays(loadedStays);
     } catch (err) {
       console.error("Error loading related stays:", err);
@@ -334,41 +338,47 @@ export function BookingFields({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "confirmed": return "Confirmed";
-      case "checked_in": return "Checked In";
-      case "checked_out": return "Checked Out";
-      case "cancelled": return "Cancelled";
-      case "no_show": return "No Show";
-      default: return status || "-";
+      case "confirmed":
+        return "Confirmed";
+      case "checked_in":
+        return "Checked In";
+      case "checked_out":
+        return "Checked Out";
+      case "cancelled":
+        return "Cancelled";
+      case "no_show":
+        return "No Show";
+      default:
+        return status || "-";
     }
   };
 
   const getStayDisplayName = (stay) => {
     if (!stay) return "New Stay";
-    
-    let name = '';
-    
+
+    let name = "";
+
     // Add check-in/check-out dates if available
     if (stay.checkInDate) {
       name += formatDate(stay.checkInDate);
-      
+
       if (stay.checkOutDate) {
         name += ` - ${formatDate(stay.checkOutDate)}`;
       }
     }
-    
+
     // Add hotel name if available
     if (stay.hotelName) {
-      name += stay.hotelName ? ` at ${stay.hotelName}` : '';
+      name += stay.hotelName ? ` at ${stay.hotelName}` : "";
     }
-    
+
     // Add room info if available
     if (stay.roomNumber) {
       name += ` (Room ${stay.roomNumber})`;
     } else if (stay.roomType) {
       name += ` (${stay.roomType})`;
     }
-    
+
     return name.trim() || `Stay ${formatDate(new Date().toISOString())}`;
   };
 
@@ -379,12 +389,12 @@ export function BookingFields({
       checkOutDate: formData.travelPeriodEnd || "",
       status: "confirmed",
     };
-    
+
     // Open the stay modal
     openModal("stay", {
       stay: newStay,
       isCopyMode: false,
-      callback: handleStaySaved
+      callback: handleStaySaved,
     });
   };
 
@@ -392,62 +402,68 @@ export function BookingFields({
     openModal("stay", {
       stay: stay,
       isCopyMode: false,
-      callback: handleStaySaved
+      callback: handleStaySaved,
     });
   };
 
   const handleCopyStay = (stay: any) => {
     // Create a deep copy of the stay
     const stayCopy = JSON.parse(JSON.stringify(stay));
-    
+
     // Remove the _id to ensure it creates a new stay
     delete stayCopy._id;
-    
+
     // Optionally modify the reference to indicate it's a copy
     if (stayCopy.reference) {
       stayCopy.reference = `${stayCopy.reference} (Copy)`;
     }
-    
+
     openModal("stay", {
       stay: stayCopy,
       isCopyMode: true,
-      callback: handleStaySaved
+      callback: handleStaySaved,
     });
   };
 
   const handleViewStay = (stayId: string) => {
-    window.open(`/stays/${stayId}`, '_blank');
+    window.open(`/stays/${stayId}`, "_blank");
   };
 
   const handleRemoveStay = (stay: any, index: number) => {
     // Ask for confirmation before removing
-    if (confirm(`Are you sure you want to remove ${getStayDisplayName(stay)} from this booking? This will not delete the stay itself.`)) {
+    if (
+      confirm(
+        `Are you sure you want to remove ${getStayDisplayName(
+          stay
+        )} from this booking? This will not delete the stay itself.`
+      )
+    ) {
       // Create new arrays without the removed stay
       const newStayIds = [...formData.stayIds];
       newStayIds.splice(index, 1);
-      
+
       const newStays = [...stays];
       newStays.splice(index, 1);
-      
+
       // Update the form data
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         stayIds: newStayIds,
-        stayNames: newStays.map(stay => getStayDisplayName(stay))
+        stayNames: newStays.map((stay) => getStayDisplayName(stay)),
       }));
-      
+
       // Update the stays list
       setStays(newStays);
-      
+
       // Update pendingChanges
-      setPendingChanges(prev => ({
+      setPendingChanges((prev) => ({
         ...prev,
         stayIds: {
           oldValue: selectedItem?.stayIds || [],
-          newValue: newStayIds
-        }
+          newValue: newStayIds,
+        },
       }));
-      
+
       // Show success message
       toast.success("Stay removed from booking");
     }
@@ -457,44 +473,44 @@ export function BookingFields({
     if (!savedStay || !savedStay._id) {
       return; // Something went wrong with saving
     }
-    
+
     // Check if this is a new stay or an update
     const existingIndex = formData.stayIds.indexOf(savedStay._id);
-    
+
     if (existingIndex === -1) {
       // This is a new stay - add it to our arrays
       const newStayIds = [...formData.stayIds, savedStay._id];
       const newStays = [...stays, savedStay];
-      
+
       // Update the form data
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         stayIds: newStayIds,
-        stayNames: newStays.map(stay => getStayDisplayName(stay))
+        stayNames: newStays.map((stay) => getStayDisplayName(stay)),
       }));
-      
+
       // Update the stays list
       setStays(newStays);
-      
+
       // Update pendingChanges
-      setPendingChanges(prev => ({
+      setPendingChanges((prev) => ({
         ...prev,
         stayIds: {
           oldValue: selectedItem?.stayIds || [],
-          newValue: newStayIds
-        }
+          newValue: newStayIds,
+        },
       }));
     } else {
       // This is an existing stay that's been updated
       const newStays = [...stays];
       newStays[existingIndex] = savedStay;
-      
+
       // Update the form data with new display names
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        stayNames: newStays.map(stay => getStayDisplayName(stay))
+        stayNames: newStays.map((stay) => getStayDisplayName(stay)),
       }));
-      
+
       // Update the stays list
       setStays(newStays);
     }
@@ -503,18 +519,14 @@ export function BookingFields({
   // Function to render the related stays section
   const renderRelatedStays = () => {
     if (!showRelatedStays || !selectedItem?._id) return null;
-    
+
     return (
       <div className="related-stays-container">
         <div className="related-stays">
           <div className="related-stays-header">
             <h3 className="related-title">Related Stays</h3>
             {isEditing && (
-              <Button 
-                icon={Plus} 
-                onClick={handleAddStay} 
-                size="sm"
-              >
+              <Button icon={Plus} onClick={handleAddStay} size="sm">
                 Add Stay
               </Button>
             )}
@@ -527,19 +539,30 @@ export function BookingFields({
           ) : staysError ? (
             <div className="error-message">{staysError}</div>
           ) : stays.length === 0 ? (
-            <div className="no-stays-message">No stays found for this booking</div>
+            <div className="no-stays-message">
+              No stays found for this booking
+            </div>
           ) : (
             <div className="stays-list">
               {stays.map((stay, index) => (
                 <div key={stay._id} className="stay-item">
                   <div className="stay-info">
                     <div className="stay-dates">
-                      {formatDate(stay.checkInDate)} - {formatDate(stay.checkOutDate)}
+                      {formatDate(stay.checkInDate)} -{" "}
+                      {formatDate(stay.checkOutDate)}
                     </div>
                     <div className="stay-details">
-                      <span className="stay-hotel">{stay.hotelName || "Unknown hotel"}</span>
-                      {stay.roomNumber && <span className="stay-room">Room: {stay.roomNumber}</span>}
-                      <span className="stay-status">Status: {getStatusLabel(stay.status)}</span>
+                      <span className="stay-hotel">
+                        {stay.hotelName || "Unknown hotel"}
+                      </span>
+                      {stay.roomNumber && (
+                        <span className="stay-room">
+                          Room: {stay.roomNumber}
+                        </span>
+                      )}
+                      <span className="stay-status">
+                        Status: {getStatusLabel(stay.status)}
+                      </span>
                     </div>
                     <div className="stay-guests">
                       {stay.guestNames && stay.guestNames.length > 0 ? (
@@ -552,28 +575,28 @@ export function BookingFields({
                   <div className="stay-actions">
                     {isEditing && (
                       <>
-                        <Button 
-                          icon={X} 
-                          onClick={() => handleRemoveStay(stay, index)} 
-                          size="sm" 
+                        <Button
+                          icon={X}
+                          onClick={() => handleRemoveStay(stay, index)}
+                          size="sm"
                           intent="ghost"
                           title="Remove stay from booking"
                         >
                           Remove
                         </Button>
-                        <Button 
-                          icon={Copy} 
-                          onClick={() => handleCopyStay(stay)} 
-                          size="sm" 
+                        <Button
+                          icon={Copy}
+                          onClick={() => handleCopyStay(stay)}
+                          size="sm"
                           intent="secondary"
                           title="Copy stay"
                         >
                           Copy
                         </Button>
-                        <Button 
-                          icon={Edit} 
-                          onClick={() => handleEditStay(stay)} 
-                          size="sm" 
+                        <Button
+                          icon={Edit}
+                          onClick={() => handleEditStay(stay)}
+                          size="sm"
                           intent="secondary"
                           title="Edit stay"
                         >
@@ -581,10 +604,10 @@ export function BookingFields({
                         </Button>
                       </>
                     )}
-                    <Button 
-                      icon={ExternalLink} 
-                      onClick={() => handleViewStay(stay._id)} 
-                      size="sm" 
+                    <Button
+                      icon={ExternalLink}
+                      onClick={() => handleViewStay(stay._id)}
+                      size="sm"
                       intent="ghost"
                       title="View in new tab"
                     >
@@ -665,16 +688,16 @@ export function BookingFields({
           onLoadComplete={handleBookerLoadComplete}
         />
       </div>
-      
-      {/* Render the related stays section */}
-      {renderRelatedStays()}
-      
+      <div className="col-full">
+        {/* Render the related stays section */}
+        {renderRelatedStays()}
+      </div>
       <style jsx>{`
         .related-stays-container {
           margin-top: 2rem;
           width: 100%;
         }
-        
+
         .related-stays {
           border: 1px solid #e0e0e0;
           border-radius: 6px;
@@ -751,7 +774,8 @@ export function BookingFields({
           font-size: 0.9rem;
         }
 
-        .stay-room, .stay-status {
+        .stay-room,
+        .stay-status {
           color: #616161;
         }
 

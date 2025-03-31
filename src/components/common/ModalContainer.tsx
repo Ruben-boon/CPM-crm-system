@@ -54,8 +54,8 @@ export function ModalContainer() {
         .modal-container {
           background-color: white;
           border-radius: 8px;
-          width: 90%;
-          max-width: 900px;
+
+          max-width: 90%;
           max-height: 90vh;
           display: flex;
           flex-direction: column;

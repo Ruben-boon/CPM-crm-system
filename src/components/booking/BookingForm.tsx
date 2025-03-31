@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useBookingsData } from "@/context/DataContext";
 import { CommonForm } from "../common/CommonForm";
 import { BookingFields } from "./BookingFields";
+// import { BookingPDFButton } from "../pdf/GenerateButton";
 
 export function BookingForm() {
   const [isFormLoading, setIsFormLoading] = useState(false);
@@ -32,6 +33,11 @@ export function BookingForm() {
         onLoadingChange={setIsFormLoading}
         onAllFieldsLoadedChange={setAreAllFieldsLoaded}
       />
+      {/* {bookingsContext.selectedItem && (
+        <div className="pdf-generation-container">
+          <BookingPDFButton booking={bookingsContext.selectedItem} />
+        </div>
+      )} */}
     </CommonForm>
   );
 }

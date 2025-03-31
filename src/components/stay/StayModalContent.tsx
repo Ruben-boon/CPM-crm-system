@@ -146,7 +146,8 @@ export function StayModalContent({ data, onClose }: StayModalContentProps) {
         .stay-modal-content {
           display: flex;
           flex-direction: column;
-          min-height: 400px;
+          min-height: 400px;  
+          gap:32px;
         }
         
         .stay-fields-container {

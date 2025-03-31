@@ -7,15 +7,14 @@ import { useModal } from "@/context/ModalContext";
 interface MultiRefFieldProps {
   label: string;
   value: string[];
-  onChange: (value: string[], displayValues?: string[]) => void;
+  onChange: (value: string[]) => void;
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
   className?: string;
   collectionName: string;
   displayFields?: string[];
-  selectedLabels?: string[];
-  showQuickAdd?: boolean; // Whether to show the "Add New" button
+  showQuickAdd?: boolean;
 }
 
 interface SearchResult {
@@ -33,60 +32,15 @@ export function MultiRefField({
   className = "",
   collectionName,
   displayFields = ["name"],
-  selectedLabels = [],
   showQuickAdd = false,
 }: MultiRefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [displayValues, setDisplayValues] = useState<string[]>(selectedLabels);
+  const [displayNames, setDisplayNames] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Use the modal context
   const { openModal } = useModal();
-
-  // Load reference details when value changes or component mounts
-  useEffect(() => {
-    const loadReferenceDetails = async () => {
-      if (value.length > 0) {
-        try {
-          const loadPromises = value.map(id =>
-            searchDocuments<SearchResult>(collectionName, id, "_id")
-          );
-          
-          const results = await Promise.all(loadPromises);
-          const newDisplayValues = results
-            .map(result => result[0])
-            .filter(Boolean)
-            .map(item => formatDisplayValue(item));
-
-          setDisplayValues(newDisplayValues);
-          // Only call onChange if we have new display values and they're different
-          if (newDisplayValues.length > 0 && JSON.stringify(newDisplayValues) !== JSON.stringify(selectedLabels)) {
-            onChange(value, newDisplayValues);
-          }
-        } catch (error) {
-          console.error(`Failed to load ${collectionName} details:`, error);
-        }
-      }
-    };
-
-    if (value.length > 0 && (!selectedLabels.length || selectedLabels.length !== value.length)) {
-      loadReferenceDetails();
-    } else {
-      setDisplayValues(selectedLabels);
-    }
-  }, [value, selectedLabels, collectionName]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsSearching(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const getNestedValue = (obj: any, path: string) => {
     const parts = path.split('.');
@@ -103,6 +57,44 @@ export function MultiRefField({
       .filter(Boolean)
       .join(" ");
   };
+
+  // Fetch display names when references change
+  useEffect(() => {
+    const fetchDisplayNames = async () => {
+      if (value.length > 0) {
+        try {
+          const namePromises = value.map(id => 
+            searchDocuments<SearchResult>(collectionName, id, "_id")
+          );
+          
+          const results = await Promise.all(namePromises);
+          const names = results
+            .map(result => result[0] ? formatDisplayValue(result[0]) : id)
+            .filter(Boolean);
+
+          setDisplayNames(names);
+        } catch (error) {
+          console.error(`Failed to load ${collectionName} display names:`, error);
+          // Fallback to IDs if fetching fails
+          setDisplayNames(value);
+        }
+      } else {
+        setDisplayNames([]);
+      }
+    };
+
+    fetchDisplayNames();
+  }, [value, collectionName]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsSearching(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSearch = async (term: string) => {
     setSearchTerm(term);
@@ -141,42 +133,30 @@ export function MultiRefField({
 
   const handleSelect = (result: SearchResult) => {
     const newValue = [...value, result._id];
-    const newDisplayValues = [...displayValues, formatDisplayValue(result)];
-    setDisplayValues(newDisplayValues);
-    onChange(newValue, newDisplayValues);
+    onChange(newValue);
     setSearchTerm("");
     setIsSearching(false);
   };
 
   const handleRemove = (index: number) => {
     const newValue = value.filter((_, i) => i !== index);
-    const newDisplayValues = displayValues.filter((_, i) => i !== index);
-    setDisplayValues(newDisplayValues);
-    onChange(newValue, newDisplayValues);
+    onChange(newValue);
   };
 
-  // Handler for opening the contact modal
   const handleQuickAdd = () => {
-    // Only show quick add for contacts collection
     if (collectionName === "contacts") {
       openModal("contact", {
         initialData: {
           general: { role: "guest" }
         },
-        callback: handleContactCreated
+        callback: (contactId: string) => {
+          const newValue = [...value, contactId];
+          onChange(newValue);
+        }
       });
     }
   };
 
-  const handleContactCreated = (contactId: string, displayName: string) => {
-    // Add the newly created contact to the selection
-    const newValue = [...value, contactId];
-    const newDisplayValues = [...displayValues, displayName];
-    setDisplayValues(newDisplayValues);
-    onChange(newValue, newDisplayValues);
-  };
-
-  // Only show quick add for contacts collection
   const shouldShowQuickAdd = showQuickAdd && collectionName === "contacts" && isEditing;
 
   return (
@@ -189,9 +169,9 @@ export function MultiRefField({
         {isEditing ? (
           <>
             <div className="selected-items">
-              {displayValues.map((label, index) => (
-                <div key={`${value[index]}-${index}`} className="selected-item">
-                  <span>{label}</span>
+              {value.map((id, index) => (
+                <div key={`${id}-${index}`} className="selected-item">
+                  <span>{displayNames[index] || id}</span>
                   <button
                     type="button"
                     onClick={() => handleRemove(index)}
@@ -246,11 +226,11 @@ export function MultiRefField({
           </>
         ) : (
           <div className={`read-only ${className}`}>
-            {displayValues.length > 0 ? (
+            {displayNames.length > 0 ? (
               <div className="selected-items-readonly selected-items">
-                {displayValues.map((label, index) => (
+                {displayNames.map((name, index) => (
                   <div key={`${value[index]}-${index}`} className="selected-item-readonly">
-                    {label}
+                    {name}
                   </div>
                 ))}
               </div>

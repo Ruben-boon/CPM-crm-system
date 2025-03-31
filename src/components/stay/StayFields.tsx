@@ -6,15 +6,11 @@ import { RefField } from "../fields/RefField";
 import { MultiRefField } from "../fields/MultiRefField";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { toast } from "sonner";
+import { RelatedItems } from "../fields/RelatedItems";
 
 interface StayFormData {
-  reference: string;
-  bookingId: string;
-  bookingReference: string;
   guestIds: string[];
-  guestNames: string[];
   hotelId: string;
-  hotelName: string;
   roomNumber: string;
   roomType: string;
   roomPrice: string;
@@ -30,19 +26,13 @@ interface StayFormData {
 }
 
 interface FieldLoadingState {
-  bookingId: boolean;
   guestIds: boolean;
   hotelId: boolean;
 }
 
 const INITIAL_FORM_STATE: StayFormData = {
-  reference: "",
-  bookingId: "",
-  bookingReference: "",
   guestIds: [],
-  guestNames: [],
   hotelId: "",
-  hotelName: "",
   roomNumber: "",
   roomType: "",
   roomPrice: "",
@@ -58,7 +48,6 @@ const INITIAL_FORM_STATE: StayFormData = {
 };
 
 const INITIAL_LOADING_STATE: FieldLoadingState = {
-  bookingId: false,
   guestIds: false,
   hotelId: false,
 };
@@ -147,7 +136,9 @@ interface StayFieldsProps {
   selectedItem: any;
   isEditing: boolean;
   pendingChanges: Record<string, { oldValue: any; newValue: any }>;
-  setPendingChanges: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
+  setPendingChanges: (
+    changes: Record<string, { oldValue: any; newValue: any }>
+  ) => void;
   onFormReset?: () => void;
   onLoadingChange: (isLoading: boolean) => void;
   onAllFieldsLoadedChange: (allLoaded: boolean) => void;
@@ -160,31 +151,32 @@ export function StayFields({
   setPendingChanges,
   onFormReset,
   onLoadingChange,
-  onAllFieldsLoadedChange
+  onAllFieldsLoadedChange,
 }: StayFieldsProps) {
   const [formData, setFormData] = useState<StayFormData>(INITIAL_FORM_STATE);
-  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(INITIAL_LOADING_STATE);
+  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
+    INITIAL_LOADING_STATE
+  );
   const [isFormLoading, setIsFormLoading] = useState(false);
-  
+
   // Room types from the selected hotel
-  const [roomTypeOptions, setRoomTypeOptions] = useState(DEFAULT_ROOM_TYPE_OPTIONS);
+  const [roomTypeOptions, setRoomTypeOptions] = useState(
+    DEFAULT_ROOM_TYPE_OPTIONS
+  );
   const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
 
   // Function to check if all reference fields are loaded
   const checkAllFieldsLoaded = () => {
-    const isBookingLoaded = !formData.bookingId || fieldsLoaded.bookingId;
     const isGuestLoaded = !formData.guestIds.length || fieldsLoaded.guestIds;
     const isHotelLoaded = !formData.hotelId || fieldsLoaded.hotelId;
-    return isBookingLoaded && isGuestLoaded && isHotelLoaded;
+    return isGuestLoaded && isHotelLoaded;
   };
 
   // Update form loading state when fields load status changes
   useEffect(() => {
     // Only consider reference fields that actually require loading
     const shouldShowLoading =
-      (formData.bookingId && !fieldsLoaded.bookingId) ||
-      (formData.hotelId && !fieldsLoaded.hotelId) ||
-      loadingRoomTypes;
+      (formData.hotelId && !fieldsLoaded.hotelId) || loadingRoomTypes;
 
     // Only set loading state for actual loading operations, not text field edits
     setIsFormLoading(shouldShowLoading);
@@ -275,13 +267,8 @@ export function StayFields({
 
       // Set form data
       setFormData({
-        reference: selectedItem.reference || "",
-        bookingId: selectedItem.bookingId || "",
-        bookingReference: selectedItem.bookingReference || "",
         guestIds: selectedItem.guestIds || [],
-        guestNames: selectedItem.guestNames || [],
         hotelId: selectedItem.hotelId || "",
-        hotelName: selectedItem.hotelName || "",
         roomNumber: selectedItem.roomNumber || "",
         roomType: selectedItem.roomType || "",
         roomPrice: selectedItem.roomPrice || "",
@@ -305,13 +292,8 @@ export function StayFields({
       const resetForm = () => {
         if (selectedItem) {
           setFormData({
-            reference: selectedItem.reference || "",
-            bookingId: selectedItem.bookingId || "",
-            bookingReference: selectedItem.bookingReference || "",
             guestIds: selectedItem.guestIds || [],
-            guestNames: selectedItem.guestNames || [],
             hotelId: selectedItem.hotelId || "",
-            hotelName: selectedItem.hotelName || "",
             roomNumber: selectedItem.roomNumber || "",
             roomType: selectedItem.roomType || "",
             roomPrice: selectedItem.roomPrice || "",
@@ -338,13 +320,8 @@ export function StayFields({
   // Update the parent context's selectedItem with our form data changes
   useEffect(() => {
     if (selectedItem) {
-      selectedItem.reference = formData.reference;
-      selectedItem.bookingId = formData.bookingId;
-      selectedItem.bookingReference = formData.bookingReference;
       selectedItem.guestIds = formData.guestIds;
-      selectedItem.guestNames = formData.guestNames;
       selectedItem.hotelId = formData.hotelId;
-      selectedItem.hotelName = formData.hotelName;
       selectedItem.roomNumber = formData.roomNumber;
       selectedItem.roomType = formData.roomType;
       selectedItem.roomPrice = formData.roomPrice;
@@ -368,14 +345,15 @@ export function StayFields({
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-      ...(displayValue && field === "bookingId"
-        ? { bookingReference: displayValue }
-        : {}),
       ...(displayValue && field === "hotelId"
         ? { hotelName: displayValue }
         : {}),
       ...(displayValue && field === "guestIds"
-        ? { guestNames: displayValue }
+        ? {
+            guestNames: Array.isArray(displayValue)
+              ? displayValue
+              : [displayValue as string],
+          }
         : {}),
     }));
 
@@ -383,14 +361,7 @@ export function StayFields({
     const refFields = ["bookingId", "guestIds", "hotelId"];
 
     if (refFields.includes(field as string)) {
-      if (field === "bookingId") {
-        setFieldsLoaded((prev) => ({
-          ...prev,
-          bookingId: false,
-        }));
-        setIsFormLoading(!!value);
-        onLoadingChange(!!value);
-      } else if (field === "guestIds") {
+      if (field === "guestIds") {
         // For guestIds, we'll handle loading in the onChange callback of MultiRefField
         setFieldsLoaded((prev) => ({
           ...prev,
@@ -413,11 +384,11 @@ export function StayFields({
         [field]: {
           oldValue: selectedItem?.[field] || [],
           newValue: value,
-          displayValues: Array.isArray(displayValue) 
-            ? displayValue 
-            : typeof displayValue === 'string' 
-              ? displayValue.split(", ") 
-              : [], // Convert to array for selectedLabels
+          displayValues: Array.isArray(displayValue)
+            ? displayValue
+            : typeof displayValue === "string"
+            ? displayValue.split(", ")
+            : [], // Convert to array for selectedLabels
         },
       }));
     } else {
@@ -431,19 +402,6 @@ export function StayFields({
     }
   };
 
-  const handleBookingLoadComplete = (loaded: boolean, error?: string) => {
-    if (error) {
-      console.error("Booking field load error:", error);
-      toast.error(`Error loading booking information`);
-    }
-
-    setFieldsLoaded((prev) => ({
-      ...prev,
-      bookingId: loaded,
-    }));
-    
-    onAllFieldsLoadedChange(checkAllFieldsLoaded());
-  };
 
   const handleHotelLoadComplete = (loaded: boolean, error?: string) => {
     if (error) {
@@ -455,7 +413,7 @@ export function StayFields({
       ...prev,
       hotelId: loaded,
     }));
-    
+
     onAllFieldsLoadedChange(checkAllFieldsLoaded());
   };
 
@@ -482,26 +440,11 @@ export function StayFields({
           {...fieldProps("checkOutDate", true)}
         />
 
-        <RefField
-          label="Booking"
-          value={formData.bookingId}
-          onChange={(value, displayValue) =>
-            handleChange("bookingId", value, displayValue)
-          }
-          isEditing={isEditing}
-          className={pendingChanges["bookingId"] ? "field-changed" : ""}
-          collectionName="bookings"
-          displayFields={["confirmationNo"]}
-          onLoadComplete={handleBookingLoadComplete}
-          allowClear={true} // Enable clearing the booking reference
-          selectedLabel={formData.bookingReference}
-        />
-
         <MultiRefField
           label="Guests"
           value={formData.guestIds}
           onChange={(value, displayValues) => {
-            handleChange("guestIds", value, displayValues);
+            handleChange("guestIds", value, displayValues || value);
             // Immediately set as loaded since MultiRefField handles its own loading
             setFieldsLoaded((prev) => ({
               ...prev,
@@ -516,11 +459,6 @@ export function StayFields({
             "general.lastName",
             "general.remarks",
           ]}
-          selectedLabels={
-            formData.guestIds.length > 0
-              ? pendingChanges["guestIds"]?.displayValues || []
-              : []
-          }
           showQuickAdd={true} // Enable quick add functionality
         />
         <TextField
@@ -560,9 +498,7 @@ export function StayFields({
           options={roomTypeOptions}
           {...fieldProps("roomType")}
           placeholder={
-            loadingRoomTypes
-              ? "Loading room types..."
-              : "Select a room type"
+            loadingRoomTypes ? "Loading room types..." : "Select a room type"
           }
           disabled={loadingRoomTypes || !formData.hotelId}
         />
@@ -603,7 +539,7 @@ export function StayFields({
           {...fieldProps("specialRequests")}
         />
       </div>
-      
+
       <style jsx>{`
         .currency-group {
           margin-bottom: 1rem;
