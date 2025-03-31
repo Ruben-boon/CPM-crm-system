@@ -1,13 +1,24 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useContactsData } from "@/context/DataContext";
 import { CommonForm } from "../common/CommonForm";
 import { ContactFields } from "./ContactFields";
 
-export function ContactForm() {
-  const [isFormLoading, setIsFormLoading] = useState(false);
+interface ContactFormProps {
+  onLoadingChange?: (isLoading: boolean) => void;
+}
+
+export function ContactForm({ onLoadingChange }: ContactFormProps) {
+  const [isFieldLoading, setIsFieldLoading] = useState(false);
   const [areAllFieldsLoaded, setAreAllFieldsLoaded] = useState(true);
   const contactsContext = useContactsData();
+
+  // Propagate loading changes to parent if callback exists
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(isFieldLoading);
+    }
+  }, [isFieldLoading, onLoadingChange]);
 
   // Function to get display name for the item
   const getDisplayName = (item: any) => {
@@ -23,7 +34,7 @@ export function ContactForm() {
       entityType="contact"
       basePath="contacts"
       displayName={getDisplayName}
-      isFormLoading={isFormLoading}
+      isFormLoading={isFieldLoading}
       isAllFieldsLoaded={() => areAllFieldsLoaded}
     >
       <ContactFields
@@ -31,7 +42,7 @@ export function ContactForm() {
         isEditing={contactsContext.isEditing}
         pendingChanges={contactsContext.pendingChanges}
         setPendingChanges={contactsContext.setPendingChanges}
-        onLoadingChange={setIsFormLoading}
+        onLoadingChange={(loading) => setIsFieldLoading(loading)}
         onAllFieldsLoadedChange={setAreAllFieldsLoaded}
       />
     </CommonForm>
