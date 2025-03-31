@@ -4,17 +4,15 @@ import { ContactForm } from "@/components/contact/ContactForm";
 import { useContactsData } from "@/context/DataContext";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function ContactDetailPage() {
   const { selectItem } = useContactsData();
   const params = useParams();
   const contactId = params.id;
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadContact = async () => {
-      setIsLoading(true);
 
       try {
         // Handle "new" contact case
@@ -36,7 +34,6 @@ export default function ContactDetailPage() {
       } catch (error) {
         console.error("Error loading contact:", error);
       } finally {
-        setIsLoading(false);
       }
     };
 
@@ -45,13 +42,7 @@ export default function ContactDetailPage() {
 
   return (
     <>
-      {isLoading ? (
-        <div className="gray-screen">
-
-        </div>
-      ) : (
-        <ContactForm />
-      )}
+      <ContactForm />
     </>
   );
 }

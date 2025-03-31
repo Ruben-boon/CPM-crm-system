@@ -36,7 +36,9 @@ interface CompanyFieldsProps {
   selectedItem: any;
   isEditing: boolean;
   pendingChanges: Record<string, { oldValue: any; newValue: any }>;
-  setPendingChanges: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
+  setPendingChanges: (
+    changes: Record<string, { oldValue: any; newValue: any }>
+  ) => void;
   onFormReset?: () => void;
   onLoadingChange: (isLoading: boolean) => void;
   onAllFieldsLoadedChange: (allLoaded: boolean) => void;
@@ -49,18 +51,21 @@ export function CompanyFields({
   setPendingChanges,
   onFormReset,
   onLoadingChange,
-  onAllFieldsLoadedChange
+  onAllFieldsLoadedChange,
 }: CompanyFieldsProps) {
   const [formData, setFormData] = useState<CompanyFormData>(INITIAL_FORM_STATE);
-  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(INITIAL_LOADING_STATE);
+  const [fieldsLoaded, setFieldsLoaded] = useState<FieldLoadingState>(
+    INITIAL_LOADING_STATE
+  );
   const [isRelatedItemsLoading, setIsRelatedItemsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   const router = useRouter();
 
   // Function to check if all reference fields are loaded
   const checkAllFieldsLoaded = () => {
-    const isParentCompanyLoaded = !formData.parentCompanyId || fieldsLoaded.parentCompanyId;
+    const isParentCompanyLoaded =
+      !formData.parentCompanyId || fieldsLoaded.parentCompanyId;
     return isParentCompanyLoaded;
   };
 
@@ -68,7 +73,11 @@ export function CompanyFields({
   useEffect(() => {
     onLoadingChange(isRelatedItemsLoading);
     onAllFieldsLoadedChange(checkAllFieldsLoaded());
-  }, [isRelatedItemsLoading, fieldsLoaded.parentCompanyId, formData.parentCompanyId]);
+  }, [
+    isRelatedItemsLoading,
+    fieldsLoaded.parentCompanyId,
+    formData.parentCompanyId,
+  ]);
 
   // Load form data when selected item changes
   useEffect(() => {
@@ -197,8 +206,25 @@ export function CompanyFields({
           displayFields={["name"]}
           onLoadComplete={handleParentCompanyLoadComplete}
         />
-
-        {/* Child Companies - only show when there's a company selected and we're not creating a new one */}
+        {selectedItem?._id && !isCreating && (
+          <div className="related-section">
+            <RelatedItems
+              id={selectedItem._id}
+              referenceField="general.companyId"
+              collectionName="contacts"
+              displayFields={[
+                { path: "general.title" },
+                { path: "general.firstName" },
+                { path: "general.lastName" },
+              ]}
+              title="Contacts"
+              emptyMessage="No contacts found"
+              onItemClick={handleRelationClick}
+            />
+          </div>
+        )}
+      </div>
+      <div className="col-half">
         {selectedItem?._id && !isCreating && (
           <div className="related-section">
             <RelatedItems
@@ -213,24 +239,8 @@ export function CompanyFields({
             />
           </div>
         )}
-        {selectedItem?._id && !isCreating && (
-          <div className="related-section">
-            <RelatedItems
-              id={selectedItem._id}
-              referenceField="general.companyId"
-              collectionName="contacts"
-              displayFields={[{ path: "general.title" },{ path: "general.firstName" }, { path: "general.lastName"}]}
-              title="Contacts"
-              emptyMessage="No contacts found"
-              onItemClick={handleRelationClick}
-            />
-          </div>
-        )}
       </div>
-      <div className="col-half">
-        {/* You can add additional fields or sections here */}
-      </div>
-      
+
       <style jsx>{`
         .related-section {
           margin-top: 2rem;

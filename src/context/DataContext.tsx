@@ -12,7 +12,6 @@ interface RoleFilter {
   bookerChecked: boolean;
   guestChecked: boolean;
 }
-
 interface DataContextType {
   items: Item[];
   selectedItem: Item | null;
@@ -47,21 +46,14 @@ function createDataContext(collectionName: string) {
       bookerChecked: false,
       guestChecked: false,
     });
-
     const setRoleFilter = (filter: Partial<RoleFilter>) => {
       setRoleFilterState((prev) => ({
         ...prev,
         ...filter,
       }));
     };
-
     const searchItems = async (searchTerm?: string, searchField?: string) => {
-      console.log(
-        "searchItems fired searchTerm:",
-        searchTerm,
-        "searchField:",
-        searchField
-      );
+
       setIsLoading(true);
       try {
         const results = await searchDocuments(
@@ -96,13 +88,11 @@ function createDataContext(collectionName: string) {
         setIsLoading(false);
       }
     };
-
     const selectItem = (item: Partial<Item> | null, startEditing = false) => {
       setSelectedItem(item ? ({ _id: "", ...item } as Item) : null);
       setIsEditing(startEditing);
       if (!item) setPendingChanges({});
     };
-
     const createItem = async (item: Item) => {
       setIsLoading(true);
       try {
@@ -118,7 +108,6 @@ function createDataContext(collectionName: string) {
         setIsLoading(false);
       }
     };
-
     const updateItem = async (item: Item) => {
       if (!item._id) {
         setError("Missing item ID");
@@ -139,7 +128,6 @@ function createDataContext(collectionName: string) {
         setIsLoading(false);
       }
     };
-
     const deleteItem = async (id: string) => {
       if (!id) {
         setError("Missing item ID");

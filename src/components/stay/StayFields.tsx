@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
@@ -6,7 +7,6 @@ import { RefField } from "../fields/RefField";
 import { MultiRefField } from "../fields/MultiRefField";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { toast } from "sonner";
-import { RelatedItems } from "../fields/RelatedItems";
 
 interface StayFormData {
   guestIds: string[];
@@ -167,9 +167,12 @@ export function StayFields({
 
   // Function to check if all reference fields are loaded
   const checkAllFieldsLoaded = () => {
+    console.log("fields loaded: ", fieldsLoaded)
     const isGuestLoaded = !formData.guestIds.length || fieldsLoaded.guestIds;
     const isHotelLoaded = !formData.hotelId || fieldsLoaded.hotelId;
-    return isGuestLoaded && isHotelLoaded;
+    if (isGuestLoaded && isHotelLoaded) {
+      onAllFieldsLoadedChange(true);
+    };
   };
 
   // Update form loading state when fields load status changes
@@ -181,7 +184,7 @@ export function StayFields({
     // Only set loading state for actual loading operations, not text field edits
     setIsFormLoading(shouldShowLoading);
     onLoadingChange(shouldShowLoading);
-    onAllFieldsLoadedChange(checkAllFieldsLoaded());
+    checkAllFieldsLoaded();
   }, [
     fieldsLoaded.bookingId,
     fieldsLoaded.hotelId,
@@ -402,7 +405,6 @@ export function StayFields({
     }
   };
 
-
   const handleHotelLoadComplete = (loaded: boolean, error?: string) => {
     if (error) {
       console.error("Hotel field load error:", error);
@@ -414,8 +416,24 @@ export function StayFields({
       hotelId: loaded,
     }));
 
-    onAllFieldsLoadedChange(checkAllFieldsLoaded());
+    checkAllFieldsLoaded();
   };
+  const handleGuestLoadComplete = (loaded: boolean, error?: string) => {
+    if (error) {
+      console.error("Guest field load error:", error);
+      toast.error(`Error loading Guest information`);
+    }
+
+    setFieldsLoaded((prev) => ({
+      ...prev,
+      guestIds: loaded,
+    }));
+
+    checkAllFieldsLoaded();
+
+  };
+
+
 
   // Helper function to create field props
   const fieldProps = (field: keyof StayFormData, required = false) => ({
@@ -445,11 +463,6 @@ export function StayFields({
           value={formData.guestIds}
           onChange={(value, displayValues) => {
             handleChange("guestIds", value, displayValues || value);
-            // Immediately set as loaded since MultiRefField handles its own loading
-            setFieldsLoaded((prev) => ({
-              ...prev,
-              guestIds: true,
-            }));
           }}
           isEditing={isEditing}
           className={pendingChanges["guestIds"] ? "field-changed" : ""}
@@ -459,10 +472,11 @@ export function StayFields({
             "general.lastName",
             "general.remarks",
           ]}
-          showQuickAdd={true} // Enable quick add functionality
+          showQuickAdd={true}
+          onLoadComplete={handleGuestLoadComplete}
         />
         <TextField
-          label="Remarks"
+          label="Remarks"å
           {...fieldProps("remarks")}
           multiline={true}
           rows={4}

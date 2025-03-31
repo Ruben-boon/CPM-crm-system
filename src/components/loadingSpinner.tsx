@@ -1,14 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LoadingSpinnerProps {
   isLoading: boolean;
-  minDuration?: number;
 }
 
 export function LoadingSpinner({
   isLoading,
-  minDuration = 340,
 }: LoadingSpinnerProps) {
   const [showSpinner, setShowSpinner] = useState(false);
   const [spinnerColor, setSpinnerColor] = useState("#ff5722"); // Default orange color
@@ -27,22 +25,10 @@ export function LoadingSpinner({
     }
   }, [isLoading]);
 
+  // Directly control spinner visibility based on isLoading
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (isLoading) {
-      setShowSpinner(true);
-    } else if (showSpinner) {
-      // When loading finishes, ensure spinner stays visible for minDuration
-      timeoutId = setTimeout(() => {
-        setShowSpinner(false);
-      }, minDuration);
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [isLoading, minDuration, showSpinner]);
+    setShowSpinner(isLoading);
+  }, [isLoading]);
 
   if (!showSpinner) return null;
 

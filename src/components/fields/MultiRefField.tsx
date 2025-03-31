@@ -15,6 +15,7 @@ interface MultiRefFieldProps {
   collectionName: string;
   displayFields?: string[];
   showQuickAdd?: boolean;
+  onLoadComplete?: (loaded: boolean, error?: string) => void;
 }
 
 interface SearchResult {
@@ -33,6 +34,7 @@ export function MultiRefField({
   collectionName,
   displayFields = ["name"],
   showQuickAdd = false,
+  onLoadComplete
 }: MultiRefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -41,7 +43,6 @@ export function MultiRefField({
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { openModal } = useModal();
-
   const getNestedValue = (obj: any, path: string) => {
     const parts = path.split('.');
     let value = obj;
@@ -50,7 +51,6 @@ export function MultiRefField({
     }
     return value;
   };
-
   const formatDisplayValue = (result: SearchResult) => {
     return displayFields
       .map(field => getNestedValue(result, field))
@@ -66,13 +66,13 @@ export function MultiRefField({
           const namePromises = value.map(id => 
             searchDocuments<SearchResult>(collectionName, id, "_id")
           );
-          
           const results = await Promise.all(namePromises);
           const names = results
             .map(result => result[0] ? formatDisplayValue(result[0]) : id)
             .filter(Boolean);
 
           setDisplayNames(names);
+          onLoadComplete?.(true);
         } catch (error) {
           console.error(`Failed to load ${collectionName} display names:`, error);
           // Fallback to IDs if fetching fails
@@ -156,7 +156,6 @@ export function MultiRefField({
       });
     }
   };
-
   const shouldShowQuickAdd = showQuickAdd && collectionName === "contacts" && isEditing;
 
   return (
