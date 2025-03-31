@@ -13,7 +13,7 @@ interface RefFieldProps {
   collectionName: string;
   displayFields?: string[];
   onLoadComplete?: (loaded: boolean, error?: string) => void;
-  allowClear?: boolean; // New prop to control whether clearing is allowed
+  allowClear?: boolean; // This prop is now only used for non-edit mode behavior
   selectedLabel?: string; // Optional prop for pre-filled display value
 }
 
@@ -28,7 +28,7 @@ export function RefField({
   collectionName,
   displayFields = ["name"],
   onLoadComplete,
-  allowClear = false, // Default to false for backward compatibility
+  allowClear = true, // Default to true since we now show clear button in edit mode
   selectedLabel,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -270,17 +270,15 @@ export function RefField({
             <div className={`selected-value ${displayValue && displayValue.startsWith("[Unable") ? "error-value" : ""} ${className}`}>
               {isLoading ? "Loading..." : displayValue || "-"}
             </div>
-            {/* Only show clear button if allowClear is true */}
-            {allowClear && (
-              <button
-                type="button"
-                className="clear-button"
-                onClick={handleClear}
-                aria-label="Clear selection"
-              >
-                <X size={16} />
-              </button>
-            )}
+            {/* Always show clear button in edit mode */}
+            <button
+              type="button"
+              className="clear-button"
+              onClick={handleClear}
+              aria-label="Clear selection"
+            >
+              <X size={16} />
+            </button>
           </div>
         ) : (
           <div className="search-container">
@@ -320,6 +318,46 @@ export function RefField({
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .selected-value-container {
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+
+        .selected-value {
+          flex: 1;
+          padding: 0.5rem;
+          border: 1px solid #e0e0e0;
+          border-radius: 4px;
+          background-color: #f8f8f8;
+        }
+
+        .error-value {
+          color: #d32f2f;
+          background-color: #ffebee;
+        }
+
+        .clear-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: none;
+          border: none;
+          color: #666;
+          cursor: pointer;
+          margin-left: 8px;
+          padding: 4px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .clear-button:hover {
+          background-color: #f0f0f0;
+          color: #d32f2f;
+        }
+      `}</style>
     </div>
   );
 }
