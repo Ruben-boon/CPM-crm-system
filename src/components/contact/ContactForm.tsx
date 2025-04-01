@@ -1,5 +1,4 @@
 "use client";
-import { useState, useEffect } from "react";
 import { useContactsData } from "@/context/DataContext";
 import { CommonForm } from "../common/CommonForm";
 import { TextField } from "../fields/TextField";
@@ -27,7 +26,7 @@ export function ContactForm() {
 
     return firstName && lastName ? `${firstName} ${lastName}` : "this contact";
   };
-  
+
   const getNestedValue = (obj: any, path: string) => {
     if (!obj) return "";
 
@@ -41,7 +40,7 @@ export function ContactForm() {
 
     return current || "";
   };
-  
+
   const handleFieldChange = (
     fieldPath: string,
     value: string,

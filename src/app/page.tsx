@@ -1,3 +1,3 @@
 export default function HomePage() {
-  return <div>A very good place for a dashboard</div>;
+  return <h2>A very good place for a dashboard</h2>;
 }

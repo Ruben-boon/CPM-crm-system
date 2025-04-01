@@ -1,7 +1,7 @@
 "use client";
 
 import MenuLink from "./MenuLink";
-import { Users, Briefcase, Calendar, FileText, Bed, Hotel, BookOpen } from "lucide-react";
+import { Users, Briefcase, Calendar, Bed, Hotel, } from "lucide-react";
 import { ThemeControls } from "./ThemeControls";
 
 export default function Header() {

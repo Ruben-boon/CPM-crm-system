@@ -150,7 +150,7 @@ export function StayForm() {
           isChanged={isFieldChanged("checkOutDate")}
         />
 
-        {/* <MultiRefField
+        <MultiRefField
           label="Guests"
           fieldPath="guestIds"
           value={staysContext.selectedItem?.guestIds || []}
@@ -161,7 +161,7 @@ export function StayForm() {
           displayFields={["general.firstName", "general.lastName"]}
           showQuickAdd={true}
           setFieldLoading={staysContext.setFieldLoading}
-        /> */}
+        />
         
         <TextField
           label="Remarks"

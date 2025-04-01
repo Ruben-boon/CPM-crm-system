@@ -12,9 +12,6 @@ interface MenuLinkProps {
 
 export default function MenuLink({ title, url, icon: Icon }: MenuLinkProps) {
   const pathname = usePathname();
-  
-  // Check if pathname starts with the url
-  // For base routes like "/" we need an exact match to avoid all links being active
   const isActive = url === '/' 
     ? pathname === '/'
     : pathname === url || pathname.startsWith(`${url}/`);

@@ -14,7 +14,6 @@ export function CompanyForm() {
     return item?.name || "this company";
   };
   
-  // Match ContactForm's signature exactly
   const handleFieldChange = (
     fieldPath: string,
     value: string,
@@ -128,11 +127,6 @@ export function CompanyForm() {
         )}
       </div>
 
-      <style jsx>{`
-        .related-section {
-          margin-top: 2rem;
-        }
-      `}</style>
     </CommonForm>
   );
 }
