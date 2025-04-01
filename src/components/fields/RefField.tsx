@@ -4,174 +4,164 @@ import { searchDocuments } from "@/app/actions/crudActions";
 
 interface RefFieldProps {
   label: string;
+  fieldPath: string; // Path to the field in the data model
   value: string;
-  onChange: (value: string, displayValue?: string) => void;
+  updateField?: (fieldPath: string, value: any, metadata?: any) => void;
+  onChange?: (fieldPath: string, value: any, metadata?: any) => void; // Alternative callback
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
+  isChanged?: boolean;
   className?: string;
   collectionName: string;
   displayFields?: string[];
+  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void;
   onLoadComplete?: (loaded: boolean, error?: string) => void;
-  allowClear?: boolean; // This prop is now only used for non-edit mode behavior
-  selectedLabel?: string; // Optional prop for pre-filled display value
 }
 
 export function RefField({
   label,
+  fieldPath,
   value = "",
+  updateField,
   onChange,
   required = false,
   disabled = false,
   isEditing = false,
+  isChanged = false,
   className = "",
   collectionName,
   displayFields = ["name"],
-  onLoadComplete,
-  allowClear = true, // Default to true since we now show clear button in edit mode
-  selectedLabel,
+  setFieldLoading,
+  onLoadComplete
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<any[]>([]);
-  const [displayValue, setDisplayValue] = useState(selectedLabel || "");
-  const [isLoading, setIsLoading] = useState(false);
+  const [displayValue, setDisplayValue] = useState("");
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(!value);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const prevValueRef = useRef<string>(value);
-  const loadCompleteCalledRef = useRef<boolean>(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
-  const retryDelay = process.env.NODE_ENV === 'production' ? 1000 : 0;
+  const previousValueRef = useRef<string>("");
 
-  // Reset the load complete flag when value changes
-  useEffect(() => {
-    // Value has changed, we're starting a new load cycle
-    if (value !== prevValueRef.current) {
-      loadCompleteCalledRef.current = false;
-      setDisplayValue(selectedLabel || "");
-      setRetryCount(0);
-      prevValueRef.current = value;
+  // Use the appropriate update function - handle both callback patterns
+  const handleUpdate = (path: string, val: any, metadata?: any) => {
+    if (onChange) {
+      onChange(path, val, metadata);
+    } else if (updateField) {
+      updateField(path, val, metadata);
+    } else {
+      console.error("No update function provided to RefField");
     }
-  }, [value, selectedLabel]);
+  };
 
-  // Define fetchDisplayName at the component level so it's accessible everywhere
-  async function fetchDisplayName() {
-    // Skip if we already have a display value for this ID
-    if (value && displayValue && value === prevValueRef.current) {
-      if (!loadCompleteCalledRef.current) {
-        loadCompleteCalledRef.current = true;
-        onLoadComplete?.(true);
-      }
-      setIsLoading(false);
+  // Load the display value when the component mounts or value changes
+  useEffect(() => {
+    // Skip effect if value hasn't changed
+    if (previousValueRef.current === value) {
       return;
     }
     
-    // Reset display value if no ID
-    if (!value) {
-      setIsLoading(false);
-      
-      // Only signal complete if we haven't already for this value
-      if (!loadCompleteCalledRef.current) {
-        loadCompleteCalledRef.current = true;
-        onLoadComplete?.(true);
-      }
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await searchDocuments(collectionName, value, "_id");
-      const parsedResults = typeof response === "string" ? JSON.parse(response) : response;
-      const resultArray = Array.isArray(parsedResults) ? parsedResults : [];
-      
-      // Only proceed if this is still the current value
-      if (value !== prevValueRef.current) return;
-      
-      if (resultArray.length > 0) {
-        // Get display string from fields
-        const display = displayFields
-          .map(field => {
-            const parts = field.split(".");
-            let val = resultArray[0];
-            for (const part of parts) {
-              val = val?.[part];
-              if (val === undefined) break;
-            }
-            return val;
-          })
-          .filter(Boolean)
-          .join(" ");
-          
-        setDisplayValue(display);
-      } else {
+    previousValueRef.current = value;
+    
+    async function fetchDisplayName() {
+      if (!value) {
         setDisplayValue("");
+        if (setFieldLoading) {
+          setFieldLoading(fieldPath, false);
+        }
+        if (onLoadComplete) {
+          onLoadComplete(true);
+        }
+        return;
       }
-      
-      // Signal load complete only once per value
-      if (!loadCompleteCalledRef.current) {
-        loadCompleteCalledRef.current = true;
-        onLoadComplete?.(true);
-      }
-    } catch (error) {
-      console.error(`Failed to load ${collectionName} details:`, error);
-      
-      // Only handle error for current value
-      if (value === prevValueRef.current) {
-        // Increase retry count but don't set displayValue yet to allow retries
-        setRetryCount(prev => prev + 1);
+
+      try {
+        setIsLocalLoading(true);
+        // Set loading state to true - this is critical!
+        if (setFieldLoading) {
+          setFieldLoading(fieldPath, true);
+        }
         
-        // Only on final retry, set a display value
-        if (retryCount >= MAX_RETRIES - 1) {
-          setDisplayValue(`[Unable to load ${collectionName}]`);
+        const response = await searchDocuments(collectionName, value, "_id");
+
+        if (response && response.length > 0) {
+          // Get display string from fields
+          const display = displayFields
+            .map((field) => {
+              const parts = field.split(".");
+              let val = response[0];
+              for (const part of parts) {
+                val = val?.[part];
+                if (val === undefined) break;
+              }
+              return val;
+            })
+            .filter(Boolean)
+            .join(" ");
+
+          setDisplayValue(display);
           
-          // Signal load error only once per value
-          if (!loadCompleteCalledRef.current) {
-            loadCompleteCalledRef.current = true;
-            onLoadComplete?.(false, `Failed to load ${collectionName} details`);
+          if (onLoadComplete) {
+            onLoadComplete(true);
+          }
+        } else {
+          setDisplayValue("");
+          if (onLoadComplete) {
+            onLoadComplete(true, "Referenced item not found");
           }
         }
-      }
-    } finally {
-      // Only update loading state if this is for the current value
-      if (value === prevValueRef.current) {
-        setIsLoading(false);
+
+        if (setFieldLoading) {
+          setFieldLoading(fieldPath, false);
+        }
+      } catch (error) {
+        console.error(`Failed to load ${collectionName} details:`, error);
+        setDisplayValue(`[Unable to load ${collectionName}]`);
+        if (setFieldLoading) {
+          setFieldLoading(fieldPath, false);
+        }
+        if (onLoadComplete) {
+          onLoadComplete(false, error instanceof Error ? error.message : "Unknown error");
+        }
+      } finally {
+        setIsLocalLoading(false);
       }
     }
-  }
 
-  // Single effect for loading with retry logic
+    fetchDisplayName();
+  }, [value, collectionName, displayFields, fieldPath, setFieldLoading, onLoadComplete]);
+
+  // When value changes, update the showSearchInput state
   useEffect(() => {
-    if (value && !loadCompleteCalledRef.current) {
-      const timeoutId = setTimeout(() => {
-        fetchDisplayName().catch((error) => {
-          console.error("Error in fetchDisplayName:", error);
-          // Retry logic is handled inside fetchDisplayName
-        });
-      }, retryCount * retryDelay);
-      
-      return () => clearTimeout(timeoutId);
-    } else if (!value && !loadCompleteCalledRef.current) {
-      // For empty values, signal complete immediately
-      loadCompleteCalledRef.current = true;
-      onLoadComplete?.(true);
-    }
-  }, [value, retryCount, collectionName, displayFields, onLoadComplete]);
+    setShowSearchInput(!value);
+  }, [value]);
 
+  // Handle click outside to close the dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsSearching(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      // Clear loading state on unmount
+      if (setFieldLoading) {
+        setFieldLoading(fieldPath, false);
+      }
+    };
+  }, [fieldPath, setFieldLoading]);
 
   // Handle search input
-  async function handleSearch(term: string) {
+  const handleSearch = async (term: string) => {
     setSearchTerm(term);
-    
+
     if (!term.trim()) {
       setResults([]);
       setIsSearching(false);
@@ -179,22 +169,31 @@ export function RefField({
     }
 
     try {
-      const response = await searchDocuments(collectionName, term, displayFields[0]);
-      const parsedResults = typeof response === "string" ? JSON.parse(response) : response;
-      const resultArray = Array.isArray(parsedResults) ? parsedResults : [];
-      
-      setResults(resultArray);
-      setIsSearching(resultArray.length > 0);
+      // Search across all display fields for better results
+      const searchPromises = displayFields.map((field) =>
+        searchDocuments(collectionName, term, field)
+      );
+
+      const resultsArrays = await Promise.all(searchPromises);
+
+      // Combine and deduplicate results
+      const combinedResults = Array.from(
+        new Map(resultsArrays.flat().map((item) => [item._id, item])).values()
+      );
+
+      setResults(combinedResults);
+      setIsSearching(combinedResults.length > 0);
     } catch (error) {
       console.error("Search failed:", error);
       setResults([]);
+      setIsSearching(false);
     }
-  }
+  };
 
   // Handle selecting a search result
-  function handleSelect(result: any) {
+  const handleSelect = (result: any) => {
     const display = displayFields
-      .map(field => {
+      .map((field) => {
         const parts = field.split(".");
         let val = result;
         for (const part of parts) {
@@ -205,53 +204,56 @@ export function RefField({
       })
       .filter(Boolean)
       .join(" ");
-    
-    // When manually selecting, we're already "loaded"
-    loadCompleteCalledRef.current = true;
-    prevValueRef.current = result._id;  
+
     setDisplayValue(display);
-    setIsLoading(false); // Explicitly clear loading state
-    onChange(result._id, display);
+    handleUpdate(fieldPath, result._id, { displayValue: display });
     setSearchTerm("");
     setIsSearching(false);
     
-    // Signal complete for manual selection
-    onLoadComplete?.(true);
-  }
+    // When we select a new value, mark it as loading until the data is fetched
+    if (setFieldLoading) {
+      setFieldLoading(fieldPath, true);
+    }
+    
+    // Force the UI to show the selected value view
+    setShowSearchInput(false);
+  };
 
   // Clear the selection
-  function handleClear() {
-    loadCompleteCalledRef.current = true;
-    prevValueRef.current = "";
+  const handleClear = () => {
+    // Update local states
     setDisplayValue("");
     setSearchTerm("");
-    setIsLoading(false); // Explicitly clear loading state
-    onChange("", "");
     setIsSearching(false);
     
-    // Signal complete for clearing
-    onLoadComplete?.(true);
-  }
+    // Force UI to show search input
+    setShowSearchInput(true);
+    
+    // Update loading state and parent
+    if (setFieldLoading) {
+      setFieldLoading(fieldPath, false);
+    }
+    
+    // Notify parent
+    handleUpdate(fieldPath, "");
+    
+    // Notify onLoadComplete
+    if (onLoadComplete) {
+      onLoadComplete(true);
+    }
+  };
 
   // Read-only view
   if (!isEditing) {
     return (
-      <div className="ref-field">
+      <div className="form-field">
         <label className="field-label">{label}</label>
         <div className={`read-only ${className}`}>
-          {value && displayValue ? displayValue : <span className="empty-reference">-</span>}
-        </div>
-      </div>
-    );
-  }
-
-  // Disabled view
-  if (disabled) {
-    return (
-      <div className="ref-field">
-        <label className="field-label">{label}</label>
-        <div className="disabled-field">
-          <i>This field is automatically set and cannot be edited.</i>
+          {value && displayValue ? (
+            displayValue
+          ) : (
+            <span className="empty-reference">-</span>
+          )}
         </div>
       </div>
     );
@@ -259,23 +261,27 @@ export function RefField({
 
   // Editable view
   return (
-    <div className="ref-field">
+    <div className="form-field" ref={dropdownRef}>
       <label className="field-label">
         {label}
         {required && <span className="required-mark">*</span>}
       </label>
-      <div className="ref-field-container" ref={dropdownRef}>
-        {value ? (
+
+      <div className="ref-field-container">
+        {!showSearchInput ? (
           <div className="selected-value-container">
-            <div className={`selected-value ${displayValue && displayValue.startsWith("[Unable") ? "error-value" : ""} ${className}`}>
-              {isLoading ? "Loading..." : displayValue || "-"}
+            <div
+              className={`selected-value ${
+                isChanged ? "field-changed" : ""
+              } ${className}`}
+            >
+              {isLocalLoading ? "Loading..." : displayValue || "-"}
             </div>
-            {/* Always show clear button in edit mode */}
             <button
               type="button"
               className="clear-button"
               onClick={handleClear}
-              aria-label="Clear selection"
+              disabled={disabled}
             >
               <X size={16} />
             </button>
@@ -286,11 +292,14 @@ export function RefField({
               type="text"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className={`search-input ${className}`}
+              className={`search-input ${
+                isChanged ? "field-changed" : ""
+              } ${className}`}
               placeholder="Search..."
+              disabled={disabled}
             />
             <Search className="search-icon" />
-            
+
             {isSearching && (
               <div className="search-results">
                 {results.map((result) => (
@@ -300,7 +309,7 @@ export function RefField({
                     onClick={() => handleSelect(result)}
                   >
                     {displayFields
-                      .map(field => {
+                      .map((field) => {
                         const parts = field.split(".");
                         let val = result;
                         for (const part of parts) {
@@ -318,46 +327,6 @@ export function RefField({
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .selected-value-container {
-          display: flex;
-          align-items: center;
-          width: 100%;
-        }
-
-        .selected-value {
-          flex: 1;
-          padding: 0.5rem;
-          border: 1px solid #e0e0e0;
-          border-radius: 4px;
-          background-color: #f8f8f8;
-        }
-
-        .error-value {
-          color: #d32f2f;
-          background-color: #ffebee;
-        }
-
-        .clear-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: none;
-          border: none;
-          color: #666;
-          cursor: pointer;
-          margin-left: 8px;
-          padding: 4px;
-          border-radius: 4px;
-          transition: background-color 0.2s;
-        }
-
-        .clear-button:hover {
-          background-color: #f0f0f0;
-          color: #d32f2f;
-        }
-      `}</style>
     </div>
   );
 }

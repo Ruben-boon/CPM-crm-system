@@ -1,17 +1,63 @@
 "use client";
-import { useState } from "react";
 import { useHotelsData } from "@/context/DataContext";
 import { CommonForm } from "../common/CommonForm";
-import { HotelFields } from "./HotelFields";
+import { TextField } from "../fields/TextField";
+import { RelatedItems } from "../fields/RelatedItems";
+import { useRouter } from "next/navigation";
+import { MultiTextField } from "../fields/MultiTextFields";
+import { useEffect, useRef } from "react";
 
 export function HotelForm() {
-  const [isFormLoading, setIsFormLoading] = useState(false);
-  const [areAllFieldsLoaded, setAreAllFieldsLoaded] = useState(true);
   const hotelsContext = useHotelsData();
+  const router = useRouter();
+  const previousHotelIdRef = useRef<string | null>(null);
 
-  // Function to get display name for the item
+  // Track related items loading
+  useEffect(() => {
+    const currentHotelId = hotelsContext.selectedItem?._id || null;
+    
+    // If we have a new hotel (different from previous one)
+    if (currentHotelId !== previousHotelIdRef.current) {
+      // First clear any previous loading states to avoid stuck spinners
+      if (previousHotelIdRef.current) {
+        hotelsContext.setFieldLoading('related.stays', false);
+      }
+      
+      // Now set loading state for the new hotel if needed
+      if (!hotelsContext.isEditing && currentHotelId) {
+        hotelsContext.setFieldLoading('related.stays', true);
+      }
+      
+      // Update the ref to the current hotel
+      previousHotelIdRef.current = currentHotelId;
+    }
+  }, [hotelsContext.isEditing, hotelsContext.selectedItem, hotelsContext.setFieldLoading]);
+
+  // Clean up loading states when component unmounts
+  useEffect(() => {
+    return () => {
+      hotelsContext.setFieldLoading('related.stays', false);
+    };
+  }, [hotelsContext.setFieldLoading]);
+
   const getDisplayName = (item: any) => {
-    return item.name || "this hotel";
+    return item?.name || "this hotel";
+  };
+  
+  const handleFieldChange = (
+    fieldPath: string,
+    value: string,
+    displayValue?: string
+  ) => {
+    hotelsContext.updateField(fieldPath, value);
+  };
+
+  const handleRelationClick = (itemId: string, collection: string) => {
+    router.push(`/${collection}/${itemId}`);
+  };
+
+  const isFieldChanged = (fieldPath: string) => {
+    return !!hotelsContext.pendingChanges[fieldPath];
   };
 
   return (
@@ -21,17 +67,117 @@ export function HotelForm() {
       entityType="hotel"
       basePath="hotels"
       displayName={getDisplayName}
-      isFormLoading={isFormLoading}
-      isAllFieldsLoaded={() => areAllFieldsLoaded}
     >
-      <HotelFields
-        selectedItem={hotelsContext.selectedItem}
-        isEditing={hotelsContext.isEditing}
-        pendingChanges={hotelsContext.pendingChanges}
-        setPendingChanges={hotelsContext.setPendingChanges}
-        onLoadingChange={setIsFormLoading}
-        onAllFieldsLoadedChange={setAreAllFieldsLoaded}
-      />
+      <div className="col-half">
+        <TextField
+          label="Name"
+          fieldPath="name"
+          value={hotelsContext.selectedItem?.name || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          required={true}
+          isChanged={isFieldChanged("name")}
+        />
+        <TextField
+          label="Address"
+          fieldPath="address"
+          value={hotelsContext.selectedItem?.address || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          isChanged={isFieldChanged("address")}
+        />
+        <TextField
+          label="Postal Code"
+          fieldPath="postal_code"
+          value={hotelsContext.selectedItem?.postal_code || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          isChanged={isFieldChanged("postal_code")}
+        />
+        <TextField
+          label="City"
+          fieldPath="city"
+          value={hotelsContext.selectedItem?.city || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          isChanged={isFieldChanged("city")}
+        />
+        <TextField
+          label="Country"
+          fieldPath="country"
+          value={hotelsContext.selectedItem?.country || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          isChanged={isFieldChanged("country")}
+        />
+        <TextField
+          label="Email"
+          fieldPath="email"
+          value={hotelsContext.selectedItem?.email || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          type="email"
+          isChanged={isFieldChanged("email")}
+        />
+        <TextField
+          label="Phone"
+          fieldPath="phone"
+          value={hotelsContext.selectedItem?.phone || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          type="tel"
+          isChanged={isFieldChanged("phone")}
+        />
+      </div>
+      
+      <div className="col-half">
+        <MultiTextField
+          label="Room Types"
+          fieldPath="roomTypes"
+          value={hotelsContext.selectedItem?.roomTypes || []}
+          updateField={hotelsContext.updateField}
+          isEditing={hotelsContext.isEditing}
+          isChanged={isFieldChanged("roomTypes")}
+          placeholder="Add a room type..."
+          setFieldLoading={hotelsContext.setFieldLoading}
+        />
+        
+        <TextField
+          label="Notes"
+          fieldPath="notes"
+          value={hotelsContext.selectedItem?.notes || ""}
+          onChange={handleFieldChange}
+          isEditing={hotelsContext.isEditing}
+          multiline={true}
+          rows={4}
+          isChanged={isFieldChanged("notes")}
+        />
+        
+        {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
+          <div className="related-section">
+            <RelatedItems
+              id={hotelsContext.selectedItem._id}
+              referenceField="hotelId"
+              collectionName="stays"
+              displayFields={[
+                { path: "reference" },
+                { path: "roomNumber" }
+              ]}
+              title="Stays"
+              emptyMessage="No stays found"
+              onItemClick={handleRelationClick}
+              setFieldLoading={hotelsContext.setFieldLoading}
+              isFormEditing={hotelsContext.isEditing}
+            />
+          </div>
+        )}
+      </div>
+
+      <style jsx>{`
+        .related-section {
+          margin-top: 2rem;
+        }
+      `}</style>
     </CommonForm>
   );
 }

@@ -6,43 +6,62 @@ interface Option {
 }
 
 interface DropdownFieldProps {
-  label?: string; // Make label optional
-  value?: string;
-  onChange: (value: string) => void;
+  label?: string;
+  fieldPath: string; // Path to the field in the data model
+  value: string;
+  updateField?: (fieldPath: string, value: any) => void;
+  onChange?: (fieldPath: string, value: any) => void; // Alternative callback
   options: Option[];
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
+  isChanged?: boolean;
   placeholder?: string;
   className?: string;
-  compact?: boolean; // Add a compact mode for smaller dropdowns
+  compact?: boolean;
 }
 
 export function DropdownField({
   label,
+  fieldPath,
   value = "",
+  updateField,
   onChange,
   options,
   required = false,
-  disabled,
-  isEditing,
+  disabled = false,
+  isEditing = false,
+  isChanged = false,
   placeholder = "Select an option",
   className = "",
   compact = false,
 }: DropdownFieldProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (updateField) {
+      updateField(fieldPath, e.target.value);
+    } else if (onChange) {
+      onChange(fieldPath, e.target.value);
+    }
+  };
+
+  const displayLabel = options.find((opt) => opt.value === value)?.label || "";
+
   return (
-    <div className={`form-field ${compact ? 'form-field-compact' : ''}`}>
-      {label && ( // Only render label if provided
+    <div className={`form-field ${compact ? "form-field-compact" : ""}`}>
+      {label && (
         <label className="field-label">
           {label}
           {isEditing && required && <span className="required-mark"> *</span>}
         </label>
       )}
+
       {isEditing ? (
         <select
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`input-base input-style ${className} ${compact ? 'input-compact' : ''}`}
+          onChange={handleChange}
+          className={`input-base input-style ${className} ${
+            compact ? "input-compact" : ""
+          } ${isChanged ? "field-changed" : ""}`}
           required={required}
           disabled={disabled}
         >
@@ -56,10 +75,12 @@ export function DropdownField({
           ))}
         </select>
       ) : (
-        <input 
-          disabled 
-          value={options.find(opt => opt.value === value)?.label || ""} 
-          className={`input-base ${className} ${compact ? 'input-compact' : ''}`}
+        <input
+          disabled
+          value={displayLabel}
+          className={`input-base ${className} ${
+            compact ? "input-compact" : ""
+          }`}
         />
       )}
     </div>

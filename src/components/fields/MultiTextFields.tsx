@@ -4,30 +4,39 @@ import Button from "@/components/common/Button";
 
 interface MultiTextFieldProps {
   label: string;
+  fieldPath: string; // Path to the field in the data model
   value: string[];
-  onChange: (value: string[]) => void;
+  updateField: (fieldPath: string, value: any) => void;
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
+  isChanged?: boolean;
   className?: string;
   placeholder?: string;
+  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void;
 }
 
 export function MultiTextField({
   label,
+  fieldPath,
   value = [],
-  onChange,
+  updateField,
   required = false,
   disabled = false,
   isEditing = false,
+  isChanged = false,
   className = "",
   placeholder = "Enter text...",
+  setFieldLoading,
 }: MultiTextFieldProps) {
   const [newEntry, setNewEntry] = useState("");
 
   const handleAddEntry = () => {
     if (newEntry.trim()) {
-      onChange([...value, newEntry.trim()]);
+      // Since this is just a client-side update with no async operations,
+      // we don't need to set loading state
+      const newValue = [...value, newEntry.trim()];
+      updateField(fieldPath, newValue);
       setNewEntry("");
     }
   };
@@ -35,7 +44,7 @@ export function MultiTextField({
   const handleRemoveEntry = (index: number) => {
     const newValue = [...value];
     newValue.splice(index, 1);
-    onChange(newValue);
+    updateField(fieldPath, newValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -65,13 +74,15 @@ export function MultiTextField({
     );
   }
 
+  // Editable view
   return (
     <div className="multi-text-field">
       <label className="field-label">
         {label}
         {required && <span className="required-mark">*</span>}
       </label>
-      <div className="multi-text-field-container">
+      
+      <div className={`multi-text-field-container ${isChanged ? "field-changed" : ""}`}>
         <div className="entries-list">
           {value.map((entry, index) => (
             <div key={index} className="entry-item">
@@ -110,57 +121,6 @@ export function MultiTextField({
           </Button>
         </div>
       </div>
-
-      <style jsx>{`
-        .multi-text-field {
-          margin-bottom: 1rem;
-        }
-        
-        .entries-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        .entry-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.5rem;
-          background-color: #f0f4f8;
-          border-radius: 4px;
-        }
-        
-        .remove-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #666;
-          padding: 0.25rem;
-          border-radius: 4px;
-        }
-        
-        .remove-button:hover {
-          color: #d32f2f;
-          background-color: rgba(211, 47, 47, 0.1);
-        }
-        
-        .add-entry-container {
-          display: flex;
-          gap: 0.5rem;
-        }
-        
-        .text-entries-list {
-          list-style-type: disc;
-          margin: 0;
-          padding-left: 1.5rem;
-        }
-        
-        .text-entry-item {
-          margin-bottom: 0.25rem;
-        }
-      `}</style>
     </div>
   );
 }

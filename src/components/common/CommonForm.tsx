@@ -1,7 +1,7 @@
 "use client";
 import Button from "@/components/common/Button";
 import { Save, X, Edit, Trash2 } from "lucide-react";
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../loadingSpinner";
@@ -9,27 +9,26 @@ import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 
 export interface DataContextState<T> {
   selectedItem: T | null;
+  originalItem: T | null;
   updateItem: (item: T) => Promise<boolean>;
   createItem: (item: T) => Promise<boolean>;
   deleteItem: (id: string) => Promise<boolean>;
+  resetForm: () => void;
   setIsEditing: (isEditing: boolean) => void;
   isEditing: boolean;
   pendingChanges: Record<string, { oldValue: any; newValue: any }>;
-  setPendingChanges: (
-    changes: Record<string, { oldValue: any; newValue: any }>
-  ) => void;
-  selectItem?: (item: Partial<T> | null, startEditing?: boolean) => void;
+  isDirty: boolean;
+  cancelCopy?: () => void;
+  isAnyFieldLoading?: () => boolean;
+  fieldLoadingStates?: Record<string, boolean>;
 }
 export interface CommonFormProps<T> {
   dataContext: DataContextState<T>;
-  children: ReactNode;
+  children: React.ReactNode;
   itemName: string;
   entityType: string;
   basePath: string;
   displayName: (item: T) => string;
-  isFormLoading?: boolean;
-  isAllFieldsLoaded?: () => boolean;
-  onFormReset?: () => void;
 }
 
 export function CommonForm<T extends { _id?: string }>({
@@ -39,57 +38,79 @@ export function CommonForm<T extends { _id?: string }>({
   entityType,
   basePath,
   displayName,
-  isFormLoading = false,
-  isAllFieldsLoaded = () => true,
-  onFormReset,
 }: CommonFormProps<T>) {
   const {
     selectedItem,
     updateItem,
     createItem,
     deleteItem,
+    resetForm,
     setIsEditing,
     isEditing,
-    pendingChanges,
-    setPendingChanges,
-    selectItem,
+    isDirty,
   } = dataContext;
-  const router = useRouter();
 
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  //start as new contact
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (selectedItem) {
-      setIsCreating(!selectedItem._id);
-      if (!selectedItem._id) {
+      const isNewItem = !selectedItem._id;
+      setIsCreating(isNewItem);
+      // Auto-enable editing for new items
+      if (isNewItem && !isEditing) {
         setIsEditing(true);
       }
     }
-  }, [selectedItem, setIsEditing]);
+  }, [selectedItem, isEditing, setIsEditing]);
+
+  const checkLoading = useCallback(() => {
+    const isLoading = dataContext.isAnyFieldLoading?.() || false;
+
+    if (isLoading) {
+      setShowLoadingSpinner(true);
+    } else {
+      setShowLoadingSpinner(false);
+    }
+  }, [dataContext]);
+
+  useEffect(() => {
+    checkLoading();
+    const interval = setInterval(checkLoading, 200);
+
+    return () => {
+      clearInterval(interval);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [checkLoading]);
 
   const handleClose = () => {
-    setPendingChanges({});
-    if (isEditing) {
-      setIsEditing(false);
-    }
     router.push(`/${basePath}`);
   };
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      // Use the current selectedItem combined with any pending changes
-      const itemData = {
-        ...selectedItem,
-      } as T;
+    if (isSubmitting || !selectedItem) {
+      return;
+    }
+    if (dataContext.isAnyFieldLoading?.()) {
+      toast.error("Please wait until all fields have finished loading");
+      return;
+    }
 
-      const isUpdate = !!selectedItem?._id;
+    setIsSubmitting(true);
+
+    try {
+      const isUpdate = !!selectedItem._id;
       const success = isUpdate
-        ? await updateItem(itemData)
-        : await createItem(itemData);
+        ? await updateItem(selectedItem as T)
+        : await createItem(selectedItem as T);
 
       if (success) {
         toast.success(
@@ -97,11 +118,10 @@ export function CommonForm<T extends { _id?: string }>({
         );
         setIsEditing(false);
         setIsCreating(false);
-        setPendingChanges({});
 
         // For new items, navigate to the detail view with the new ID
-        if (!isUpdate && (itemData as any)._id) {
-          router.push(`/${basePath}/${(itemData as any)._id}`);
+        if (!isUpdate && (selectedItem as any)?._id) {
+          router.push(`/${basePath}/${(selectedItem as any)._id}`);
         }
       } else {
         toast.error(
@@ -112,49 +132,37 @@ export function CommonForm<T extends { _id?: string }>({
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
+      console.error("Save error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
   const handleCancel = () => {
-    // Clear pending changes first
-    setPendingChanges({});
-    
-    // For existing items, just exit edit mode
-    if (!isCreating && selectedItem?._id) {
-      setIsEditing(false);
-      
-      // Call the optional onFormReset callback if provided
-      if (onFormReset) {
-        onFormReset();
-      }
-      return;
-    }
-    
-    // For new items, navigate back to list view
     if (isCreating) {
-      setIsEditing(false);
-      setIsCreating(false);
-      
-      // Call the optional onFormReset callback if provided
-      if (onFormReset) {
-        onFormReset();
+      // If we have a cancelCopy method, use that for better cleanup
+      if (dataContext.cancelCopy) {
+        dataContext.cancelCopy();
+      } else {
+        resetForm();
+        setIsEditing(false);
       }
-      
+
+      // Navigate after state is reset
       router.push(`/${basePath}`);
+    } else {
+      resetForm();
+      setIsEditing(false);
     }
   };
   const handleDeleteClick = (e?: React.MouseEvent) => {
-    // If there's an event, prevent default behavior
     if (e) e.preventDefault();
 
-    // Cancel editing mode first to avoid update conflict
+    // Exit edit mode before deletion
     if (isEditing) {
       setIsEditing(false);
-      setPendingChanges({});
+      resetForm();
     }
 
-    // Show confirmation dialog
     setShowDeleteConfirmation(true);
   };
   const handleCancelDelete = () => {
@@ -185,27 +193,33 @@ export function CommonForm<T extends { _id?: string }>({
       setShowDeleteConfirmation(false);
     }
   };
+
   const itemDisplayName = selectedItem
     ? displayName(selectedItem)
     : `this ${itemName.toLowerCase()}`;
 
   return (
     <div className="detail-wrapper">
-      <LoadingSpinner isLoading={isFormLoading || isDeleting} />
+
+      <LoadingSpinner isLoading={showLoadingSpinner || isDeleting} />
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirmation}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
         itemName={itemDisplayName}
       />
+
       <form
         onSubmit={handleSave}
-        className={`${entityType}-form ${!isFormLoading ? "done-loading" : ""}`}
+        className={`${entityType}-form ${
+          !showLoadingSpinner ? "done-loading" : ""
+        }`}
       >
         <div className="top-bar">
           <div className="top-bar__title">
             {selectedItem?._id ? `${itemName} Details` : `New ${itemName}`}
           </div>
+
           <div className="top-bar__edit">
             {!isEditing && selectedItem?._id && (
               <>
@@ -223,7 +237,7 @@ export function CommonForm<T extends { _id?: string }>({
               </>
             )}
 
-            {(isEditing || isCreating) && (
+            {isEditing && (
               <>
                 <Button
                   intent="secondary"
@@ -238,9 +252,8 @@ export function CommonForm<T extends { _id?: string }>({
                   type="submit"
                   disabled={
                     isSubmitting ||
-                    (!isCreating && Object.keys(pendingChanges).length === 0) ||
-                    isFormLoading ||
-                    !isAllFieldsLoaded()
+                    (!isCreating && !isDirty) ||
+                    showLoadingSpinner
                   }
                 >
                   Save
@@ -249,7 +262,9 @@ export function CommonForm<T extends { _id?: string }>({
             )}
           </div>
         </div>
+
         <div className="detail-content">{children}</div>
+
         <div className="bottom-bar">
           {isEditing && !isCreating && selectedItem?._id && (
             <Button

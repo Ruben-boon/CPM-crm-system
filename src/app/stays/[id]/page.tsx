@@ -3,19 +3,16 @@
 import { useStaysData } from "@/context/DataContext";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { StayForm } from "@/components/stay/StayForm";
 
 export default function StayDetailPage() {
   const { selectItem } = useStaysData();
   const params = useParams();
   const stayId = params.id;
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadStay = async () => {
-      setIsLoading(true);
-
       try {
         // Handle "new" stay case
         if (stayId === "new") {
@@ -35,23 +32,11 @@ export default function StayDetailPage() {
         }
       } catch (error) {
         console.error("Error loading stay:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadStay();
-  }, [stayId]);
+  }, [stayId, selectItem]);
 
-  return (
-    <>
-      {isLoading ? (
-        <div className="gray-screen">
-          {/* Loading indicator */}
-        </div>
-      ) : (
-        <StayForm />
-      )}
-    </>
-  );
+  return <StayForm />;
 }

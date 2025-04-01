@@ -7,47 +7,59 @@ interface Option {
 
 interface RadioFieldProps {
   label: string;
+  fieldPath: string; // Path to the field in the data model
   value: string;
-  onChange: (value: string) => void;
+  updateField: (fieldPath: string, value: any) => void;
   options: Option[];
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
+  isChanged?: boolean;
   className?: string;
 }
 
 export function RadioField({
   label,
-  value,
-  onChange,
+  fieldPath,
+  value = "",
+  updateField,
   options,
   required = false,
-  disabled,
-  isEditing,
+  disabled = false,
+  isEditing = false,
+  isChanged = false,
   className = "",
 }: RadioFieldProps) {
+  const handleChange = (selectedValue: string) => {
+    updateField(fieldPath, selectedValue);
+  };
+
+  // Get the display label for the current value
+  const displayLabel = options.find(opt => opt.value === value)?.label || "";
+
   return (
     <div className="radio-field">
       <label className="field-label">
         {label}
         {isEditing && required && <span className="required-mark"> *</span>}
       </label>
-      <div className={`radio-options ${className}`}>
+      
+      <div className={`radio-options ${className} ${isChanged ? "field-changed" : ""}`}>
         {isEditing ? (
           <div className="radio-group">
             {options.map((option) => (
               <div key={option.value} className="radio-option">
                 <input
                   type="radio"
-                  id={`radio-${option.value}`}
-                  name={label.replace(/\s+/g, '-').toLowerCase()}
+                  id={`radio-${fieldPath}-${option.value}`}
+                  name={fieldPath.replace(/\./g, '-')}
                   value={option.value}
                   checked={value === option.value}
-                  onChange={() => onChange(option.value)}
+                  onChange={() => handleChange(option.value)}
                   disabled={disabled}
                   required={required && options.findIndex(opt => opt.value === value) === -1}
                 />
-                <label htmlFor={`radio-${option.value}`} className="radio-label">
+                <label htmlFor={`radio-${fieldPath}-${option.value}`} className="radio-label">
                   {option.label}
                 </label>
               </div>
@@ -55,7 +67,7 @@ export function RadioField({
           </div>
         ) : (
           <div className="input-read-only">
-            {options.find(opt => opt.value === value)?.label || <span className="empty-reference">-</span>}
+            {displayLabel || <span className="empty-reference">-</span>}
           </div>
         )}
       </div>

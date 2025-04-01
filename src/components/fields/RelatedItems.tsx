@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { ExternalLink } from "lucide-react";
 import { LoadingSpinner } from "../loadingSpinner";
@@ -17,10 +17,13 @@ interface RelatedItemsProps {
   title: string; // Title for the section (e.g., "Related Contacts")
   emptyMessage?: string; // Message to show when no items are found
   onItemClick?: (id: string, collection: string) => void;
-  onLoadingChange?: (isLoading: boolean) => void; // Callback for loading state changes
+  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void; // New prop to report loading state
+  isFormEditing?: boolean; // Whether the parent form is in edit mode
+  onLoadingChange?: (isLoading: boolean) => void; // Callback for loading changes
 }
 
-export function RelatedItems({
+// Use React.memo to prevent unnecessary rerenders
+const RelatedItems = memo(function RelatedItems({
   id,
   referenceField,
   collectionName,
@@ -28,27 +31,58 @@ export function RelatedItems({
   title,
   emptyMessage = "No items found",
   onItemClick,
-  onLoadingChange,
+  setFieldLoading,
+  isFormEditing = false,
+  onLoadingChange
 }: RelatedItemsProps) {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadedRef = useRef(false); // Track if data has been loaded once
+  const isMountedRef = useRef(true); // Track if component is mounted
+  const loadingFieldPath = `related.${collectionName}`; // Unique field path for loading state
+
+  // Memoize the function to report loading state to prevent it from changing on each render
+  const reportLoadingState = useCallback((loading: boolean) => {
+    if (setFieldLoading) {
+      setFieldLoading(loadingFieldPath, loading);
+    }
+    
+    // Report loading state to the parent component
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+  }, [loadingFieldPath, setFieldLoading, onLoadingChange]);
 
   // Load related items when component mounts or ID changes
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
+
+    // Skip data loading when in edit mode if data was already loaded once
+    if (isFormEditing && loadedRef.current && items.length > 0) {
+      return;
+    }
 
     const loadRelatedItems = async () => {
       if (!id) {
-        setItems([]);
+        if (isMountedRef.current) {
+          setItems([]);
+        }
         return;
       }
 
-      setIsLoading(true);
-      if (onLoadingChange) {
-        onLoadingChange(true);
+      // Only show loading indicator when no data is already loaded
+      if (!loadedRef.current) {
+        if (isMountedRef.current) {
+          setIsLoading(true);
+          // Report loading state
+          reportLoadingState(true);
+        }
       }
-      setError(null);
+
+      if (isMountedRef.current) {
+        setError(null);
+      }
 
       try {
         const results = await searchDocuments(
@@ -57,20 +91,20 @@ export function RelatedItems({
           referenceField
         );
 
-        if (isMounted) {
+        if (isMountedRef.current) {
           setItems(results);
+          loadedRef.current = true; // Mark data as loaded
+          setIsLoading(false);
+          // Report loading complete
+          reportLoadingState(false);
         }
       } catch (err) {
         console.error(`Error loading related ${collectionName}:`, err);
-        if (isMounted) {
+        if (isMountedRef.current) {
           setError(`Failed to load ${collectionName}`);
-        }
-      } finally {
-        if (isMounted) {
           setIsLoading(false);
-          if (onLoadingChange) {
-            onLoadingChange(false);
-          }
+          // Report loading complete even on error
+          reportLoadingState(false);
         }
       }
     };
@@ -79,9 +113,11 @@ export function RelatedItems({
 
     // Cleanup function to handle unmounting
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
+      // Make sure to mark as not loading when component unmounts
+      reportLoadingState(false);
     };
-  }, [id, referenceField, collectionName]); // Remove onLoadingChange from dependency array
+  }, [id, referenceField, collectionName, items.length, isFormEditing, reportLoadingState]);
 
   // Helper function to get a value from an object using a path string
   const getNestedValue = (obj: any, path: string): string => {
@@ -108,6 +144,20 @@ export function RelatedItems({
       onItemClick(itemId, collectionName);
     }
   };
+
+  // If in edit mode and we've already loaded data once, render a simpler version
+  if (isFormEditing && loadedRef.current) {
+    return (
+      <div className="related-items related-items--edit-mode">
+        <h3 className="related-items__title">{title}</h3>
+        <div className="related-items__edit-message">
+          {items.length > 0 
+            ? `${items.length} ${items.length === 1 ? 'item' : 'items'} (visible after saving)` 
+            : emptyMessage}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="related-items">
@@ -137,71 +187,8 @@ export function RelatedItems({
       ) : (
         <div className="related-items__empty">{emptyMessage}</div>
       )}
-
-      <style jsx>{`
-        .related-items {
-          margin-bottom: 2rem;
-        }
-
-        .related-items__title {
-          font-size: 1rem;
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-        }
-
-        .related-items__list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          max-height: 300px;
-          overflow-y: auto;
-          display: flex;
-          align-items: flex-start;
-          padding: 0.75rem;
-          border-radius: 4px;
-          background-color: #white;
-          border: 1px solid #e0e0e0;
-          cursor: ${onItemClick ? "pointer" : "default"};
-          transition: all 0.2s;
-          color: var(--accent-color);
-        }
-
-        .related-items__item {
-            display:flex;
-            justify-content:space-between;
-            width:100%;
-        }
-        .related-items__item:hover {
-          text-decoration: underline;
-        }
-
-        .related-items__empty {
-          padding: 0.75rem;
-          border-radius: 4px;
-          background-color: white;
-          border: 1px solid #e0e0e0;
-          color: #999;
-          font-style: italic;
-        }
-
-        .related-items__loading,
-        .related-items__error {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem;
-          font-style: italic;
-          color: #666;
-        }
-
-        .related-items__error {
-          color: #d32f2f;
-        }
-
-        .item-link-icon {
-          opacity: 0.7;
-        }
-      `}</style>
     </div>
   );
-}
+});
+
+export { RelatedItems };

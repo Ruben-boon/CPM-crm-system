@@ -2,47 +2,94 @@ import React from "react";
 
 interface TextFieldProps {
   label: string;
+  fieldPath: string; // Path to the field in the data model (e.g., "general.firstName")
   value: string;
-  onChange: (value: string) => void;
+  updateField: (fieldPath: string, value: any) => void;
+  onChange?: (fieldPath: string, value: any) => void; // Optional alternative callback
   type?: "text" | "email" | "number" | "tel" | "date";
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
+  isChanged?: boolean;
+  multiline?: boolean;
+  rows?: number;
   className?: string;
+  placeholder?: string;
 }
 
 export function TextField({
   label,
+  fieldPath,
   value = "",
+  updateField,
   onChange,
   type = "text",
   required = false,
-  disabled,
-  isEditing,
+  disabled = false,
+  isEditing = false,
+  isChanged = false,
+  multiline = false,
+  rows = 4,
   className = "",
+  placeholder = "",
 }: TextFieldProps) {
+  // Use either updateField or onChange as the handler
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (onChange) {
+      onChange(fieldPath, e.target.value);
+    } else if (updateField) {
+      updateField(fieldPath, e.target.value);
+    }
+  };
+
+  // Read-only view
+  if (!isEditing) {
+    return (
+      <div className="form-field">
+        <label className="field-label">{label}</label>
+        {multiline ? (
+          <div className={`read-only-text ${className}`}>
+            {value || <span className="empty-reference">-</span>}
+          </div>
+        ) : (
+          <input 
+            disabled 
+            value={type === "date" && value ? new Date(value).toLocaleDateString() : value} 
+            className={`input-base ${className}`}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Editable view
   return (
     <div className="form-field">
       <label className="field-label">
         {label}
-        {isEditing && required && <span className="required-mark"> *</span>}
+        {required && <span className="required-mark"> *</span>}
       </label>
-      {isEditing ? (
+      
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={handleChange}
+          className={`input-base ${className} ${isChanged ? "field-changed" : ""}`}
+          required={required}
+          disabled={disabled}
+          rows={rows}
+          placeholder={placeholder}
+        />
+      ) : (
         <input
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
           onKeyDown={(e) => type !== "date" && e.key === "Enter" && e.preventDefault()}
-          className={`input-base ${className}`}
+          className={`input-base ${className} ${isChanged ? "field-changed" : ""}`}
           required={required}
           disabled={disabled}
-          autoFocus={isEditing}
-        />
-      ) : (
-        <input 
-          disabled 
-          value={type === "date" && value ? new Date(value).toLocaleDateString() : value} 
-          className={`input-base ${className}`}
+          placeholder={placeholder}
         />
       )}
     </div>

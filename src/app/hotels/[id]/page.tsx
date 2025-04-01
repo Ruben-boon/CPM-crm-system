@@ -13,23 +13,30 @@ export default function HotelDetailPage() {
 
   useEffect(() => {
     const loadHotel = async () => {
-      // Handle "new" hotel case
-      if (hotelId === "new") {
-        selectItem({}, true); // Empty object + start editing mode
-        return;
-      }
       try {
-        const result = await searchDocuments("hotels", hotelId as string, "_id");
-        if (Array.isArray(result) && result.length > 0) {
-          selectItem(result[0]);
+        // Handle "new" hotel case
+        if (hotelId === "new") {
+          selectItem({}, true); // Empty object + start editing mode
+        } else {
+          const result = await searchDocuments(
+            "hotels",
+            hotelId as string,
+            "_id"
+          );
+          if (Array.isArray(result) && result.length > 0) {
+            selectItem(result[0]);
+          } else {
+            // Handle case where hotel isn't found
+            console.error("Hotel not found");
+          }
         }
       } catch (error) {
         console.error("Error loading hotel:", error);
       }
     };
-   
+
     loadHotel();
-  }, [hotelId]);
+  }, [hotelId, selectItem]);
 
   return <HotelForm />;
 }

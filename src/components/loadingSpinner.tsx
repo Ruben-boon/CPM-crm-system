@@ -1,34 +1,58 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface LoadingSpinnerProps {
   isLoading: boolean;
+  minDisplayTime?: number; // Minimum time in ms to show the spinner
 }
 
 export function LoadingSpinner({
   isLoading,
+  minDisplayTime = 400, // Default to 800ms minimum display time
 }: LoadingSpinnerProps) {
   const [showSpinner, setShowSpinner] = useState(false);
-  const [spinnerColor, setSpinnerColor] = useState("#ff5722"); // Default orange color
+  const spinnerColor = "#ff5722";
+  const spinnerTimer = useRef<NodeJS.Timeout | null>(null);
+  const spinnerStartTime = useRef<number>(0);
 
-  // Generate a random color when the spinner is shown
   useEffect(() => {
-    if (isLoading) {
-      // Array of bright, vibrant colors that work well with white text
-      const colors = [
-        "#ff5722", // Orange (like your logo)
-      ];
-      
-      // Pick a random color from the array
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      setSpinnerColor(randomColor);
+    // When loading starts
+    if (isLoading && !showSpinner) {
+      // Record the start time
+      spinnerStartTime.current = Date.now();
+      setShowSpinner(true);
     }
-  }, [isLoading]);
+    // When loading ends
+    else if (!isLoading && showSpinner) {
+      // Calculate how long the spinner has been visible
+      const elapsedTime = Date.now() - spinnerStartTime.current;
+      
+      // If it hasn't been visible for the minimum time, set a timer
+      if (elapsedTime < minDisplayTime) {
+        const remainingTime = minDisplayTime - elapsedTime;
+        
+        // Clear any existing timer
+        if (spinnerTimer.current) {
+          clearTimeout(spinnerTimer.current);
+        }
+        
+        // Set new timer to hide spinner after remaining time
+        spinnerTimer.current = setTimeout(() => {
+          setShowSpinner(false);
+        }, remainingTime);
+      } else {
+        // If it's been visible long enough, hide it immediately
+        setShowSpinner(false);
+      }
+    }
 
-  // Directly control spinner visibility based on isLoading
-  useEffect(() => {
-    setShowSpinner(isLoading);
-  }, [isLoading]);
+    // Cleanup function
+    return () => {
+      if (spinnerTimer.current) {
+        clearTimeout(spinnerTimer.current);
+      }
+    };
+  }, [isLoading, showSpinner, minDisplayTime]);
 
   if (!showSpinner) return null;
 
