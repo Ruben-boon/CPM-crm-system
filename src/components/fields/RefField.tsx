@@ -55,7 +55,6 @@ export function RefField({
     }
   };
 
-  // Load the display value when the component mounts or value changes
   useEffect(() => {
     // Skip effect if value hasn't changed
     if (previousValueRef.current === value) {
@@ -75,7 +74,7 @@ export function RefField({
         }
         return;
       }
-
+  
       try {
         setIsLocalLoading(true);
         // Set loading state to true - this is critical!
@@ -84,7 +83,7 @@ export function RefField({
         }
         
         const response = await searchDocuments(collectionName, value, "_id");
-
+  
         if (response && response.length > 0) {
           // Get display string from fields
           const display = displayFields
@@ -99,7 +98,7 @@ export function RefField({
             })
             .filter(Boolean)
             .join(" ");
-
+  
           setDisplayValue(display);
           
           if (onLoadComplete) {
@@ -111,7 +110,7 @@ export function RefField({
             onLoadComplete(true, "Referenced item not found");
           }
         }
-
+  
         if (setFieldLoading) {
           setFieldLoading(fieldPath, false);
         }
@@ -128,9 +127,11 @@ export function RefField({
         setIsLocalLoading(false);
       }
     }
-
+  
     fetchDisplayName();
-  }, [value, collectionName, displayFields, fieldPath, setFieldLoading, onLoadComplete]);
+    // The critical dependency array - only include the value and other stable values
+    // DON'T include the setFieldLoading function in the dependency array
+  }, [value, collectionName, displayFields, fieldPath, onLoadComplete]);
 
   // When value changes, update the showSearchInput state
   useEffect(() => {
@@ -138,25 +139,15 @@ export function RefField({
   }, [value]);
 
   // Handle click outside to close the dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsSearching(false);
-      }
+useEffect(() => {
+  return () => {
+    // Clear loading state on unmount, but only if the function exists
+    if (setFieldLoading) {
+      setFieldLoading(fieldPath, false);
     }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      // Clear loading state on unmount
-      if (setFieldLoading) {
-        setFieldLoading(fieldPath, false);
-      }
-    };
-  }, [fieldPath, setFieldLoading]);
+  };
+  // Again, DON'T include setFieldLoading in the dependency array
+}, [fieldPath]);
 
   // Handle search input
   const handleSearch = async (term: string) => {
