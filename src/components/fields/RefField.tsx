@@ -261,7 +261,7 @@ export function RefField({
 
   // Editable view
   return (
-    <div className="form-field" ref={dropdownRef}>
+    <div className="form-field ref-field" ref={dropdownRef}>
       <label className="field-label">
         {label}
         {required && <span className="required-mark">*</span>}

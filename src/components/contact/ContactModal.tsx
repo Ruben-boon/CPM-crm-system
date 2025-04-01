@@ -51,9 +51,8 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
   // Update loading state when field loading state changes
   useEffect(() => {
     setIsFormLoading(isAnyFieldLoading());
-  }, [fieldLoadingStates]);
+  }, []);
 
-  // Set field loading state
   const setFieldLoading = (fieldPath: string, isLoading: boolean) => {
     setFieldLoadingStates(prev => ({
       ...prev,
@@ -106,8 +105,6 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
       setIsSubmitting(false);
     }
   };
-
-  // Handle field change
   const handleFieldChange = (fieldPath: string, value: any) => {
     // Create a deep copy of the contact
     const updatedContact = JSON.parse(JSON.stringify(contact));
@@ -143,8 +140,6 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
       setFieldLoading(fieldPath, true);
     }
   };
-
-  // Helper function to get nested value
   const getNestedValue = (obj: any, path: string) => {
     if (!obj) return "";
 
