@@ -124,8 +124,11 @@ export function BookingForm() {
   }, []);
 
   // Handle adding a new stay
-  const handleAddStay = () => {
-    // Create a new stay with default values from the booking
+  const handleAddStay = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const newStay = {
       checkInDate: bookingsContext.selectedItem?.travelPeriodStart || "",
       checkOutDate: bookingsContext.selectedItem?.travelPeriodEnd || "",
