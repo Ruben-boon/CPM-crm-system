@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X, Plus } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import Button from "@/components/common/Button";
-import { useModal } from "@/context/ModalContext";
 import { ContactModal } from "../contact/ContactModal";
 
 interface MultiRefFieldProps {

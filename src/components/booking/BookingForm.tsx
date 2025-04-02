@@ -293,7 +293,7 @@ export function BookingForm() {
       <div className="related-stays-container">
         <div className="related-stays">
           <div className="related-stays-header">
-            <h3 className="related-title">Related Stays</h3>
+            <h4 className="related-title">Stays</h4>
             {bookingsContext.isEditing && (
               <Button icon={Plus} onClick={handleAddStay} size="sm">
                 Add Stay
