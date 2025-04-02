@@ -13,20 +13,14 @@ interface RoleFilter {
   guestChecked: boolean;
 }
 
-interface FieldLoadingState {
-  [fieldPath: string]: boolean;
-}
-
 interface DataContextType {
   items: Item[];
   selectedItem: Item | null;
   originalItem: Item | null; 
-  isLoading: boolean;
   error: string | null;
   isEditing: boolean;
   pendingChanges: Record<string, ChangeRecord>;
   roleFilter: RoleFilter;
-  fieldLoadingStates: FieldLoadingState;
   searchItems: (searchTerm?: string, searchField?: string) => Promise<void>;
   selectItem: (item: Partial<Item> | null, startEditing?: boolean) => void;
   createItem: (item: Item) => Promise<boolean>;
@@ -37,8 +31,6 @@ interface DataContextType {
   resetForm: () => void; 
   cancelCopy: () => void; 
   setRoleFilter: (filter: Partial<RoleFilter>) => void;
-  setFieldLoading: (fieldPath: string, isLoading: boolean) => void;
-  isAnyFieldLoading: () => boolean;
   isDirty: boolean; 
 }
 
@@ -49,7 +41,6 @@ function createDataContext(collectionName: string) {
     const [items, setItems] = useState<Item[]>([]);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const [originalItem, setOriginalItem] = useState<Item | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [pendingChanges, setPendingChanges] = useState<
@@ -59,10 +50,6 @@ function createDataContext(collectionName: string) {
       bookerChecked: false,
       guestChecked: false,
     });
-    const [fieldLoadingStates, setFieldLoadingStates] = useState<FieldLoadingState>({});
-    
-    // Use this ref to track the current loading states without triggering rerenders
-    const fieldLoadingStatesRef = useRef<FieldLoadingState>({});
 
     const isDirty = Object.keys(pendingChanges).length > 0;
     
@@ -72,46 +59,15 @@ function createDataContext(collectionName: string) {
         ...filter,
       }));
     };
-
-    // Memoize this function to prevent it from changing on every render
-    const setFieldLoading = useCallback((fieldPath: string, isLoading: boolean) => {
-      // First update the ref immediately (doesn't cause rerenders)
-      fieldLoadingStatesRef.current = {
-        ...fieldLoadingStatesRef.current,
-        [fieldPath]: isLoading
-      };
-      
-      // Then update the state with proper equality check
-      setFieldLoadingStates(prev => {
-        // Skip update if value hasn't changed
-        if (prev[fieldPath] === isLoading) {
-          return prev;
-        }
-        
-        // Create new state object with updated value
-        return {
-          ...prev,
-          [fieldPath]: isLoading
-        };
-      });
-    }, []);
-
-    // Use the ref for checking loading state to avoid unnecessary rerenders
-    const isAnyFieldLoading = useCallback(() => {
-      return Object.values(fieldLoadingStatesRef.current).some(isLoading => isLoading);
-    }, []);
     
     const cancelCopy = useCallback(() => {
       setSelectedItem(null);
       setOriginalItem(null);
       setPendingChanges({});
-      setFieldLoadingStates({});
-      fieldLoadingStatesRef.current = {};
       setIsEditing(false);
     }, []);
     
     const searchItems = async (searchTerm?: string, searchField?: string) => {
-      setIsLoading(true);
       try {
         const results = await searchDocuments(
           collectionName,
@@ -141,8 +97,6 @@ function createDataContext(collectionName: string) {
         setError(null);
       } catch (error) {
         setError(error instanceof Error ? error.message : "Search failed");
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -155,8 +109,6 @@ function createDataContext(collectionName: string) {
       
       setIsEditing(startEditing);
       setPendingChanges({});
-      setFieldLoadingStates({});
-      fieldLoadingStatesRef.current = {}; // Reset loading states when selecting a new item
     }, []);
 
     const updateField = (field: string, value: any) => {
@@ -214,11 +166,6 @@ function createDataContext(collectionName: string) {
         delete newPendingChanges[field];
         setPendingChanges(newPendingChanges);
       }
-
-      // If it's a reference field, mark it as loading
-      if (field.endsWith('Id')) {
-        setFieldLoading(field, true);
-      }
     };
     
     const resetForm = useCallback(() => {
@@ -229,7 +176,6 @@ function createDataContext(collectionName: string) {
     }, [originalItem]);
 
     const createItem = async (item: Item) => {
-      setIsLoading(true);
       try {
         const result = await createDocument(collectionName, item);
         if (result.success) {
@@ -240,8 +186,6 @@ function createDataContext(collectionName: string) {
             setSelectedItem(result.data);
             setOriginalItem(JSON.parse(JSON.stringify(result.data)));
             setPendingChanges({});
-            setFieldLoadingStates({});
-            fieldLoadingStatesRef.current = {};
           }
           
           setError(null);
@@ -249,8 +193,9 @@ function createDataContext(collectionName: string) {
         }
         setError(result.error || "Creation failed");
         return false;
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Creation failed");
+        return false;
       }
     };
 
@@ -260,7 +205,6 @@ function createDataContext(collectionName: string) {
         return false;
       }
 
-      setIsLoading(true);
       try {
         const result = await updateDocument(collectionName, item._id, item);
         if (result.success) {
@@ -271,8 +215,6 @@ function createDataContext(collectionName: string) {
             setSelectedItem(result.data);
             setOriginalItem(JSON.parse(JSON.stringify(result.data)));
             setPendingChanges({});
-            setFieldLoadingStates({});
-            fieldLoadingStatesRef.current = {};
           }
           
           setError(null);
@@ -280,8 +222,9 @@ function createDataContext(collectionName: string) {
         }
         setError(result.error || "Update failed");
         return false;
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Update failed");
+        return false;
       }
     };
 
@@ -291,7 +234,6 @@ function createDataContext(collectionName: string) {
         return false;
       }
 
-      setIsLoading(true);
       try {
         const result = await deleteDocument(collectionName, id);
         if (result.success) {
@@ -300,8 +242,6 @@ function createDataContext(collectionName: string) {
             setSelectedItem(null);
             setOriginalItem(null);
             setPendingChanges({});
-            setFieldLoadingStates({});
-            fieldLoadingStatesRef.current = {};
           }
           await searchItems();
           setError(null);
@@ -309,8 +249,9 @@ function createDataContext(collectionName: string) {
         }
         setError(result.error || "Deletion failed");
         return false;
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Deletion failed");
+        return false;
       }
     };
 
@@ -320,12 +261,10 @@ function createDataContext(collectionName: string) {
           items,
           selectedItem,
           originalItem,
-          isLoading,
           error,
           isEditing,
           pendingChanges,
           roleFilter,
-          fieldLoadingStates,
           isDirty,
           searchItems,
           selectItem,
@@ -337,8 +276,6 @@ function createDataContext(collectionName: string) {
           resetForm,
           cancelCopy, 
           setRoleFilter,
-          setFieldLoading,
-          isAnyFieldLoading,
         }}
       >
         {children}

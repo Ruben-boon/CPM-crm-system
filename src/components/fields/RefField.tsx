@@ -15,7 +15,6 @@ interface RefFieldProps {
   className?: string;
   collectionName: string;
   displayFields?: string[];
-  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void;
   onLoadComplete?: (loaded: boolean, error?: string) => void;
 }
 
@@ -32,7 +31,6 @@ export function RefField({
   className = "",
   collectionName,
   displayFields = ["name"],
-  setFieldLoading,
   onLoadComplete
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,9 +64,6 @@ export function RefField({
     async function fetchDisplayName() {
       if (!value) {
         setDisplayValue("");
-        if (setFieldLoading) {
-          setFieldLoading(fieldPath, false);
-        }
         if (onLoadComplete) {
           onLoadComplete(true);
         }
@@ -77,10 +72,6 @@ export function RefField({
   
       try {
         setIsLocalLoading(true);
-        // Set loading state to true - this is critical!
-        if (setFieldLoading) {
-          setFieldLoading(fieldPath, true);
-        }
         
         const response = await searchDocuments(collectionName, value, "_id");
   
@@ -110,16 +101,9 @@ export function RefField({
             onLoadComplete(true, "Referenced item not found");
           }
         }
-  
-        if (setFieldLoading) {
-          setFieldLoading(fieldPath, false);
-        }
       } catch (error) {
         console.error(`Failed to load ${collectionName} details:`, error);
         setDisplayValue(`[Unable to load ${collectionName}]`);
-        if (setFieldLoading) {
-          setFieldLoading(fieldPath, false);
-        }
         if (onLoadComplete) {
           onLoadComplete(false, error instanceof Error ? error.message : "Unknown error");
         }
@@ -139,15 +123,7 @@ export function RefField({
   }, [value]);
 
   // Handle click outside to close the dropdown
-useEffect(() => {
-  return () => {
-    // Clear loading state on unmount, but only if the function exists
-    if (setFieldLoading) {
-      setFieldLoading(fieldPath, false);
-    }
-  };
-  // Again, DON'T include setFieldLoading in the dependency array
-}, [fieldPath]);
+// Cleanup effect removed
 
   // Handle search input
   const handleSearch = async (term: string) => {
@@ -201,11 +177,6 @@ useEffect(() => {
     setSearchTerm("");
     setIsSearching(false);
     
-    // When we select a new value, mark it as loading until the data is fetched
-    if (setFieldLoading) {
-      setFieldLoading(fieldPath, true);
-    }
-    
     // Force the UI to show the selected value view
     setShowSearchInput(false);
   };
@@ -219,11 +190,6 @@ useEffect(() => {
     
     // Force UI to show search input
     setShowSearchInput(true);
-    
-    // Update loading state and parent
-    if (setFieldLoading) {
-      setFieldLoading(fieldPath, false);
-    }
     
     // Notify parent
     handleUpdate(fieldPath, "");

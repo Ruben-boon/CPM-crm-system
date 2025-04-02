@@ -5,40 +5,12 @@ import { TextField } from "../fields/TextField";
 import { RelatedItems } from "../fields/RelatedItems";
 import { useRouter } from "next/navigation";
 import { MultiTextField } from "../fields/MultiTextFields";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 export function HotelForm() {
   const hotelsContext = useHotelsData();
   const router = useRouter();
   const previousHotelIdRef = useRef<string | null>(null);
-
-  // Track related items loading
-  useEffect(() => {
-    const currentHotelId = hotelsContext.selectedItem?._id || null;
-    
-    // If we have a new hotel (different from previous one)
-    if (currentHotelId !== previousHotelIdRef.current) {
-      // First clear any previous loading states to avoid stuck spinners
-      if (previousHotelIdRef.current) {
-        hotelsContext.setFieldLoading('related.stays', false);
-      }
-      
-      // Now set loading state for the new hotel if needed
-      if (!hotelsContext.isEditing && currentHotelId) {
-        hotelsContext.setFieldLoading('related.stays', true);
-      }
-      
-      // Update the ref to the current hotel
-      previousHotelIdRef.current = currentHotelId;
-    }
-  }, [hotelsContext.isEditing, hotelsContext.selectedItem, hotelsContext.setFieldLoading]);
-
-  // Clean up loading states when component unmounts
-  useEffect(() => {
-    return () => {
-      hotelsContext.setFieldLoading('related.stays', false);
-    };
-  }, [hotelsContext.setFieldLoading]);
 
   const getDisplayName = (item: any) => {
     return item?.name || "this hotel";
@@ -139,7 +111,6 @@ export function HotelForm() {
           isEditing={hotelsContext.isEditing}
           isChanged={isFieldChanged("roomTypes")}
           placeholder="Add a room type..."
-          setFieldLoading={hotelsContext.setFieldLoading}
         />
         
         <TextField
@@ -166,7 +137,6 @@ export function HotelForm() {
               title="Stays"
               emptyMessage="No stays found"
               onItemClick={handleRelationClick}
-              setFieldLoading={hotelsContext.setFieldLoading}
               isFormEditing={hotelsContext.isEditing}
             />
           </div>

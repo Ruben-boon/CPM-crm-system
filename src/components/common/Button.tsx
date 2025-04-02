@@ -1,11 +1,11 @@
 import React from "react";
-import { LucideIcon, Loader2 } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "sm" | "md" | "lg";
   intent?: "primary" | "secondary" | "outline" | "ghost" | "danger";
   icon?: LucideIcon;
-  isLoading?: boolean;
+  isLoading?: boolean; // kept for compatibility
   iconAfter?: boolean;
 }
 
@@ -14,7 +14,7 @@ const Button: React.FC<ButtonProps> = ({
   icon: Icon,
   variant = "md",
   intent = "primary",
-  isLoading = false,
+  isLoading: _isLoading = false, // unused
   iconAfter = false,
   className = "",
   disabled,
@@ -31,9 +31,6 @@ const Button: React.FC<ButtonProps> = ({
     .join(" ");
 
   const renderIcon = () => {
-    if (isLoading) {
-      return <Loader2 className="button-icon animate-spin" />;
-    }
     if (Icon) {
       return <Icon className="button-icon" />;
     }
@@ -43,7 +40,7 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={buttonClasses}
-      disabled={disabled || isLoading}
+      disabled={disabled}
       {...props}
     >
       {!iconAfter && renderIcon()}

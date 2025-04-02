@@ -17,7 +17,6 @@ interface RelatedItemsProps {
   title: string; // Title for the section (e.g., "Related Contacts")
   emptyMessage?: string; // Message to show when no items are found
   onItemClick?: (id: string, collection: string) => void;
-  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void; // New prop to report loading state
   isFormEditing?: boolean; // Whether the parent form is in edit mode
   onLoadingChange?: (isLoading: boolean) => void; // Callback for loading changes
 }
@@ -31,7 +30,6 @@ const RelatedItems = memo(function RelatedItems({
   title,
   emptyMessage = "No items found",
   onItemClick,
-  setFieldLoading,
   isFormEditing = false,
   onLoadingChange
 }: RelatedItemsProps) {
@@ -40,19 +38,14 @@ const RelatedItems = memo(function RelatedItems({
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false); // Track if data has been loaded once
   const isMountedRef = useRef(true); // Track if component is mounted
-  const loadingFieldPath = `related.${collectionName}`; // Unique field path for loading state
 
   // Memoize the function to report loading state to prevent it from changing on each render
   const reportLoadingState = useCallback((loading: boolean) => {
-    if (setFieldLoading) {
-      setFieldLoading(loadingFieldPath, loading);
-    }
-    
     // Report loading state to the parent component
     if (onLoadingChange) {
       onLoadingChange(loading);
     }
-  }, [loadingFieldPath, setFieldLoading, onLoadingChange]);
+  }, [onLoadingChange]);
 
   // Load related items when component mounts or ID changes
   useEffect(() => {

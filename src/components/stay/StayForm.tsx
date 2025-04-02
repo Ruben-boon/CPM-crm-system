@@ -55,10 +55,9 @@ export function StayForm() {
   const [roomTypeOptions, setRoomTypeOptions] = useState(DEFAULT_ROOM_TYPE_OPTIONS);
   const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
 
-  // Set loading state immediately when hotel changes
+  // Load room types when hotel changes
   useEffect(() => {
     if (staysContext.selectedItem?.hotelId) {
-      staysContext.setFieldLoading('hotelId', true);
       loadRoomTypesFromHotel(staysContext.selectedItem.hotelId);
     }
   }, [staysContext.selectedItem?.hotelId]);
@@ -92,17 +91,8 @@ export function StayForm() {
       setRoomTypeOptions(DEFAULT_ROOM_TYPE_OPTIONS);
     } finally {
       setLoadingRoomTypes(false);
-      staysContext.setFieldLoading('hotelId', false);
     }
   };
-
-  // Clean up loading states on unmount
-  useEffect(() => {
-    return () => {
-      staysContext.setFieldLoading('hotelId', false);
-      staysContext.setFieldLoading('guestIds', false);
-    };
-  }, []);
 
   const getDisplayName = (item: any) => {
     return item?.reference || "this stay";
@@ -160,7 +150,6 @@ export function StayForm() {
           collectionName="contacts"
           displayFields={["general.firstName", "general.lastName"]}
           showQuickAdd={true}
-          setFieldLoading={staysContext.setFieldLoading}
         />
         
         <TextField
@@ -205,7 +194,6 @@ export function StayForm() {
           collectionName="hotels"
           displayFields={["name", "address"]}
           isChanged={isFieldChanged("hotelId")}
-          setFieldLoading={staysContext.setFieldLoading}
         />
         
         <DropdownField

@@ -17,7 +17,6 @@ interface MultiRefFieldProps {
   collectionName: string;
   displayFields?: string[];
   showQuickAdd?: boolean;
-  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void;
 }
 
 interface SearchResult {
@@ -38,7 +37,6 @@ export function MultiRefField({
   collectionName,
   displayFields = ["name"],
   showQuickAdd = false,
-  setFieldLoading,
 }: MultiRefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -77,17 +75,11 @@ export function MultiRefField({
     if (hasValueChanges && value.length > 0) {
       // Only set loading state if there are values to load
       setIsLoading(true);
-      if (setFieldLoading) {
-        setFieldLoading(fieldPath, true);
-      }
       fetchDisplayNames();
       previousValuesRef.current = [...value];
     } else if (hasValueChanges && value.length === 0) {
       // Clear display names if no values
       setDisplayNames([]);
-      if (setFieldLoading) {
-        setFieldLoading(fieldPath, false);
-      }
       previousValuesRef.current = [];
     }
   }, [value, fieldPath]);
@@ -97,9 +89,6 @@ export function MultiRefField({
     if (value.length === 0) {
       setDisplayNames([]);
       setIsLoading(false);
-      if (setFieldLoading) {
-        setFieldLoading(fieldPath, false);
-      }
       return;
     }
 
@@ -118,9 +107,6 @@ export function MultiRefField({
       setDisplayNames(value.map(() => "Error loading name"));
     } finally {
       setIsLoading(false);
-      if (setFieldLoading) {
-        setFieldLoading(fieldPath, false);
-      }
     }
   };
 
@@ -137,10 +123,6 @@ export function MultiRefField({
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      // Clean up loading state on unmount
-      if (setFieldLoading) {
-        setFieldLoading(fieldPath, false);
-      }
     };
   }, []);
 
@@ -184,11 +166,6 @@ export function MultiRefField({
     updateField(fieldPath, newValue);
     setSearchTerm("");
     setIsSearching(false);
-
-    // Set loading state for the newly added item
-    if (setFieldLoading) {
-      setFieldLoading(fieldPath, true);
-    }
   };
 
   // Handle removing an item
@@ -208,11 +185,6 @@ export function MultiRefField({
   const handleContactCreated = (contactId: string, displayName: string) => {
     const newValue = [...value, contactId];
     updateField(fieldPath, newValue);
-
-    // Set loading state for the new contact
-    if (setFieldLoading) {
-      setFieldLoading(fieldPath, true);
-    }
 
     // Close the modal
     setIsContactModalOpen(false);

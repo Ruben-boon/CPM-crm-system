@@ -13,7 +13,6 @@ interface MultiTextFieldProps {
   isChanged?: boolean;
   className?: string;
   placeholder?: string;
-  setFieldLoading?: (fieldPath: string, isLoading: boolean) => void;
 }
 
 export function MultiTextField({
@@ -27,7 +26,6 @@ export function MultiTextField({
   isChanged = false,
   className = "",
   placeholder = "Enter text...",
-  setFieldLoading,
 }: MultiTextFieldProps) {
   const [newEntry, setNewEntry] = useState("");
 
