@@ -7,6 +7,7 @@ import {
   updateDocument,
   deleteDocument,
 } from "@/app/actions/crudActions";
+import { useSession } from "next-auth/react";
 
 interface RoleFilter {
   bookerChecked: boolean;
@@ -21,6 +22,7 @@ interface DataContextType {
   isEditing: boolean;
   pendingChanges: Record<string, ChangeRecord>;
   roleFilter: RoleFilter;
+  isLoading: boolean;
   searchItems: (searchTerm?: string, searchField?: string) => Promise<void>;
   selectItem: (item: Partial<Item> | null, startEditing?: boolean) => void;
   createItem: (item: Item) => Promise<boolean>;
@@ -31,25 +33,30 @@ interface DataContextType {
   resetForm: () => void; 
   cancelCopy: () => void; 
   setRoleFilter: (filter: Partial<RoleFilter>) => void;
-  isDirty: boolean; 
+  isDirty: boolean;
+  setFieldLoading: (field: string, isLoading: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
 
 function createDataContext(collectionName: string) {
   function DataProvider({ children }: { children: ReactNode }) {
+    const { data: session, status } = useSession();
+    const userId = session?.user?.id;
+    const isAuthenticated = status === "authenticated";
+
     const [items, setItems] = useState<Item[]>([]);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const [originalItem, setOriginalItem] = useState<Item | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<
-      Record<string, ChangeRecord>
-    >({});
+    const [pendingChanges, setPendingChanges] = useState<Record<string, ChangeRecord>>({});
     const [roleFilter, setRoleFilterState] = useState<RoleFilter>({
       bookerChecked: false,
       guestChecked: false,
     });
+    const [fieldLoading, setFieldLoadingState] = useState<Record<string, boolean>>({});
 
     const isDirty = Object.keys(pendingChanges).length > 0;
     
@@ -60,6 +67,13 @@ function createDataContext(collectionName: string) {
       }));
     };
     
+    const setFieldLoading = useCallback((field: string, loading: boolean) => {
+      setFieldLoadingState(prev => ({
+        ...prev,
+        [field]: loading
+      }));
+    }, []);
+    
     const cancelCopy = useCallback(() => {
       setSelectedItem(null);
       setOriginalItem(null);
@@ -69,10 +83,19 @@ function createDataContext(collectionName: string) {
     
     const searchItems = async (searchTerm?: string, searchField?: string) => {
       try {
+        setIsLoading(true);
+        
+        // If not authenticated and userId is required, return empty results
+        if (!isAuthenticated && userId === undefined) {
+          setItems([]);
+          return;
+        }
+        
         const results = await searchDocuments(
           collectionName,
           searchTerm,
-          searchField
+          searchField,
+          userId // Pass the userId for data isolation
         );
 
         // role filtering for contacts
@@ -97,6 +120,9 @@ function createDataContext(collectionName: string) {
         setError(null);
       } catch (error) {
         setError(error instanceof Error ? error.message : "Search failed");
+        setItems([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -176,8 +202,18 @@ function createDataContext(collectionName: string) {
     }, [originalItem]);
 
     const createItem = async (item: Item) => {
+      if (!isAuthenticated && userId === undefined) {
+        setError("Authentication required");
+        return false;
+      }
+      
       try {
-        const result = await createDocument(collectionName, item);
+        setIsLoading(true);
+        
+        // Track document version for concurrency control
+        const itemWithVersion = { ...item, version: 0 };
+        
+        const result = await createDocument(collectionName, itemWithVersion, userId);
         if (result.success) {
           await searchItems();
           
@@ -196,6 +232,8 @@ function createDataContext(collectionName: string) {
       } catch (error) {
         setError(error instanceof Error ? error.message : "Creation failed");
         return false;
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -204,27 +242,53 @@ function createDataContext(collectionName: string) {
         setError("Missing item ID");
         return false;
       }
+      
+      if (!isAuthenticated && userId === undefined) {
+        setError("Authentication required");
+        return false;
+      }
 
       try {
-        const result = await updateDocument(collectionName, item._id, item);
+        setIsLoading(true);
+        
+        // Ensure we're passing the current version
+        const currentVersion = selectedItem?.version || 0;
+        const itemWithVersion = { ...item, version: currentVersion };
+        
+        const result = await updateDocument(collectionName, item._id, itemWithVersion, userId);
         if (result.success) {
           await searchItems();
           
           // Update both selectedItem and originalItem with the updated item
+          // Include the incremented version
           if (result.data) {
-            setSelectedItem(result.data);
-            setOriginalItem(JSON.parse(JSON.stringify(result.data)));
+            const updatedItem = {
+              ...result.data,
+              version: (currentVersion || 0) + 1
+            };
+            setSelectedItem(updatedItem);
+            setOriginalItem(JSON.parse(JSON.stringify(updatedItem)));
             setPendingChanges({});
           }
           
           setError(null);
           return true;
         }
-        setError(result.error || "Update failed");
+        
+        // Special handling for version conflict errors
+        if (result.error?.includes("modified by another user")) {
+          setError("This record was modified by another user. Please refresh and try again.");
+          // Could add logic here to show a diff or help resolve the conflict
+        } else {
+          setError(result.error || "Update failed");
+        }
+        
         return false;
       } catch (error) {
         setError(error instanceof Error ? error.message : "Update failed");
         return false;
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -233,9 +297,16 @@ function createDataContext(collectionName: string) {
         setError("Missing item ID");
         return false;
       }
+      
+      if (!isAuthenticated && userId === undefined) {
+        setError("Authentication required");
+        return false;
+      }
 
       try {
-        const result = await deleteDocument(collectionName, id);
+        setIsLoading(true);
+        
+        const result = await deleteDocument(collectionName, id, userId);
         if (result.success) {
           // Clear the selected item if it was deleted
           if (selectedItem?._id === id) {
@@ -252,6 +323,8 @@ function createDataContext(collectionName: string) {
       } catch (error) {
         setError(error instanceof Error ? error.message : "Deletion failed");
         return false;
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -266,6 +339,7 @@ function createDataContext(collectionName: string) {
           pendingChanges,
           roleFilter,
           isDirty,
+          isLoading,
           searchItems,
           selectItem,
           createItem,
@@ -276,6 +350,7 @@ function createDataContext(collectionName: string) {
           resetForm,
           cancelCopy, 
           setRoleFilter,
+          setFieldLoading,
         }}
       >
         {children}
