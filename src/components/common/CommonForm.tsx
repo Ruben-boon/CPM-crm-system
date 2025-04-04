@@ -1,10 +1,9 @@
 "use client";
 import Button from "@/components/common/Button";
 import { Save, X, Edit, Trash2 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { LoadingSpinner } from "../loadingSpinner";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 
 export interface DataContextState<T> {
@@ -19,9 +18,8 @@ export interface DataContextState<T> {
   pendingChanges: Record<string, { oldValue: any; newValue: any }>;
   isDirty: boolean;
   cancelCopy?: () => void;
-  isAnyFieldLoading?: () => boolean;
-  fieldLoadingStates?: Record<string, boolean>;
 }
+
 export interface CommonFormProps<T> {
   dataContext: DataContextState<T>;
   children: React.ReactNode;
@@ -55,8 +53,6 @@ export function CommonForm<T extends { _id?: string }>({
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (selectedItem) {
@@ -69,38 +65,13 @@ export function CommonForm<T extends { _id?: string }>({
     }
   }, [selectedItem, isEditing, setIsEditing]);
 
-  const checkLoading = useCallback(() => {
-    const isLoading = dataContext.isAnyFieldLoading?.() || false;
-
-    if (isLoading) {
-      setShowLoadingSpinner(true);
-    } else {
-      setShowLoadingSpinner(false);
-    }
-  }, [dataContext]);
-
-  useEffect(() => {
-    checkLoading();
-    const interval = setInterval(checkLoading, 200);
-
-    return () => {
-      clearInterval(interval);
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [checkLoading]);
-
   const handleClose = () => {
     router.push(`/${basePath}`);
   };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting || !selectedItem) {
-      return;
-    }
-    if (dataContext.isAnyFieldLoading?.()) {
-      toast.error("Please wait until all fields have finished loading");
       return;
     }
 
@@ -137,6 +108,7 @@ export function CommonForm<T extends { _id?: string }>({
       setIsSubmitting(false);
     }
   };
+
   const handleCancel = () => {
     if (isCreating) {
       // If we have a cancelCopy method, use that for better cleanup
@@ -154,6 +126,7 @@ export function CommonForm<T extends { _id?: string }>({
       setIsEditing(false);
     }
   };
+
   const handleDeleteClick = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
 
@@ -165,9 +138,11 @@ export function CommonForm<T extends { _id?: string }>({
 
     setShowDeleteConfirmation(true);
   };
+
   const handleCancelDelete = () => {
     setShowDeleteConfirmation(false);
   };
+
   const handleConfirmDelete = async () => {
     if (!selectedItem?._id) {
       toast.error(`No ${itemName.toLowerCase()} selected to delete`);
@@ -200,8 +175,6 @@ export function CommonForm<T extends { _id?: string }>({
 
   return (
     <div className="detail-wrapper">
-
-      <LoadingSpinner isLoading={showLoadingSpinner || isDeleting} />
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirmation}
         onClose={handleCancelDelete}
@@ -209,12 +182,7 @@ export function CommonForm<T extends { _id?: string }>({
         itemName={itemDisplayName}
       />
 
-      <form
-        onSubmit={handleSave}
-        className={`${entityType}-form ${
-          !showLoadingSpinner ? "done-loading" : ""
-        }`}
-      >
+      <form onSubmit={handleSave} className={`${entityType}-form`}>
         <div className="top-bar">
           <div className="top-bar__title">
             {selectedItem?._id ? `${itemName} Details` : `New ${itemName}`}
@@ -250,11 +218,7 @@ export function CommonForm<T extends { _id?: string }>({
                 <Button
                   icon={Save}
                   type="submit"
-                  disabled={
-                    isSubmitting ||
-                    (!isCreating && !isDirty) ||
-                    showLoadingSpinner
-                  }
+                  disabled={isSubmitting || (!isCreating && !isDirty)}
                 >
                   Save
                 </Button>

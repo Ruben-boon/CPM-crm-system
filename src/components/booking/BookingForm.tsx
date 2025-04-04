@@ -7,10 +7,10 @@ import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { Plus, Edit, ExternalLink, Copy, X } from "lucide-react";
 import Button from "@/components/common/Button";
-import { LoadingSpinner } from "../loadingSpinner";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { toast } from "sonner";
 import { StayModal } from "../stay/StayModal";
+import { DownloadPDFButton } from "../pdf/DownloadPDFButton";
 
 // Define constants for dropdown options
 const COST_CENTRE_OPTIONS = [
@@ -31,11 +31,12 @@ export function BookingForm() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStay, setSelectedStay] = useState(null);
   const [isCopyMode, setIsCopyMode] = useState(false);
-  const [isLoadingStays, setIsLoadingStays] = useState(false);
   const [stays, setStays] = useState([]);
   const previousStayIdsRef = useRef([]); // For tracking changes to stayIds
-  const loadingTimeoutRef = useRef(null); // For debouncing loading state
-  
+
+  console.log("loaded stays:", stays);
+  console.log("booking context:", bookingsContext.selectedItem);
+
   // Function to get display name for the booking
   const getDisplayName = (item) => {
     return item.confirmationNo || "this booking";
@@ -55,14 +56,18 @@ export function BookingForm() {
   useEffect(() => {
     const currentStayIds = bookingsContext.selectedItem?.stayIds || [];
     const previousStayIds = previousStayIdsRef.current;
-    
+
     // Check if the arrays are different (different length or content)
-    const haveStayIdsChanged = 
-      currentStayIds.length !== previousStayIds.length || 
+    const haveStayIdsChanged =
+      currentStayIds.length !== previousStayIds.length ||
       currentStayIds.some((id, index) => id !== previousStayIds[index]);
-    
+
     // Only reload stays if there's an actual change to stayIds
-    if (bookingsContext.selectedItem?._id && currentStayIds.length > 0 && haveStayIdsChanged) {
+    if (
+      bookingsContext.selectedItem?._id &&
+      currentStayIds.length > 0 &&
+      haveStayIdsChanged
+    ) {
       loadRelatedStays(currentStayIds);
       // Update the reference to current stayIds
       previousStayIdsRef.current = [...currentStayIds];
@@ -71,23 +76,17 @@ export function BookingForm() {
       setStays([]);
       previousStayIdsRef.current = [];
     }
-  }, [bookingsContext.selectedItem?._id, bookingsContext.selectedItem?.stayIds]);
+  }, [
+    bookingsContext.selectedItem?._id,
+    bookingsContext.selectedItem?.stayIds,
+  ]);
 
-  // Load stays data with debounced loading state
+  // Load stays data without loading state
   const loadRelatedStays = async (stayIds) => {
     if (!stayIds || stayIds.length === 0) {
       setStays([]);
       return;
     }
-
-    // Delay showing the loading indicator to prevent flashes
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    
-    loadingTimeoutRef.current = setTimeout(() => {
-      setIsLoadingStays(true);
-    }, 300); // Only show loading state if it takes more than 300ms
 
     try {
       const loadedStays = [];
@@ -104,24 +103,8 @@ export function BookingForm() {
     } catch (err) {
       console.error("Error loading related stays:", err);
       toast.error("Failed to load stays");
-    } finally {
-      // Clear the timeout and set loading to false
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-      setIsLoadingStays(false);
     }
   };
-
-  // Clean up timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Handle adding a new stay
   const handleAddStay = (e) => {
@@ -173,7 +156,11 @@ export function BookingForm() {
   // Handle removing a stay from the booking
   const handleRemoveStay = (stay, index) => {
     // Ask for confirmation before removing
-    if (confirm(`Are you sure you want to remove this stay from the booking? This will not delete the stay itself.`)) {
+    if (
+      confirm(
+        `Are you sure you want to remove this stay from the booking? This will not delete the stay itself.`
+      )
+    ) {
       // Create new arrays without the removed stay
       const newStayIds = [...bookingsContext.selectedItem.stayIds];
       newStayIds.splice(index, 1);
@@ -183,10 +170,10 @@ export function BookingForm() {
 
       // Update the form data
       bookingsContext.updateField("stayIds", newStayIds);
-      
+
       // Update the stays list locally for immediate UI feedback
       setStays(newStays);
-      
+
       // Update our reference to prevent unnecessary reloading
       previousStayIdsRef.current = [...newStayIds];
 
@@ -202,33 +189,37 @@ export function BookingForm() {
     }
 
     // Check if this is a new stay or an update
-    const existingIndex = bookingsContext.selectedItem.stayIds?.indexOf(savedStay._id) ?? -1;
+    const existingIndex =
+      bookingsContext.selectedItem.stayIds?.indexOf(savedStay._id) ?? -1;
     let newStayIds;
 
     if (existingIndex === -1) {
       // This is a new stay - add it to our arrays
-      newStayIds = [...(bookingsContext.selectedItem.stayIds || []), savedStay._id];
-      
+      newStayIds = [
+        ...(bookingsContext.selectedItem.stayIds || []),
+        savedStay._id,
+      ];
+
       // Update the booking with the new stay
       bookingsContext.updateField("stayIds", newStayIds);
-      
+
       // Add the new stay to our local state for immediate UI feedback
-      setStays(prevStays => [...prevStays, savedStay]);
+      setStays((prevStays) => [...prevStays, savedStay]);
     } else {
       // This is an existing stay that's been updated
       newStayIds = [...bookingsContext.selectedItem.stayIds];
-      
+
       // Update the stay in our local state
-      setStays(prevStays => {
+      setStays((prevStays) => {
         const newStays = [...prevStays];
         newStays[existingIndex] = savedStay;
         return newStays;
       });
     }
-    
+
     // Update our reference to prevent unnecessary reloading
     previousStayIdsRef.current = newStayIds || [];
-    
+
     // Close the modal
     setIsModalOpen(false);
   };
@@ -246,12 +237,18 @@ export function BookingForm() {
   // Helper function to get status label
   const getStatusLabel = (status) => {
     switch (status) {
-      case "confirmed": return "Confirmed";
-      case "checked_in": return "Checked In";
-      case "checked_out": return "Checked Out";
-      case "cancelled": return "Cancelled";
-      case "no_show": return "No Show";
-      default: return status || "-";
+      case "confirmed":
+        return "Confirmed";
+      case "checked_in":
+        return "Checked In";
+      case "checked_out":
+        return "Checked Out";
+      case "cancelled":
+        return "Cancelled";
+      case "no_show":
+        return "No Show";
+      default:
+        return status || "-";
     }
   };
 
@@ -301,11 +298,7 @@ export function BookingForm() {
             )}
           </div>
 
-          {isLoadingStays ? (
-            <div className="loading-container">
-              <LoadingSpinner isLoading={true} />
-            </div>
-          ) : stays.length === 0 ? (
+          {stays.length === 0 ? (
             <div className="no-stays-message">
               No stays found for this booking
             </div>
@@ -315,7 +308,8 @@ export function BookingForm() {
                 <div key={stay._id} className="stay-item">
                   <div className="stay-info">
                     <div className="stay-dates">
-                      {formatDate(stay.checkInDate)} - {formatDate(stay.checkOutDate)}
+                      {formatDate(stay.checkInDate)} -{" "}
+                      {formatDate(stay.checkOutDate)}
                     </div>
                     <div className="stay-details">
                       <span className="stay-hotel">
@@ -399,7 +393,7 @@ export function BookingForm() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
-      
+
       <CommonForm
         dataContext={bookingsContext}
         itemName="Booking"
@@ -420,7 +414,10 @@ export function BookingForm() {
           <TextField
             label="Confirmation Date"
             fieldPath="confirmationDate"
-            value={bookingsContext.selectedItem?.confirmationDate || new Date().toISOString().split("T")[0]}
+            value={
+              bookingsContext.selectedItem?.confirmationDate ||
+              new Date().toISOString().split("T")[0]
+            }
             onChange={handleFieldChange}
             isEditing={bookingsContext.isEditing}
             type="date"
@@ -501,6 +498,18 @@ export function BookingForm() {
           />
         </div>
         <div className="col-full">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: "1rem",
+            }}
+          >
+            <DownloadPDFButton
+              bookingData={bookingsContext.selectedItem}
+              stays={stays}
+            />
+          </div>
           {renderRelatedStays()}
         </div>
       </CommonForm>
@@ -529,14 +538,6 @@ export function BookingForm() {
           font-size: 1.1rem;
           font-weight: 600;
           margin: 0;
-        }
-
-        .loading-container {
-          display: flex;
-          justify-content: center;
-          padding: 2rem 0;
-          height: 100px;
-          position: relative;
         }
 
         .no-stays-message {

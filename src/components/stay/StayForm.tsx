@@ -51,7 +51,6 @@ const DEFAULT_ROOM_TYPE_OPTIONS = [
 
 export function StayForm() {
   const staysContext = useStaysData();
-  const router = useRouter();
   const [roomTypeOptions, setRoomTypeOptions] = useState(DEFAULT_ROOM_TYPE_OPTIONS);
   const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
 
