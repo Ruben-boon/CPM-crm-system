@@ -39,6 +39,7 @@ export default function SignIn() {
           justify-content: center;
           align-items: center;
           min-height: 80vh;
+          width:100vw;
         }
         .auth-card {
           background: white;

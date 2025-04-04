@@ -1,5 +1,12 @@
 "use client";
-import { createContext, useContext, useState, ReactNode, useRef, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useRef,
+  useCallback,
+} from "react";
 import { ChangeRecord, Item } from "@/types/types";
 import {
   createDocument,
@@ -17,7 +24,7 @@ interface RoleFilter {
 interface DataContextType {
   items: Item[];
   selectedItem: Item | null;
-  originalItem: Item | null; 
+  originalItem: Item | null;
   error: string | null;
   isEditing: boolean;
   pendingChanges: Record<string, ChangeRecord>;
@@ -30,8 +37,8 @@ interface DataContextType {
   deleteItem: (id: string) => Promise<boolean>;
   setIsEditing: (isEditing: boolean) => void;
   updateField: (field: string, value: any) => void;
-  resetForm: () => void; 
-  cancelCopy: () => void; 
+  resetForm: () => void;
+  cancelCopy: () => void;
   setRoleFilter: (filter: Partial<RoleFilter>) => void;
   isDirty: boolean;
   setFieldLoading: (field: string, isLoading: boolean) => void;
@@ -51,54 +58,56 @@ function createDataContext(collectionName: string) {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [pendingChanges, setPendingChanges] = useState<Record<string, ChangeRecord>>({});
+    const [pendingChanges, setPendingChanges] = useState<
+      Record<string, ChangeRecord>
+    >({});
     const [roleFilter, setRoleFilterState] = useState<RoleFilter>({
       bookerChecked: false,
       guestChecked: false,
     });
-    const [fieldLoading, setFieldLoadingState] = useState<Record<string, boolean>>({});
+    const [fieldLoading, setFieldLoadingState] = useState<
+      Record<string, boolean>
+    >({});
 
     const isDirty = Object.keys(pendingChanges).length > 0;
-    
+
     const setRoleFilter = (filter: Partial<RoleFilter>) => {
       setRoleFilterState((prev) => ({
         ...prev,
         ...filter,
       }));
     };
-    
+
     const setFieldLoading = useCallback((field: string, loading: boolean) => {
-      setFieldLoadingState(prev => ({
+      setFieldLoadingState((prev) => ({
         ...prev,
-        [field]: loading
+        [field]: loading,
       }));
     }, []);
-    
+
     const cancelCopy = useCallback(() => {
       setSelectedItem(null);
       setOriginalItem(null);
       setPendingChanges({});
       setIsEditing(false);
     }, []);
-    
+
+    // In DataContext.tsx, modify the searchItems function
+
     const searchItems = async (searchTerm?: string, searchField?: string) => {
       try {
         setIsLoading(true);
-        
-        // If not authenticated and userId is required, return empty results
-        if (!isAuthenticated && userId === undefined) {
-          setItems([]);
-          return;
-        }
-        
+
+        // Pass userId as an optional parameter (for auditing or future use)
+        // but don't filter by it in the actual query
         const results = await searchDocuments(
           collectionName,
           searchTerm,
           searchField,
-          userId // Pass the userId for data isolation
+          userId // Pass this for potential future use, but don't filter by it
         );
 
-        // role filtering for contacts
+        // Rest of your function remains the same
         let filteredResults = [...results];
         if (
           collectionName === "contacts" &&
@@ -126,26 +135,29 @@ function createDataContext(collectionName: string) {
       }
     };
 
-    const selectItem = useCallback((item: Partial<Item> | null, startEditing = false) => {
-      const newItem = item ? ({ _id: "", ...item } as Item) : null;
-      setSelectedItem(newItem);
-      
-      // Store a deep copy of the original item for reset functionality
-      setOriginalItem(newItem ? JSON.parse(JSON.stringify(newItem)) : null);
-      
-      setIsEditing(startEditing);
-      setPendingChanges({});
-    }, []);
+    const selectItem = useCallback(
+      (item: Partial<Item> | null, startEditing = false) => {
+        const newItem = item ? ({ _id: "", ...item } as Item) : null;
+        setSelectedItem(newItem);
+
+        // Store a deep copy of the original item for reset functionality
+        setOriginalItem(newItem ? JSON.parse(JSON.stringify(newItem)) : null);
+
+        setIsEditing(startEditing);
+        setPendingChanges({});
+      },
+      []
+    );
 
     const updateField = (field: string, value: any) => {
       if (!selectedItem) return;
 
       // Create a deep copy of the selected item
       const updatedItem = JSON.parse(JSON.stringify(selectedItem));
-      
+
       // Handle nested fields (e.g., "general.firstName")
-      const fieldParts = field.split('.');
-      
+      const fieldParts = field.split(".");
+
       if (fieldParts.length === 1) {
         // Direct field update
         updatedItem[field] = value;
@@ -159,14 +171,14 @@ function createDataContext(collectionName: string) {
         }
         current[fieldParts[fieldParts.length - 1]] = value;
       }
-      
+
       // Update the selected item
       setSelectedItem(updatedItem);
-      
+
       // Track the change in pendingChanges
       const getOriginalValue = () => {
         if (!originalItem) return undefined;
-        
+
         let current = originalItem;
         for (let i = 0; i < fieldParts.length - 1; i++) {
           if (!current[fieldParts[i]]) return undefined;
@@ -174,17 +186,17 @@ function createDataContext(collectionName: string) {
         }
         return current[fieldParts[fieldParts.length - 1]];
       };
-      
+
       const originalValue = getOriginalValue();
-      
+
       // Only track as a change if it's different from the original
       if (JSON.stringify(originalValue) !== JSON.stringify(value)) {
-        setPendingChanges(prev => ({
+        setPendingChanges((prev) => ({
           ...prev,
           [field]: {
             oldValue: originalValue,
-            newValue: value
-          }
+            newValue: value,
+          },
         }));
       } else {
         // If value is back to original, remove from pending changes
@@ -193,7 +205,7 @@ function createDataContext(collectionName: string) {
         setPendingChanges(newPendingChanges);
       }
     };
-    
+
     const resetForm = useCallback(() => {
       if (originalItem) {
         setSelectedItem(JSON.parse(JSON.stringify(originalItem)));
@@ -206,24 +218,28 @@ function createDataContext(collectionName: string) {
         setError("Authentication required");
         return false;
       }
-      
+
       try {
         setIsLoading(true);
-        
+
         // Track document version for concurrency control
         const itemWithVersion = { ...item, version: 0 };
-        
-        const result = await createDocument(collectionName, itemWithVersion, userId);
+
+        const result = await createDocument(
+          collectionName,
+          itemWithVersion,
+          userId
+        );
         if (result.success) {
           await searchItems();
-          
+
           // Update both selectedItem and originalItem with the created item
           if (result.data) {
             setSelectedItem(result.data);
             setOriginalItem(JSON.parse(JSON.stringify(result.data)));
             setPendingChanges({});
           }
-          
+
           setError(null);
           return true;
         }
@@ -242,7 +258,7 @@ function createDataContext(collectionName: string) {
         setError("Missing item ID");
         return false;
       }
-      
+
       if (!isAuthenticated && userId === undefined) {
         setError("Authentication required");
         return false;
@@ -250,39 +266,46 @@ function createDataContext(collectionName: string) {
 
       try {
         setIsLoading(true);
-        
+
         // Ensure we're passing the current version
         const currentVersion = selectedItem?.version || 0;
         const itemWithVersion = { ...item, version: currentVersion };
-        
-        const result = await updateDocument(collectionName, item._id, itemWithVersion, userId);
+
+        const result = await updateDocument(
+          collectionName,
+          item._id,
+          itemWithVersion,
+          userId
+        );
         if (result.success) {
           await searchItems();
-          
+
           // Update both selectedItem and originalItem with the updated item
           // Include the incremented version
           if (result.data) {
             const updatedItem = {
               ...result.data,
-              version: (currentVersion || 0) + 1
+              version: (currentVersion || 0) + 1,
             };
             setSelectedItem(updatedItem);
             setOriginalItem(JSON.parse(JSON.stringify(updatedItem)));
             setPendingChanges({});
           }
-          
+
           setError(null);
           return true;
         }
-        
+
         // Special handling for version conflict errors
         if (result.error?.includes("modified by another user")) {
-          setError("This record was modified by another user. Please refresh and try again.");
+          setError(
+            "This record was modified by another user. Please refresh and try again."
+          );
           // Could add logic here to show a diff or help resolve the conflict
         } else {
           setError(result.error || "Update failed");
         }
-        
+
         return false;
       } catch (error) {
         setError(error instanceof Error ? error.message : "Update failed");
@@ -297,7 +320,7 @@ function createDataContext(collectionName: string) {
         setError("Missing item ID");
         return false;
       }
-      
+
       if (!isAuthenticated && userId === undefined) {
         setError("Authentication required");
         return false;
@@ -305,7 +328,7 @@ function createDataContext(collectionName: string) {
 
       try {
         setIsLoading(true);
-        
+
         const result = await deleteDocument(collectionName, id, userId);
         if (result.success) {
           // Clear the selected item if it was deleted
@@ -348,7 +371,7 @@ function createDataContext(collectionName: string) {
           setIsEditing,
           updateField,
           resetForm,
-          cancelCopy, 
+          cancelCopy,
           setRoleFilter,
           setFieldLoading,
         }}

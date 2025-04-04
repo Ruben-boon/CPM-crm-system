@@ -12,27 +12,22 @@ export async function searchDocuments<T>(
   collectionName: string,
   searchTerm = "",
   searchField = "name",
-  userId?: string // Add userId parameter (optional for backward compatibility)
+  userId?: string // Keep this parameter for auditing or future use
 ): Promise<T[]> {
   const client = await clientPromise;
   const db = client.db("CRM");
 
   let query: any = {};
   
-  // Add userId to query if provided
-  if (userId) {
-    query.userId = userId;
-  }
+  // We don't filter by userId since all authenticated users should see all data
+  // We keep the parameter for future use if requirements change
   
   if (searchTerm && searchField) {
     if (searchField === "_id") {
       // Only attempt to create ObjectId if the searchTerm matches MongoDB ObjectId format
       if (/^[0-9a-fA-F]{24}$/.test(searchTerm)) {
         try {
-          query = { 
-            _id: new ObjectId(searchTerm),
-            ...(userId ? { userId } : {})
-          };
+          query = { _id: new ObjectId(searchTerm) };
         } catch (error) {
           console.error("Invalid ObjectId format:", error);
           return [];
@@ -67,7 +62,7 @@ export async function searchDocuments<T>(
 export async function createDocument<T extends { _id?: string }>(
   collectionName: string,
   document: T,
-  userId?: string // Add userId parameter (optional for backward compatibility)
+  userId?: string // Keep track of who created the document
 ): Promise<DatabaseResult<T>> {
   try {
     const client = await clientPromise;
@@ -75,8 +70,11 @@ export async function createDocument<T extends { _id?: string }>(
 
     const { _id, ...documentData } = document;
     
-    // Add userId to document if provided
-    const documentWithUserId = userId ? { ...documentData, userId } : documentData;
+    // Store the creator's userId with the document for auditing purposes
+    // but don't use it to restrict access
+    const documentWithUserId = userId 
+      ? { ...documentData, createdBy: userId, updatedBy: userId } 
+      : documentData;
     
     const result = await collection.insertOne(documentWithUserId);
 
@@ -85,7 +83,7 @@ export async function createDocument<T extends { _id?: string }>(
       data: { 
         ...document, 
         _id: result.insertedId.toString(),
-        ...(userId ? { userId } : {})
+        ...(userId ? { createdBy: userId, updatedBy: userId } : {})
       } as T,
     };
   } catch (error) {
@@ -101,7 +99,7 @@ export async function updateDocument<T extends { _id: string, version?: number }
   collectionName: string,
   id: string,
   document: T,
-  userId?: string // Add userId parameter (optional for backward compatibility)
+  userId?: string // Track who updated the document
 ): Promise<DatabaseResult<T>> {
   try {
     const client = await clientPromise;
@@ -118,11 +116,14 @@ export async function updateDocument<T extends { _id: string, version?: number }
     }
 
     try {
-      // Create query - include userId if provided
+      // We don't filter by userId when updating - any authenticated user can update
       const query: any = { _id: new ObjectId(id) };
-      if (userId) {
-        query.userId = userId;
-      }
+      
+      // Add who's updating the document for audit trail
+      const dataWithAudit = {
+        ...updateData,
+        ...(userId ? { updatedBy: userId, updatedAt: new Date() } : {})
+      };
       
       // If document versioning is being used
       if (version !== undefined) {
@@ -139,16 +140,23 @@ export async function updateDocument<T extends { _id: string, version?: number }
         }
         
         // Increment version on update
-        updateData.version = currentVersion + 1;
+        dataWithAudit.version = currentVersion + 1;
       }
       
       const result = await collection.updateOne(
         query,
-        { $set: updateData }
+        { $set: dataWithAudit }
       );
 
       if (result.modifiedCount === 1) {
-        return { success: true, data: document };
+        return { 
+          success: true, 
+          data: {
+            ...document,
+            ...(userId ? { updatedBy: userId, updatedAt: new Date() } : {}),
+            ...(version !== undefined ? { version: (version || 0) + 1 } : {})
+          } as T 
+        };
       }
       if (result.matchedCount === 0) {
         return { success: false, error: "Document not found" };
@@ -172,7 +180,7 @@ export async function updateDocument<T extends { _id: string, version?: number }
 export async function deleteDocument(
   collectionName: string,
   id: string,
-  userId?: string // Add userId parameter (optional for backward compatibility)
+  userId?: string // Track who deleted the document
 ): Promise<DatabaseResult<{ id: string }>> {
   try {
     const client = await clientPromise;
@@ -187,12 +195,22 @@ export async function deleteDocument(
     }
     
     try {
-      // Create query - include userId if provided
-      const query: any = { _id: new ObjectId(id) };
-      if (userId) {
-        query.userId = userId;
-      }
+      // We don't filter by userId - any authenticated user can delete
+      const query = { _id: new ObjectId(id) };
       
+      // Consider soft delete instead of hard delete
+      // const result = await collection.updateOne(
+      //   query,
+      //   { 
+      //     $set: { 
+      //       deleted: true, 
+      //       deletedBy: userId,
+      //       deletedAt: new Date()
+      //     } 
+      //   }
+      // );
+      
+      // For now, perform a hard delete
       const result = await collection.deleteOne(query);
       
       if (result.deletedCount === 1) {
