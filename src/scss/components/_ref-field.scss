@@ -1,185 +1,225 @@
 // RefField Component Styles
 // -------------------------
 
-// Variables
-$ref-field-border: #ccc;
-$ref-field-border-radius: 4px;
-$ref-field-padding: 0.5rem;
-$ref-field-text: #333;
-$ref-field-text-muted: #666;
-$ref-field-focus-shadow: rgba(74, 108, 247, 0.3);
-$transition-speed: 0.2s;
-.ref-field {
-  margin-bottom: 1rem;
-  &-container {
-    width: 100%;
-  }
-
-  &-single {
-    display: flex;
-    flex-direction: column;
-  }
-  // Selected value container
-  .selected-value {
-    padding: 7px;
-    background: #f6f6f8;
-    &-container {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      position: relative;
-      border: 1px solid $ref-field-border;
-      border-radius: $ref-field-border-radius;
-    }
-
-    // Selected value text
-    & {
-      flex-grow: 1;
-      padding-right: 30px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  // Clear button
-  .clear-button {
-    position: absolute;
-    right: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: $ref-field-text-muted;
-    padding: 2px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all $transition-speed;
-
-    &:hover {
-      color: $ref-field-text;
-    }
-
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px $ref-field-focus-shadow;
-    }
-  }
-
-  // Search container and results
-  .search {
-    &-container {
-      position: relative;
-      width: 100%;
-
-      &.flex-1 {
-        flex: 1;
-      }
-    }
-
-    &-input {
-      width: 100%;
-      padding: $ref-field-padding;
-      border: 1px solid $ref-field-border;
-      border-radius: $ref-field-border-radius;
-      transition: all $transition-speed;
-      padding-left: 40px;
-      &:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px rgba($ref-field-focus-shadow, 0.2);
-      }
-    }
-
-    &-icon {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      height: 20px;
-      transform: translateY(-50%);
-      color: $ref-field-text-muted;
-      pointer-events: none;
-    }
-
-    &-results {
-      margin-top: 0;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      width: 100%;
-      max-height: 200px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      background-color: white;
-      border: 1px solid $ref-field-border;
-      border-top: none;
-      border-radius: 0 0 $ref-field-border-radius $ref-field-border-radius;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      z-index: 10;
-    }
-  }
-
-  // Search result items
-  .result {
-    &-item {
-      display: flex;
-      justify-content: space-between;
-      padding: $ref-field-padding;
-      cursor: pointer;
-      transition: background-color $transition-speed;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      &:hover {
-        background-color: rgba($ref-field-focus-shadow, 0.1);
-      }
-    }
-
-    &-name {
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &-id {
-      color: $ref-field-text-muted;
-      font-size: 0.85em;
-      opacity: 0.8;
-      margin-left: 8px;
-    }
-  }
-
-  // RefField container styles
-
-  // Read-only view
-  .read-only {
-    align-items: center;
-    border: 1px solid #e4e4e7;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
-    padding: 7px;
-    transition: all .2sease-in-out;
-    &.flex-1 {
-      flex: 1;
-    }
-  }
-
-  .empty-reference {
-    color: $ref-field-text-muted;
-    font-style: italic;
+.form-field.ref-field {
+  border-radius: 8px;
+  // padding: 1em;
+  
+  &:has(.read-only) {
+    background-color: #f6f6f8;
   }
 
   // Field label
   .field-label {
-    margin-bottom: 0.5rem;
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
     font-weight: 500;
 
     .required-mark {
-      color: #dc2626;
+      color: #e53e3e;
       margin-left: 2px;
+    }
+  }
+
+  // RefField container
+  .ref-field-container {
+    width: 100%;
+    max-width: 100%;
+    
+    &.field-changed {
+      background-color: transparent !important;
+    }
+  }
+
+  // Selected value container
+  .selected-value-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5em;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    
+    &:hover {
+      border-color: #4299e1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // Selected value text
+  .selected-value {
+    flex: 1 1 auto;
+    min-width: 0; /* Critical for text truncation in flex containers */
+    padding: 0.3rem 0.75rem;
+    color: #2d3748;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Clear button
+  .clear-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: #a0aec0;
+    cursor: pointer;
+    padding: 0.25rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    flex: 0 0 auto; /* Prevent button from shrinking */
+
+    &:hover {
+      color: #e53e3e;
+      background-color: rgba(229, 62, 62, 0.1);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  // Search container and results
+  .search-container {
+    position: relative;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    padding-left: 2.5rem;
+    color: #4a5568;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #4299e1;
+      box-shadow: 0 0 0 1px #4299e1;
+    }
+
+    &::placeholder {
+      color: #a0aec0;
+    }
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #a0aec0;
+    pointer-events: none;
+  }
+
+  .search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    margin-top: 0.25rem;
+  }
+
+  // Search result items
+  .result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f7fafc;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .result-name {
+    color: #2d3748;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .result-id {
+    color: #a0aec0;
+    font-size: 0.85em;
+    margin-left: 8px;
+  }
+
+  // Read-only view
+  .read-only {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background-color: white;
+    padding: 0.3rem 0.75rem;
+    color: #2d3748;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      border-color: #4299e1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .empty-reference {
+    color: #a0aec0;
+    font-style: italic;
+  }
+}
+
+// Animation
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-field.ref-field {
+  .selected-value-container {
+    // animation: fadeIn 0.2s ease;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .form-field.ref-field {
+    .search-input {
+      padding: 0.5rem 0.75rem;
+      padding-left: 2.5rem;
     }
   }
 }

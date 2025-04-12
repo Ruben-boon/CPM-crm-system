@@ -19,19 +19,57 @@ const CURRENCY_OPTIONS = [
 ];
 
 const CANCELLATION_OPTIONS = [
-  { value: "Cancellations made up to 24 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.", label: "24h" },
-  { value: "Cancellations made up to 48 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.", label: "48h" },
-  { value: "Cancellations made up to 72 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.", label: "72h" },
+  {
+    value:
+      "Cancellations made up to 24 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.",
+    label: "24h",
+  },
+  {
+    value:
+      "Cancellations made up to 48 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.",
+    label: "48h",
+  },
+  {
+    value:
+      "Cancellations made up to 72 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.",
+    label: "72h",
+  },
 ];
 
 const PAYMENT_INSTRUCTION_OPTIONS = [
-  { value: "Room and breakfast charges, along with applicable taxes, will be billed to the credit card provided by Corporate Meeting Partner. Any additional expenses incurred during the stay will be settled by the guest upon check-out.", label: "Creditcard: Room, breakfast and tax" },
-  { value: "Room and applicable tax charges will be billed to the credit card provided by Corporate Meeting Partner. Any additional expenses incurred during the stay will be settled by the guest upon check-out.", label: "Creditcard: Room and tax" },
-  { value: "All charges will be billed to the credit card provided by Corporate Meeting Partner.", label: "Creditcard: All charges" },
-  { value: "Room and breakfast charges, along with applicable taxes, will be invoiced to Corporate Meeting Partner. Any additional expenses will be settled by the guest upon check-out.", label: "Billed: Room, breakfast and tax" },
-  { value: "Room and applicable tax charges will be invoiced to Corporate Meeting Partner. Any additional expenses will be settled by the guest upon check-out.", label: "Billed: Room and tax" },
-  { value: "All charges will be invoiced to Corporate Meeting Partner.", label: "Billed: All charges" },
-  { value: "All charges will be settled by the guest upon check-out.", label: "Own Account" },
+  {
+    value:
+      "Room and breakfast charges, along with applicable taxes, will be billed to the credit card provided by Corporate Meeting Partner. Any additional expenses incurred during the stay will be settled by the guest upon check-out.",
+    label: "Creditcard: Room, breakfast and tax",
+  },
+  {
+    value:
+      "Room and applicable tax charges will be billed to the credit card provided by Corporate Meeting Partner. Any additional expenses incurred during the stay will be settled by the guest upon check-out.",
+    label: "Creditcard: Room and tax",
+  },
+  {
+    value:
+      "All charges will be billed to the credit card provided by Corporate Meeting Partner.",
+    label: "Creditcard: All charges",
+  },
+  {
+    value:
+      "Room and breakfast charges, along with applicable taxes, will be invoiced to Corporate Meeting Partner. Any additional expenses will be settled by the guest upon check-out.",
+    label: "Billed: Room, breakfast and tax",
+  },
+  {
+    value:
+      "Room and applicable tax charges will be invoiced to Corporate Meeting Partner. Any additional expenses will be settled by the guest upon check-out.",
+    label: "Billed: Room and tax",
+  },
+  {
+    value: "All charges will be invoiced to Corporate Meeting Partner.",
+    label: "Billed: All charges",
+  },
+  {
+    value: "All charges will be settled by the guest upon check-out.",
+    label: "Own Account",
+  },
 ];
 
 const STATUS_OPTIONS = [
@@ -51,7 +89,9 @@ const DEFAULT_ROOM_TYPE_OPTIONS = [
 
 export function StayForm() {
   const staysContext = useStaysData();
-  const [roomTypeOptions, setRoomTypeOptions] = useState(DEFAULT_ROOM_TYPE_OPTIONS);
+  const [roomTypeOptions, setRoomTypeOptions] = useState(
+    DEFAULT_ROOM_TYPE_OPTIONS
+  );
   const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
 
   // Load room types when hotel changes
@@ -65,10 +105,14 @@ export function StayForm() {
   const loadRoomTypesFromHotel = async (hotelId: string) => {
     try {
       setLoadingRoomTypes(true);
-      
+
       const result = await searchDocuments("hotels", hotelId, "_id");
 
-      if (Array.isArray(result) && result.length > 0 && result[0].roomTypes?.length > 0) {
+      if (
+        Array.isArray(result) &&
+        result.length > 0 &&
+        result[0].roomTypes?.length > 0
+      ) {
         const hotelRoomTypes = result[0].roomTypes.map((type) => ({
           value: type,
           label: type,
@@ -96,7 +140,7 @@ export function StayForm() {
   const getDisplayName = (item: any) => {
     return item?.reference || "this stay";
   };
-  
+
   const handleFieldChange = (
     fieldPath: string,
     value: string | string[],
@@ -117,6 +161,79 @@ export function StayForm() {
       basePath="stays"
       displayName={getDisplayName}
     >
+      <div className="col-half">
+        <RefField
+          label="Hotel"
+          fieldPath="hotelId"
+          value={staysContext.selectedItem?.hotelId || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          collectionName="hotels"
+          displayFields={["name", "address"]}
+          isChanged={isFieldChanged("hotelId")}
+        />
+        <DropdownField
+          label="Room Type"
+          fieldPath="roomType"
+          value={staysContext.selectedItem?.roomType || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          options={roomTypeOptions}
+          isChanged={isFieldChanged("roomType")}
+          placeholder={
+            loadingRoomTypes ? "Loading room types..." : "Select a room type"
+          }
+          disabled={loadingRoomTypes || !staysContext.selectedItem?.hotelId}
+        />
+        <div className="currency-group">
+          <label className="field-label">Room Price</label>
+          <div className="grouper">
+            <DropdownField
+              fieldPath="roomCurrency"
+              options={CURRENCY_OPTIONS}
+              value={staysContext.selectedItem?.roomCurrency || "EUR"}
+              onChange={handleFieldChange}
+              isEditing={staysContext.isEditing}
+              className={`currency-sign ${
+                isFieldChanged("roomCurrency") ? "field-changed" : ""
+              }`}
+              compact={true}
+            />
+            <TextField
+              fieldPath="roomPrice"
+              label=""
+              type="number"
+              className={`currency-amount ${
+                isFieldChanged("roomPrice") ? "field-changed" : ""
+              }`}
+              value={staysContext.selectedItem?.roomPrice || ""}
+              onChange={handleFieldChange}
+              isEditing={staysContext.isEditing}
+            />
+          </div>
+        </div>
+
+        <DropdownField
+          label="Payment Instructions"
+          fieldPath="paymentInstructions"
+          value={staysContext.selectedItem?.paymentInstructions || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          options={PAYMENT_INSTRUCTION_OPTIONS}
+          isChanged={isFieldChanged("paymentInstructions")}
+        />
+
+        <DropdownField
+          label="Cancellations"
+          fieldPath="cancellations"
+          value={staysContext.selectedItem?.cancellations || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          options={CANCELLATION_OPTIONS}
+          isChanged={isFieldChanged("cancellations")}
+        />
+      </div>
+
       <div className="col-half">
         <TextField
           label="Check-in Date"
@@ -139,6 +256,54 @@ export function StayForm() {
           isChanged={isFieldChanged("checkOutDate")}
         />
 
+        {/* <TextField
+          label="Room Number"
+          fieldPath="roomNumber"
+          value={staysContext.selectedItem?.roomNumber || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          isChanged={isFieldChanged("roomNumber")}
+        />
+
+        <TextField
+          label="Room Notes"
+          fieldPath="roomNotes"
+          value={staysContext.selectedItem?.roomNotes || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          isChanged={isFieldChanged("roomNotes")}
+        /> */}
+
+        <DropdownField
+          label="Status"
+          fieldPath="status"
+          value={staysContext.selectedItem?.status || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          options={STATUS_OPTIONS}
+          isChanged={isFieldChanged("status")}
+        />
+
+        <TextField
+          label="Special Requests"
+          fieldPath="specialRequests"
+          value={staysContext.selectedItem?.specialRequests || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          isChanged={isFieldChanged("specialRequests")}
+        />
+        <TextField
+          label="Remarks"
+          fieldPath="remarks"
+          value={staysContext.selectedItem?.remarks || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          multiline={true}
+          rows={4}
+          isChanged={isFieldChanged("remarks")}
+        />
+      </div>
+      <div className="col-half">
         <MultiRefField
           label="Guests"
           fieldPath="guestIds"
@@ -150,129 +315,9 @@ export function StayForm() {
           displayFields={["general.firstName", "general.lastName"]}
           showQuickAdd={true}
         />
-        
-        <TextField
-          label="Remarks"
-          fieldPath="remarks"
-          value={staysContext.selectedItem?.remarks || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          multiline={true}
-          rows={4}
-          isChanged={isFieldChanged("remarks")}
-        />
-
-        <DropdownField
-          label="Payment Instructions"
-          fieldPath="paymentInstructions"
-          value={staysContext.selectedItem?.paymentInstructions || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          options={PAYMENT_INSTRUCTION_OPTIONS}
-          isChanged={isFieldChanged("paymentInstructions")}
-        />
-
-        <DropdownField
-          label="Cancellations"
-          fieldPath="cancellations"
-          value={staysContext.selectedItem?.cancellations || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          options={CANCELLATION_OPTIONS}
-          isChanged={isFieldChanged("cancellations")}
-        />
-      </div>
-      
-      <div className="col-half">
-        <RefField
-          label="Hotel"
-          fieldPath="hotelId"
-          value={staysContext.selectedItem?.hotelId || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          collectionName="hotels"
-          displayFields={["name", "address"]}
-          isChanged={isFieldChanged("hotelId")}
-        />
-        
-        <DropdownField
-          label="Room Type"
-          fieldPath="roomType"
-          value={staysContext.selectedItem?.roomType || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          options={roomTypeOptions}
-          isChanged={isFieldChanged("roomType")}
-          placeholder={loadingRoomTypes ? "Loading room types..." : "Select a room type"}
-          disabled={loadingRoomTypes || !staysContext.selectedItem?.hotelId}
-        />
-        
-        <div className="currency-group">
-          <label className="field-label">Room Price</label>
-          <div className="grouper">
-            <DropdownField
-              fieldPath="roomCurrency"
-              options={CURRENCY_OPTIONS}
-              value={staysContext.selectedItem?.roomCurrency || "EUR"}
-              onChange={handleFieldChange}
-              isEditing={staysContext.isEditing}
-              className={`currency-sign ${isFieldChanged("roomCurrency") ? "field-changed" : ""}`}
-              compact={true}
-            />
-            <TextField
-              fieldPath="roomPrice"
-              label=""
-              type="number"
-              className={`currency-amount ${isFieldChanged("roomPrice") ? "field-changed" : ""}`}
-              value={staysContext.selectedItem?.roomPrice || ""}
-              onChange={handleFieldChange}
-              isEditing={staysContext.isEditing}
-            />
-          </div>
-        </div>
-        
-        <TextField
-          label="Room Number"
-          fieldPath="roomNumber"
-          value={staysContext.selectedItem?.roomNumber || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          isChanged={isFieldChanged("roomNumber")}
-        />
-        
-        <TextField
-          label="Room Notes"
-          fieldPath="roomNotes"
-          value={staysContext.selectedItem?.roomNotes || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          isChanged={isFieldChanged("roomNotes")}
-        />
-        
-        <DropdownField
-          label="Status"
-          fieldPath="status"
-          value={staysContext.selectedItem?.status || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          options={STATUS_OPTIONS}
-          isChanged={isFieldChanged("status")}
-        />
-        
-        <TextField
-          label="Special Requests"
-          fieldPath="specialRequests"
-          value={staysContext.selectedItem?.specialRequests || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          isChanged={isFieldChanged("specialRequests")}
-        />
       </div>
 
       <style jsx>{`
-        .currency-group {
-          margin-bottom: 1rem;
-        }
         .grouper {
           display: flex;
           align-items: center;

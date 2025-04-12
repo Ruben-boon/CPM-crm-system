@@ -65,7 +65,7 @@ function BookingsLayoutContent({ children }) {
             type="bookings"
           />
           <div className="button-container">
-            <Button icon={Plus} onClick={() => handleSelectBooking({}, true)}>
+            <Button intent="outline" icon={Plus} onClick={() => handleSelectBooking({}, true)}>
               New Booking
             </Button>
           </div>

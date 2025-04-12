@@ -1,6 +1,6 @@
 "use client";
 import { Item } from "@/types/types";
-import { Copy } from "lucide-react";
+import { Copy, Hotel, House, Mail, Phone } from "lucide-react";
 
 interface SearchResultProps {
   items: Item[];
@@ -12,10 +12,14 @@ interface SearchResultProps {
 // Helper function to get role display label
 const getRoleLabel = (role: string) => {
   switch (role) {
-    case "booker": return "Booker";
-    case "guest": return "Guest";
-    case "both": return "Booker & Guest";
-    default: return role || "-";
+    case "booker":
+      return "Booker";
+    case "guest":
+      return "Guest";
+    case "both":
+      return "Booker & Guest";
+    default:
+      return role || "-";
   }
 };
 
@@ -32,18 +36,31 @@ const formatDate = (dateString: string) => {
 // Helper function to get status label
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case "confirmed": return "Confirmed";
-    case "pending": return "Pending";
-    case "cancelled": return "Cancelled";
-    case "completed": return "Completed";
-    case "checked_in": return "Checked In";
-    case "checked_out": return "Checked Out";
-    case "no_show": return "No Show";
-    default: return status || "-";
+    case "confirmed":
+      return "Confirmed";
+    case "pending":
+      return "Pending";
+    case "cancelled":
+      return "Cancelled";
+    case "completed":
+      return "Completed";
+    case "checked_in":
+      return "Checked In";
+    case "checked_out":
+      return "Checked Out";
+    case "no_show":
+      return "No Show";
+    default:
+      return status || "-";
   }
 };
 
-export default function SearchResults({ items, onSelect, onCopy, type = "contacts" }: SearchResultProps) {
+export default function SearchResults({
+  items,
+  onSelect,
+  onCopy,
+  type = "contacts",
+}: SearchResultProps) {
   if (!items || items.length === 0) {
     return <div className="search-results__empty">No results found</div>;
   }
@@ -65,23 +82,28 @@ export default function SearchResults({ items, onSelect, onCopy, type = "contact
     <ul className="search-results">
       {items.map((item) => (
         <li key={item._id.toString()} className="search-results__item">
-          <div className="search-results__content" onClick={() => handleItemClick(item)}>
+          <div
+            className="search-results__content"
+            onClick={() => handleItemClick(item)}
+          >
             <div className="search-results__header">
               <div className="search-results__header-name">
-                {type === "contacts" 
-                  ? `${item.general?.firstName} ${item.general?.lastName}`
+                {type === "contacts"
+                  ? `${item.general?.title} ${item.general?.firstName} ${item.general?.lastName}`
                   : type === "companies"
                   ? `${item.name}`
                   : type === "hotels"
                   ? `${item.name}`
                   : type === "stays"
-                  ? `${item.reference || "Stay"} - ${item.roomNumber || "No Room"}`
+                  ? `${item.hotel}`
                   : type === "bookings"
-                  ? `${item.confirmationNo || "Booking"} - ${formatDate(item.travelPeriodStart)}`
+                  ? `${item.confirmationNo || "Booking"} - ${formatDate(
+                      item.travelPeriodStart
+                    )}`
                   : `Unknown item type`}
               </div>
               {onCopy && (
-                <button 
+                <button
                   className="search-results__copy-btn"
                   onClick={(e) => handleCopyClick(e, item)}
                   title="Make a copy"
@@ -95,42 +117,82 @@ export default function SearchResults({ items, onSelect, onCopy, type = "contact
             <dl className="search-results__details">
               {type === "contacts" ? (
                 <>
-                  {item.general?.email && (
-                    <div className="search-results__details-section">
-                      <dd>{item.general.email}</dd>
-                    </div>
-                  )}
                   {item.general?.role && (
                     <div className="search-results__details-section">
                       <dd>{getRoleLabel(item.general.role)}</dd>
                     </div>
                   )}
+                  {item.general?.email && (
+                    <div className="search-results__details-section">
+                      <dd>
+                        <Mail size={14}></Mail>
+                        {item.general.email}
+                      </dd>
+                    </div>
+                  )}
+                  {item.general?.phone && (
+                    <div className="search-results__details-section">
+                      <dd>
+                        <Phone size={14}></Phone>
+                        {item.general.phone}
+                      </dd>
+                    </div>
+                  )}
                 </>
               ) : type === "companies" ? (
                 <>
+                  {item.address && (
+                    <div className="search-results__details-section">
+                      <dd>
+                        <House size={14}></House>
+                        {item.address}
+                      </dd>
+                    </div>
+                  )}
                   {item.city && (
                     <div className="search-results__details-section">
-                      <dd>{item.city}{item.country ? `, ${item.country}` : ''}</dd>
+                      <dd>
+                        {item.city}
+                        {item.country ? `, ${item.country}` : ""}
+                      </dd>
                     </div>
                   )}
                 </>
               ) : type === "hotels" ? (
                 <>
+                  {item.address && (
+                    <div className="search-results__details-section">
+                      <dd>
+                        <Hotel size={14}></Hotel>
+                        {item.address}
+                      </dd>
+                    </div>
+                  )}
+
                   {item.city && (
                     <div className="search-results__details-section">
-                      <dd>{item.city}{item.country ? `, ${item.country}` : ''}</dd>
+                      <dd>
+                        {item.city}
+                        {item.country ? `, ${item.country}` : ""}
+                      </dd>
                     </div>
                   )}
                   {item.phone && (
                     <div className="search-results__details-section">
-                      <dd>{item.phone}</dd>
+                      <dd>
+                        <Phone size={14}></Phone>
+                        {item.phone}
+                      </dd>
                     </div>
                   )}
                 </>
               ) : type === "stays" ? (
                 <>
                   <div className="search-results__details-section">
-                    <dd>{formatDate(item.checkInDate)} - {formatDate(item.checkOutDate)}</dd>
+                    <dd>
+                      {formatDate(item.checkInDate)} -{" "}
+                      {formatDate(item.checkOutDate)}
+                    </dd>
                   </div>
                   {item.status && (
                     <div className="search-results__details-section">

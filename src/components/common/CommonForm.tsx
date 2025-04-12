@@ -185,13 +185,13 @@ export function CommonForm<T extends { _id?: string }>({
       <form onSubmit={handleSave} className={`${entityType}-form`}>
         <div className="top-bar">
           <div className="top-bar__title">
-            {selectedItem?._id ? `${itemName} Details` : `New ${itemName}`}
+            {selectedItem?._id ? `${itemName}` : `New ${itemName}`}
           </div>
 
           <div className="top-bar__edit">
             {!isEditing && selectedItem?._id && (
               <>
-                <Button icon={Edit} onClick={() => setIsEditing(true)}>
+                <Button intent="outline" icon={Edit} onClick={() => setIsEditing(true)}>
                   Edit
                 </Button>
                 <Button

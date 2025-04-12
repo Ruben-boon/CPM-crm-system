@@ -1,6 +1,6 @@
 "use client";
 
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import SearchBar from "@/components/search/SearchBar";
 import SearchResults from "@/components/search/SearchResults";
 import { StaysProvider, useStaysData } from "@/context/DataContext";
@@ -65,7 +65,7 @@ function StaysLayoutContent({ children }) {
             type="stays"
           />
           <div className="button-container">
-            <Button icon={Plus} onClick={() => handleSelectStay({}, true)}>
+            <Button intent="outline" icon={Plus} onClick={() => handleSelectStay({}, true)}>
               New Stay
             </Button>
           </div>

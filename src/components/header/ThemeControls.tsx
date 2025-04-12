@@ -5,12 +5,15 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
 import { toast } from "sonner";
-import { getUserPreferences, saveUserPreferences } from "@/app/actions/userPrefences";
+import {
+  getUserPreferences,
+  saveUserPreferences,
+} from "@/app/actions/userPrefences";
 
 export const ThemeControls = () => {
   const { data: session } = useSession();
   const userId = session?.user?.id;
-  
+
   const [color, setColor] = useState("#7c3aed");
   const [fontSize, setFontSize] = useState("16px");
   const [isLoading, setIsLoading] = useState(true);
@@ -22,33 +25,42 @@ export const ThemeControls = () => {
         // Fall back to localStorage if not logged in
         const savedColor = localStorage.getItem("accent-color");
         const savedSize = localStorage.getItem("font-size");
-    
+
         if (savedColor) {
           setColor(savedColor);
-          document.documentElement.style.setProperty("--accent-color", savedColor);
+          document.documentElement.style.setProperty(
+            "--accent-color",
+            savedColor
+          );
         }
         if (savedSize) {
           setFontSize(savedSize);
           document.documentElement.style.setProperty("--font-size", savedSize);
         }
-        
+
         setIsLoading(false);
         return;
       }
-      
+
       try {
         setIsLoading(true);
         const prefs = await getUserPreferences(userId);
-        
+
         if (prefs) {
           if (prefs.accentColor) {
             setColor(prefs.accentColor);
-            document.documentElement.style.setProperty("--accent-color", prefs.accentColor);
+            document.documentElement.style.setProperty(
+              "--accent-color",
+              prefs.accentColor
+            );
           }
-          
+
           if (prefs.fontSize) {
             setFontSize(prefs.fontSize);
-            document.documentElement.style.setProperty("--font-size", prefs.fontSize);
+            document.documentElement.style.setProperty(
+              "--font-size",
+              prefs.fontSize
+            );
           }
         }
       } catch (error) {
@@ -57,7 +69,7 @@ export const ThemeControls = () => {
         setIsLoading(false);
       }
     };
-    
+
     loadPreferences();
   }, [userId]);
 
@@ -65,13 +77,15 @@ export const ThemeControls = () => {
     const newColor = e.target.value;
     setColor(newColor);
     document.documentElement.style.setProperty("--accent-color", newColor);
-    
+
     // Save to both localStorage (for non-logged in state) and database (for persistence)
     localStorage.setItem("accent-color", newColor);
-    
+
     if (userId) {
       try {
-        const success = await saveUserPreferences(userId, { accentColor: newColor });
+        const success = await saveUserPreferences(userId, {
+          accentColor: newColor,
+        });
         if (!success) {
           toast.error("Failed to save color preference");
         }
@@ -86,13 +100,15 @@ export const ThemeControls = () => {
     const newSize = e.target.value + "px";
     setFontSize(newSize);
     document.documentElement.style.setProperty("--font-size", newSize);
-    
+
     // Save to both localStorage and database
     localStorage.setItem("font-size", newSize);
-    
+
     if (userId) {
       try {
-        const success = await saveUserPreferences(userId, { fontSize: newSize });
+        const success = await saveUserPreferences(userId, {
+          fontSize: newSize,
+        });
         if (!success) {
           toast.error("Failed to save font size preference");
         }
@@ -108,8 +124,8 @@ export const ThemeControls = () => {
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+    <div className="theme-controls">
+      <div className="theme-controls__text">
         <input
           type="range"
           min="14"
@@ -119,9 +135,9 @@ export const ThemeControls = () => {
           onChange={handleFontSizeChange}
           style={{ width: "80px" }}
         />
-        <Type size={16} />
+        <Type size={20} />
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div className="theme-controls__color">
         <input
           type="color"
           value={color}
@@ -133,7 +149,7 @@ export const ThemeControls = () => {
             cursor: "pointer",
           }}
         />
-        <Palette size={16} />
+        <Palette size={20} />
       </div>
     </div>
   );

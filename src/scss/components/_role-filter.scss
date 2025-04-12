@@ -1,24 +1,25 @@
 .role-filter {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  height: 100%;
+  margin-top: 8px;
+  .checkbox-container {
     display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    height:100%;
-    .checkbox-container {
-      display: flex;
-      align-items: center;
-      gap: 2px;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent-color);
       cursor: pointer;
-  
-      input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--accent-color);
-        cursor: pointer;
-      }
-  
-      .checkbox-label {
-        color: #1a1a1a;
-        font-size: 14px;
-      }
+    }
+
+    .checkbox-label {
+      color: #1a1a1a;
+      // font-size: 14px;
     }
   }
+}

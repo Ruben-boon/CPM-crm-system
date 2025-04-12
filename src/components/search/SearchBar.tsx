@@ -17,7 +17,6 @@ export default function SearchBar({
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },
     { value: "general.email", label: "Email" },
-    { value: "general.role", label: "Role" },
   ] as const;
 
   const companyFields = [
@@ -26,8 +25,6 @@ export default function SearchBar({
     { value: "city", label: "City" },
     { value: "country", label: "Country" },
     { value: "postal_code", label: "Postal Code" },
-    { value: "parentCompanyName", label: "Parent Company" },
-    { value: "childCompanyName", label: "Child Company" },
   ] as const;
 
   const bookingFields = [

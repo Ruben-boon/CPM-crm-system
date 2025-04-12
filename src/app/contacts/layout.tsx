@@ -1,7 +1,7 @@
 // app/contacts/layout.tsx
 "use client";
 
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import SearchBar from "@/components/search/SearchBar";
 import SearchResults from "@/components/search/SearchResults";
 import { ContactsProvider, useContactsData } from "@/context/DataContext";
@@ -84,7 +84,7 @@ function ContactsLayoutContent({ children }) {
             />
 
             <div className="button-container">
-              <Button icon={Plus} onClick={() => handleSelectContact({}, true)}>
+              <Button intent={"outline"} icon={Plus} onClick={() => handleSelectContact({}, true)}>
                 New
               </Button>
             </div>

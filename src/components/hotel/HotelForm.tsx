@@ -15,7 +15,7 @@ export function HotelForm() {
   const getDisplayName = (item: any) => {
     return item?.name || "this hotel";
   };
-  
+
   const handleFieldChange = (
     fieldPath: string,
     value: string,
@@ -101,7 +101,7 @@ export function HotelForm() {
           isChanged={isFieldChanged("phone")}
         />
       </div>
-      
+
       <div className="col-half">
         <MultiTextField
           label="Room Types"
@@ -112,7 +112,6 @@ export function HotelForm() {
           isChanged={isFieldChanged("roomTypes")}
           placeholder="Add a room type..."
         />
-        
         <TextField
           label="Notes"
           fieldPath="notes"
@@ -123,18 +122,16 @@ export function HotelForm() {
           rows={4}
           isChanged={isFieldChanged("notes")}
         />
-        
+      </div>
+      <div className="col-full">
         {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
           <div className="related-section">
             <RelatedItems
               id={hotelsContext.selectedItem._id}
               referenceField="hotelId"
               collectionName="stays"
-              displayFields={[
-                { path: "reference" },
-                { path: "roomNumber" }
-              ]}
-              title="Stays"
+              displayFields={[{ path: "reference" }, { path: "roomNumber" }]}
+              title="Stays in this hotel"
               emptyMessage="No stays found"
               onItemClick={handleRelationClick}
               isFormEditing={hotelsContext.isEditing}
@@ -142,12 +139,6 @@ export function HotelForm() {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .related-section {
-          margin-top: 2rem;
-        }
-      `}</style>
     </CommonForm>
   );
 }

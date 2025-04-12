@@ -128,7 +128,9 @@ export function ContactForm() {
           required={true}
           isChanged={isFieldChanged("general.role")}
         />
+      </div>
 
+      <div className="col-half">
         <RefField
           label="Company"
           fieldPath="general.companyId"
@@ -143,9 +145,6 @@ export function ContactForm() {
           isChanged={isFieldChanged("general.companyId")}
           setFieldLoading={contactsContext.setFieldLoading}
         />
-      </div>
-
-      <div className="col-half">
         <TextField
           label="Remarks"
           fieldPath="general.remarks"

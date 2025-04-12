@@ -1,228 +1,285 @@
 // Multi-Reference Field Complete Styling
 
 .multi-ref-field {
-    margin-bottom: 16px;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  padding: 1em;
   
-    // Shared Label Styling
-    .field-label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-      color: #555;
-      font-weight: 500;
+  &:has(.read-only) {
+    background-color: #f6f6f8;
+  }
+
+  // Shared Label Styling
+  .field-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 500;
+  }
+
+  // Edit Mode Styling
+  .ref-field-container {
+    width: 100%;
+    
+    &.field-changed {
+      background-color: transparent !important;
     }
-  
-    // Edit Mode Styling
-    .ref-field-container {
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      background-color: #fff;
-      min-height: 42px;
+
+    // Selected Items
+    .selected-items {
+      margin-bottom: 0.5rem;
+    }
+
+    .selected-item {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      position: relative;
+      justify-content: space-between;
+      background-color: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 0.3rem 0.75rem;
+      margin-bottom: 0.5rem;
       transition: all 0.2s ease;
-  
+      max-width: 100%;
+      
       &:hover {
-        border-color: #6366f1;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        border-color: #4299e1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
-  
-      // Selected Items
-      .selected-items {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: center;
+      
+      span {
+        color: #2d3748;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-  
-      .selected-item {
-        display: flex;
-        align-items: center;
-        background-color: #f3f4f6;
-        border-radius: 4px;
-        padding: 4px 8px;
-        padding-right: 4px;
-        max-width: 100%;
-        
-        span {
-          font-size: 14px;
-          color: #374151;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 200px;
-          margin-right: 6px;
-        }
-  
-        .remove-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          transition: all 0.2s ease;
-          color: #6b7280;
-          padding: 0;
-  
-          &:hover {
-            background-color: #e5e7eb;
-            color: #374151;
-          }
-  
-          svg {
-            width: 14px;
-            height: 14px;
-            stroke-width: 2;
-          }
-        }
-      }
-  
-      // Search Container
-      .search-container {
-        flex-grow: 1;
-        min-width: 100px;
-        position: relative;
-      }
-  
-      .search-input-container {
+
+      .remove-button {
         display: flex;
         align-items: center;
-        position: relative;
-        width: 100%;
-      }
-  
-      .search-input {
-        flex-grow: 1;
+        justify-content: center;
+        background: none;
         border: none;
-        outline: none;
-        font-size: 14px;
-        color: #1f2937;
-        padding: 6px 12px 6px 30px;
-        background: transparent;
-  
-        &::placeholder {
-          color: #9ca3af;
-        }
-      }
-  
-      .search-icon {
-        position: absolute;
-        left: 8px;
-        width: 16px;
-        height: 16px;
-        color: #9ca3af;
-        pointer-events: none;
-      }
-  
-      .quick-add-button {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background-color: #f3f4f6;
-        color: #374151;
-        border: none;
-        border-radius: 6px;
-        padding: 6px 12px;
-        font-size: 14px;
+        color: #a0aec0;
         cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 50%;
         transition: all 0.2s ease;
-  
-        .button-icon {
+
+        &:hover {
+          color: #e53e3e;
+          background-color: rgba(229, 62, 62, 0.1);
+        }
+
+        svg {
           width: 16px;
           height: 16px;
         }
-  
-        &:hover {
-          background-color: #e5e7eb;
-        }
-  
-        &:active {
-          transform: scale(0.98);
-        }
-      }
-  
-      // Search Results
-      .search-results {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background-color: #fff;
-        border: 1px solid #e5e7eb;
-        border-top: none;
-        border-radius: 0 0 6px 6px;
-        max-height: 300px;
-        overflow-y: auto;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        z-index: 10;
-        margin-top: -1px;
-  
-        .result-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px 12px;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-  
-          &:hover {
-            background-color: #f9fafb;
-          }
-  
-          .result-name {
-            font-size: 14px;
-            color: #374151;
-            flex-grow: 1;
-            margin-right: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-  
-          .result-id {
-            font-size: 12px;
-            color: #6b7280;
-            opacity: 0.7;
-          }
-        }
       }
     }
-  
-    // Read-Only Mode Styling
-    .read-only {
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      background-color: #f9fafb;
-      min-height: 42px;
-      padding: 10px 12px;
+
+    // Search Container
+    .search-container {
+      width: 100%;
+    }
+
+    .search-input-container {
       display: flex;
       align-items: center;
+      gap: 0.5rem;
+      position: relative;
+      width: 100%;
     }
-  
-    .selected-items-readonly {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-  
-    .selected-item-readonly {
-      background-color: #e5e7eb;
-      color: #374151;
-      font-size: 14px;
-      padding: 4px 8px;
+
+    .search-input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      padding-left: 2rem;
+      color: #4a5568;
+      background-color: white;
+      border: 1px solid #e2e8f0;
       border-radius: 4px;
-      max-width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 1px #4299e1;
+      }
+
+      &::placeholder {
+        color: #a0aec0;
+      }
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      width: 16px;
+      height: 16px;
+      color: #a0aec0;
+      pointer-events: none;
+    }
+
+    .quick-add-button {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: white;
+      color: #4a5568;
+      border: 1px solid #e2e8f0;
+
+      &:hover {
+        background-color: #f7fafc;
+        border-color: #cbd5e0;
+      }
+
+      .button-icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    // Search Results
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      margin-top: 0.25rem;
+
+      .result-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: #f7fafc;
+        }
+
+        .result-name {
+          color: #2d3748;
+          flex-grow: 1;
+          margin-right: 10px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .result-id {
+          color: #a0aec0;
+        }
+      }
     }
   }
+
+  // Read-Only Mode Styling
+  .read-only {
+    width: 100%;
+  }
+
+  .selected-items-readonly {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .selected-item-readonly {
+    display: block;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0.3rem 0.75rem;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+      border-color: #4299e1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .multi-ref-field {
+    .search-input-container {
+      flex-direction: column;
+      align-items: stretch;
+
+      .quick-add-button {
+        justify-content: center;
+      }
+    }
+  }
+}
+
+// Animation for adding/removing items
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.multi-ref-field {
+  .selected-item {
+    animation: fadeIn 0.2s ease;
+
+    &.removing {
+      animation: fadeOut 0.2s ease;
+    }
+  }
+}
+
+// Match the primary button style from multi-text-field
+.multi-ref-field {
+  .button--primary {
+    background-color: #4cb0e6;
+    color: white;
+    border: none;
+
+    &:hover:not(:disabled) {
+      background-color: #3a9fd5;
+    }
+  }
+}

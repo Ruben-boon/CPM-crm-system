@@ -6,12 +6,50 @@
   padding: 1em;
   width: fit-content;
   gap: 8px;
-  width:fit-content;
+  width: fit-content;
   * {
     color: white;
   }
   .color-picker {
     margin-top: auto;
+  }
+  .user-section {
+    margin-top: auto;
+    .user-info {
+      font-size: 20px;
+    }
+  }
+  .log-section {
+    margin-top: auto;
+    .login-button {
+      padding: 12px 8px;
+      background-color: white;
+      width: 160px;
+      color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      * {
+        color: black;
+      }
+    }
+    .logout-button {
+      padding: 12px 8px;
+      width: 100%;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      background-color: transparent;
+      box-shadow: none;
+      cursor: pointer;
+      * {
+        color: white;
+      }
+    }
   }
   .menu-link-container {
     padding: 1em;
@@ -30,6 +68,13 @@
     }
     &.active {
       background-color: var(--accent-color);
+    }
+  }
+  .theme-controls {
+    &__color {
+      display: flex;
+      gap: 16px;
+      align-items: center;
     }
   }
 }

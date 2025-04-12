@@ -1,7 +1,8 @@
 .search-bar {
     display: flex;
     align-items: center;
-    width: 178px;
+    width: 100%;
+    min-width:100%;
     background-color: hsl(0 0% 100%);
     border: 1px solid hsl(240 5.9% 90%);
     border-radius: 0.5rem;
@@ -35,4 +36,5 @@
         outline: none;
       }
     }
+    
   }

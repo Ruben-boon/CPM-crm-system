@@ -13,7 +13,7 @@ export function CompanyForm() {
   const getDisplayName = (item: any) => {
     return item?.name || "this company";
   };
-  
+
   const handleFieldChange = (
     fieldPath: string,
     value: string,
@@ -80,6 +80,9 @@ export function CompanyForm() {
           isEditing={companiesContext.isEditing}
           isChanged={isFieldChanged("country")}
         />
+      </div>
+
+      <div className="col-half">
         <RefField
           label="Parent Company"
           fieldPath="parentCompanyId"
@@ -91,7 +94,19 @@ export function CompanyForm() {
           isChanged={isFieldChanged("parentCompanyId")}
           setFieldLoading={companiesContext.setFieldLoading}
         />
-        
+        {companiesContext.selectedItem?._id && !companiesContext.isEditing && (
+          <div className="related-section">
+            <RelatedItems
+              id={companiesContext.selectedItem._id}
+              referenceField="parentCompanyId"
+              collectionName="companies"
+              displayFields={[{ path: "name" }, { path: "city" }]}
+              title="Child Companies"
+              emptyMessage="No child companies found"
+              onItemClick={handleRelationClick}
+            />
+          </div>
+        )}
         {companiesContext.selectedItem?._id && !companiesContext.isEditing && (
           <div className="related-section">
             <RelatedItems
@@ -110,23 +125,6 @@ export function CompanyForm() {
           </div>
         )}
       </div>
-      
-      <div className="col-half">
-        {companiesContext.selectedItem?._id && !companiesContext.isEditing && (
-          <div className="related-section">
-            <RelatedItems
-              id={companiesContext.selectedItem._id}
-              referenceField="parentCompanyId"
-              collectionName="companies"
-              displayFields={[{ path: "name" }, { path: "city" }]}
-              title="Child Companies"
-              emptyMessage="No child companies found"
-              onItemClick={handleRelationClick}
-            />
-          </div>
-        )}
-      </div>
-
     </CommonForm>
   );
 }

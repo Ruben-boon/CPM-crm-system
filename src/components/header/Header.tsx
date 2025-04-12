@@ -1,7 +1,15 @@
 "use client";
 
 import MenuLink from "./MenuLink";
-import { Users, Briefcase, Calendar, Bed, Hotel, LogOut, LogIn } from "lucide-react";
+import {
+  Users,
+  Briefcase,
+  Calendar,
+  Bed,
+  Hotel,
+  LogOut,
+  LogIn,
+} from "lucide-react";
 import { ThemeControls } from "./ThemeControls";
 import { useSession, signIn, signOut } from "next-auth/react";
 
@@ -22,21 +30,23 @@ export default function Header() {
             <div className="user-info">
               {session?.user?.name || session?.user?.email}
             </div>
-            <button className="logout-button" onClick={() => signOut()}>
-              <LogOut size={16} /> Sign Out
-            </button>
+            <div className="log-section">
+              <button className="logout-button" onClick={() => signOut()}>
+                <LogOut size={16} /> Sign Out
+              </button>
+            </div>
           </div>
         </>
       ) : (
-        <div className="login-section">
+        <div className="log-section">
           <button className="login-button" onClick={() => signIn()}>
-            <LogIn size={16} /> Sign In
+            Sign In
+            <LogIn size={16} />
           </button>
         </div>
       )}
-      <div style={{ marginTop: "auto" }}>
-        <ThemeControls />
-      </div>
+
+      <ThemeControls />
     </nav>
   );
 }

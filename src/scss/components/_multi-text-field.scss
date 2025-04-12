@@ -1,0 +1,213 @@
+// Room Types Component Styling
+.multi-text-field {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  padding: 1em;
+  &:has(.read-only) {
+    background-color: #f6f6f8;
+  }
+  .multi-text-field-container {
+    width: 100%;
+    &.field-changed {
+      background-color: transparent !important;
+    }
+  }
+
+  // Read-only mode styling
+  .read-only {
+    width: 100%;
+
+    .text-entries-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      .text-entry-item {
+        display: block;
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 0.3rem 0.75rem;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #4299e1;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+  }
+
+  .entries-list {
+    margin-bottom: 0.5rem;
+
+    .entry-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 0.3rem 0.75rem;
+      margin-bottom: 0.5rem;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #4299e1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      span {
+        color: #2d3748;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .remove-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: #a0aec0;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+
+        &:hover {
+          color: #e53e3e;
+          background-color: rgba(229, 62, 62, 0.1);
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+  }
+
+  .add-entry-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .input-base {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      color: #4a5568;
+      background-color: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 1px #4299e1;
+      }
+
+      &::placeholder {
+        color: #a0aec0;
+      }
+    }
+
+    .button {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &--secondary {
+        background-color: white;
+        color: #4a5568;
+        border: 1px solid #e2e8f0;
+
+        &:hover:not(:disabled) {
+          background-color: #f7fafc;
+          border-color: #cbd5e0;
+        }
+      }
+
+      &--with-text {
+        .button-icon {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .multi-text-field {
+    .add-entry-container {
+      flex-direction: column;
+      align-items: stretch;
+
+      .button {
+        justify-content: center;
+      }
+    }
+  }
+}
+
+// Animation for adding/removing items
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.multi-text-field {
+  .entry-item {
+    animation: fadeIn 0.2s ease;
+
+    &.removing {
+      animation: fadeOut 0.2s ease;
+    }
+  }
+}
+
+// Customizations for the specific hotel management UI
+.multi-text-field {
+  .button--primary {
+    background-color: #4cb0e6;
+    color: white;
+    border: none;
+
+    &:hover:not(:disabled) {
+      background-color: #3a9fd5;
+    }
+  }
+}

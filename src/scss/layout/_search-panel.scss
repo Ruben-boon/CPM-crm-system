@@ -1,25 +1,27 @@
 .search-area {
   background-color: #f6f6f8;
   height: 100vh;
-  width: fit-content;
+  width: 320px;
   padding: 1em;
+  flex-shrink:0;
   overflow-y: scroll;
   position: relative;
-  width: fit-content;
   .filter-search-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
-    margin-top: 10px;
   }
   .search-group {
     display: flex;
+    flex-direction: column;
+    gap:8px;
   }
   .search-container {
     display: flex;
   }
   .button-container {
+    margin-top: 8px;
     bottom: 0;
     z-index: 10;
     width: 100%;
