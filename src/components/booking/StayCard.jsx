@@ -1,0 +1,247 @@
+"use client";
+import { useState } from "react";
+import { Edit, ExternalLink, Copy, X, Save } from "lucide-react";
+import Button from "@/components/common/Button";
+import { TextField } from "../fields/TextField";
+import { DropdownField } from "../fields/DropdownField";
+import { RadioField } from "../fields/RadioField";
+import { updateDocument } from "@/app/actions/crudActions";
+import { toast } from "sonner";
+import { STAY_STATUS_OPTIONS, PREPAID_OPTIONS, formatDate, getGuestCountText, getStatusLabel } from "./bookingConstants";
+
+export function StayCard({ 
+  stay, 
+  index, 
+  isEditing, 
+  onEditStay, 
+  onCopyStay, 
+  onViewStay, 
+  onRemoveStay 
+}) {
+  const [stayUpdate, setStayUpdate] = useState({
+    status: stay.status || "unconfirmed",
+    prepaid: stay.prepaid || "no",
+    prepaidDetails: stay.prepaidDetails || "",
+    purchaseInvoice: stay.purchaseInvoice || "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Handle field changes for stay updates
+  const handleStayFieldChange = (field, value) => {
+    setStayUpdate(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // Save stay updates directly
+  const handleSaveStayUpdates = async () => {
+    setIsSaving(true);
+
+    try {
+      // Create updated stay with the changed fields
+      const updatedStay = {
+        ...stay,
+        ...stayUpdate,
+      };
+
+      const result = await updateDocument("stays", stay._id, updatedStay);
+
+      if (result.success) {
+        toast.success("Stay updated successfully");
+      } else {
+        toast.error(
+          `Failed to update stay: ${result.error || "Unknown error"}`
+        );
+      }
+    } catch (error) {
+      console.error("Error updating stay:", error);
+      toast.error("Failed to update stay");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="stay-item">
+      <div className="stay-info">
+        <div className="stay-hotel">{stay.hotelName}</div>
+        <div className="stay-dates">
+          {formatDate(stay.checkInDate)} - {formatDate(stay.checkOutDate)}
+        </div>
+        <div className="stay-guests">
+          {getGuestCountText(stay.guestIds) ? (
+            <span>{getGuestCountText(stay.guestIds)}</span>
+          ) : (
+            <span className="no-guests">No guests assigned</span>
+          )}
+        </div>
+        <div className="stay-details">
+          <div>
+            {stay.roomCurrency} {stay.roomPrice}
+          </div>
+        </div>
+
+        {!isEditing && (
+          <span className="stay-status">
+            Status: {getStatusLabel(stay.status)}
+          </span>
+        )}
+
+        {/* Add quick fields when in edit mode */}
+        {isEditing && (
+          <div className="stay-quick-edit">
+            {/* Status field */}
+            <DropdownField
+              label="Status"
+              fieldPath={`status-${stay._id}`}
+              value={stayUpdate.status}
+              onChange={(_, value) => handleStayFieldChange("status", value)}
+              isEditing={true}
+              options={STAY_STATUS_OPTIONS}
+              required={true}
+            />
+
+            {/* Prepaid field */}
+            <RadioField
+              label="Prepaid"
+              fieldPath={`prepaid-${stay._id}`}
+              value={stayUpdate.prepaid}
+              updateField={(_, value) => handleStayFieldChange("prepaid", value)}
+              isEditing={true}
+              options={PREPAID_OPTIONS}
+              required={true}
+            />
+
+            {/* Conditional prepaid details field */}
+            {stayUpdate.prepaid === "yes" && (
+              <TextField
+                label="Prepaid Details"
+                fieldPath={`prepaidDetails-${stay._id}`}
+                value={stayUpdate.prepaidDetails}
+                onChange={(_, value) => handleStayFieldChange("prepaidDetails", value)}
+                isEditing={true}
+                placeholder="e.g., Prepaid credit card 18/7"
+              />
+            )}
+
+            {/* Purchase Invoice field */}
+            <TextField
+              label="Purchase Invoice"
+              fieldPath={`purchaseInvoice-${stay._id}`}
+              value={stayUpdate.purchaseInvoice}
+              onChange={(_, value) => handleStayFieldChange("purchaseInvoice", value)}
+              isEditing={true}
+            />
+
+            {/* Save button for stay updates */}
+            <div className="stay-save-button">
+              <Button
+                icon={Save}
+                onClick={handleSaveStayUpdates}
+                size="sm"
+                intent="secondary"
+                isLoading={isSaving}
+                disabled={isSaving}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="stay-actions">
+        <div className="edit-button-group">
+          {!isEditing && (
+            <Button
+              icon={ExternalLink}
+              onClick={() => onViewStay(stay._id)}
+              size="sm"
+              intent="ghost"
+              title="View in new tab"
+            >
+              View
+            </Button>
+          )}
+          {isEditing && (
+            <>
+              <Button
+                icon={Copy}
+                onClick={() => onCopyStay(stay)}
+                size="sm"
+                intent="outline"
+                title="Copy stay"
+              ></Button>
+              <Button
+                icon={Edit}
+                onClick={() => onEditStay(stay)}
+                size="sm"
+                intent="outline"
+                title="Edit stay"
+              >
+                Edit
+              </Button>
+            </>
+          )}
+        </div>
+
+        {isEditing && (
+          <>
+            <Button
+              icon={X}
+              onClick={() => onRemoveStay(stay, index)}
+              size="sm"
+              className="button--danger"
+              intent="outline"
+              title="Remove stay from booking"
+            >
+              Remove
+            </Button>
+          </>
+        )}
+      </div>
+
+      <style jsx>{`
+        .stay-quick-edit {
+          margin-top: 10px;
+          border-top: 1px dashed #e5e7eb;
+          padding-top: 10px;
+        }
+
+        .stay-save-button {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 10px;
+        }
+
+        .stay-item {
+          padding: 16px;
+          margin-bottom: 12px;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        @media (min-width: 768px) {
+          .stay-item {
+            flex-direction: row;
+            align-items: flex-start;
+          }
+
+          .stay-info {
+            flex: 1;
+          }
+
+          .stay-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 120px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

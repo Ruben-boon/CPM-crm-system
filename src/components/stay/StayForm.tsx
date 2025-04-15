@@ -5,6 +5,7 @@ import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { MultiRefField } from "../fields/MultiRefField";
+import { RadioField } from "../fields/RadioField";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { searchDocuments } from "@/app/actions/crudActions";
@@ -89,11 +90,19 @@ const PAYMENT_INSTRUCTION_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: "confirmed", label: "Confirmed" },
-  { value: "checked_in", label: "Checked In" },
-  { value: "checked_out", label: "Checked Out" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "no_show", label: "No Show" },
+  { value: "unconfirmed", label: "Unconfirmed" },
+  { value: "unconfirmed_prepaid", label: "Unconfirmed Prepaid" },
+  { value: "confirmed_prepaid_upcoming", label: "Confirmed Prepaid Upcoming" },
+  { value: "confirmed_upcoming", label: "Confirmed Upcoming" },
+  { value: "confirmed_prepaid_stayed", label: "Confirmed Prepaid Stayed" },
+  { value: "confirmed_stayed", label: "Confirmed Stayed" },
+  { value: "purchase_invoice_received", label: "Purchase Invoice Received" },
+  { value: "cancelled", label: "Cancelled" }
+];
+
+const PREPAID_OPTIONS = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" }
 ];
 
 const DEFAULT_ROOM_TYPE_OPTIONS = [
@@ -273,33 +282,52 @@ export function StayForm() {
           isChanged={isFieldChanged("checkOutDate")}
         />
 
-        {/* <TextField
-          label="Room Number"
-          fieldPath="roomNumber"
-          value={staysContext.selectedItem?.roomNumber || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          isChanged={isFieldChanged("roomNumber")}
-        />
-
-        <TextField
-          label="Room Notes"
-          fieldPath="roomNotes"
-          value={staysContext.selectedItem?.roomNotes || ""}
-          onChange={handleFieldChange}
-          isEditing={staysContext.isEditing}
-          isChanged={isFieldChanged("roomNotes")}
-        /> */}
-
-        {/* <DropdownField
+        {/* New Status field */}
+        <DropdownField
           label="Status"
           fieldPath="status"
-          value={staysContext.selectedItem?.status || ""}
+          value={staysContext.selectedItem?.status || "unconfirmed"}
           onChange={handleFieldChange}
           isEditing={staysContext.isEditing}
           options={STATUS_OPTIONS}
+          required={true}
           isChanged={isFieldChanged("status")}
-        /> */}
+        />
+
+        {/* New Prepaid field */}
+        <RadioField
+          label="Prepaid"
+          fieldPath="prepaid"
+          value={staysContext.selectedItem?.prepaid || "no"}
+          updateField={staysContext.updateField}
+          isEditing={staysContext.isEditing}
+          options={PREPAID_OPTIONS}
+          required={true}
+          isChanged={isFieldChanged("prepaid")}
+        />
+
+        {/* Conditional prepaid details field */}
+        {staysContext.selectedItem?.prepaid === "yes" && (
+          <TextField
+            label="Prepaid Details"
+            fieldPath="prepaidDetails"
+            value={staysContext.selectedItem?.prepaidDetails || ""}
+            onChange={handleFieldChange}
+            isEditing={staysContext.isEditing}
+            placeholder="e.g., Prepaid credit card 18/7"
+            isChanged={isFieldChanged("prepaidDetails")}
+          />
+        )}
+
+        {/* Purchase Invoice field */}
+        <TextField
+          label="Purchase Invoice"
+          fieldPath="purchaseInvoice"
+          value={staysContext.selectedItem?.purchaseInvoice || ""}
+          onChange={handleFieldChange}
+          isEditing={staysContext.isEditing}
+          isChanged={isFieldChanged("purchaseInvoice")}
+        />
 
         <TextField
           label="Special Requests"

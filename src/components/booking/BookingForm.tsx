@@ -2,29 +2,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useBookingsData } from "@/context/DataContext";
 import { CommonForm } from "../common/CommonForm";
-import { TextField } from "../fields/TextField";
-import { DropdownField } from "../fields/DropdownField";
-import { RefField } from "../fields/RefField";
-import { Plus, Edit, ExternalLink, Copy, X } from "lucide-react";
-import Button from "@/components/common/Button";
+import { BookingDetails } from "./BookingDetails";
+import { StaysList } from "./StaysList";
+import { StayModal } from "../stay/StayModal";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { toast } from "sonner";
-import { StayModal } from "../stay/StayModal";
-import { DownloadPDFButton } from "../pdf/DownloadPDFButton";
-
-// Define constants for dropdown options
-const COST_CENTRE_OPTIONS = [
-  { value: "CC1", label: "Cost Centre 1" },
-  { value: "CC2", label: "Cost Centre 2" },
-  { value: "CC3", label: "Cost Centre 3" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "confirmed", label: "Confirmed" },
-  { value: "pending", label: "Pending" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "completed", label: "Completed" },
-];
+import { BOOKING_STATUS_OPTIONS } from "./bookingConstants";
+import { getStatusLabel } from "./bookingStatusUtils";
 
 export function BookingForm() {
   const bookingsContext = useBookingsData();
@@ -34,19 +18,45 @@ export function BookingForm() {
   const [stays, setStays] = useState([]);
   const previousStayIdsRef = useRef([]); // For tracking changes to stayIds
 
-  console.log("loaded stays:", stays);
-
   const getDisplayName = (item) => {
     return item.confirmationNo || "this booking";
   };
 
-  const handleFieldChange = (fieldPath, value, displayValue) => {
-    bookingsContext.updateField(fieldPath, value);
-  };
+  useEffect(() => {
+    // Modify top bar title to show confirmation number and status badge
+    if (bookingsContext.selectedItem) {
+      // Small delay to ensure the DOM is ready
+      setTimeout(() => {
+        const topBarTitle = document.querySelector(".top-bar__title");
+        if (topBarTitle) {
+          // Clear existing content
+          topBarTitle.innerHTML = "";
 
-  const isFieldChanged = (fieldPath) => {
-    return !!bookingsContext.pendingChanges[fieldPath];
-  };
+          // Create and append confirmation number
+          const confirmationSpan = document.createElement("span");
+          const confirmationText =
+            bookingsContext.selectedItem.confirmationNo || "New Booking";
+          confirmationSpan.textContent = confirmationText;
+          topBarTitle.appendChild(confirmationSpan);
+
+          // Create and append status badge if status exists
+          if (bookingsContext.selectedItem.status) {
+            const statusBadge = document.createElement("span");
+            statusBadge.className = `status-badge status-${bookingsContext.selectedItem.status}`;
+            statusBadge.textContent = getStatusLabel(
+              bookingsContext.selectedItem.status,
+              BOOKING_STATUS_OPTIONS
+            );
+            topBarTitle.appendChild(statusBadge);
+          }
+        }
+      }, 100);
+    }
+  }, [
+    bookingsContext.selectedItem,
+    bookingsContext.selectedItem?.status,
+    bookingsContext.selectedItem?.confirmationNo,
+  ]);
 
   // Improved effect to load related stays only when stayIds actually change
   useEffect(() => {
@@ -76,7 +86,6 @@ export function BookingForm() {
     bookingsContext.selectedItem?._id,
     bookingsContext.selectedItem?.stayIds,
   ]);
-
 
   const loadRelatedStays = async (stayIds) => {
     if (!stayIds || stayIds.length === 0) {
@@ -110,7 +119,8 @@ export function BookingForm() {
     const newStay = {
       checkInDate: bookingsContext.selectedItem?.travelPeriodStart || "",
       checkOutDate: bookingsContext.selectedItem?.travelPeriodEnd || "",
-      status: "confirmed",
+      status: "unconfirmed",
+      prepaid: "no",
     };
 
     setSelectedStay(newStay);
@@ -214,161 +224,6 @@ export function BookingForm() {
     setIsModalOpen(false);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    try {
-      const date = new Date(dateString);
-      const day = date.getDate();
-      const monthNames = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      const month = monthNames[date.getMonth()];
-
-      return `${day} ${month}`;
-    } catch (error) {
-      return dateString;
-    }
-  };
-
-  const getGuestCountText = (guestIds: any[] | undefined) => {
-    if (!guestIds || !Array.isArray(guestIds)) return "0 guests";
-
-    const count = guestIds.length;
-    return count === 1 ? "1 guest" : `${count} guests`;
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "confirmed":
-        return "Confirmed";
-      case "checked_in":
-        return "Checked In";
-      case "checked_out":
-        return "Checked Out";
-      case "cancelled":
-        return "Cancelled";
-      case "no_show":
-        return "No Show";
-      default:
-        return status || "-";
-    }
-  };
-
-  const renderRelatedStays = () => {
-    if (!bookingsContext.selectedItem?._id) return null;
-
-    return (
-      <div className="related-stays-container">
-        <div className="related-stays">
-          <div className="related-stays-header">
-            <h4 className="related-title">Stays</h4>
-            {bookingsContext.isEditing && (
-              <Button icon={Plus} onClick={handleAddStay} size="sm">
-                Add Stay
-              </Button>
-            )}
-          </div>
-
-          {stays.length === 0 ? (
-            <div className="no-stays-message">
-              No stays found for this booking
-            </div>
-          ) : (
-            <div className="stays-list">
-              {stays.map((stay, index) => (
-                <div key={stay._id} className="stay-item">
-                  <div className="stay-info">
-                    <div className="stay-hotel">{stay.hotelName}</div>
-                    <div className="stay-dates">
-                      {formatDate(stay.checkInDate)} -{" "}
-                      {formatDate(stay.checkOutDate)}
-                    </div>
-                    <div className="stay-guests">
-                      {getGuestCountText(stay.guestIds) ? (
-                        <span>{getGuestCountText(stay.guestIds)}</span>
-                      ) : (
-                        <span className="no-guests">No guests assigned</span>
-                      )}
-                    </div>
-                    <div className="stay-details">
-                      <div>
-                        {stay.roomCurrency} {stay.roomPrice}
-                      </div>
-                    </div>
-                    <span className="stay-status">
-                      Status: {getStatusLabel(stay.status)}
-                    </span>
-                  </div>
-                  <div className="stay-actions">
-                    <div className="edit-button-group">
-                      {!bookingsContext.isEditing && (
-                        <Button
-                          icon={ExternalLink}
-                          onClick={() => handleViewStay(stay._id)}
-                          size="sm"
-                          intent="ghost"
-                          title="View in new tab"
-                        >
-                          View
-                        </Button>
-                      )}
-                      {bookingsContext.isEditing && (
-                        <>
-                          <Button
-                            icon={Copy}
-                            onClick={() => handleCopyStay(stay)}
-                            size="sm"
-                            intent="outline"
-                            title="Copy stay"
-                          ></Button>
-                          <Button
-                            icon={Edit}
-                            onClick={() => handleEditStay(stay)}
-                            size="sm"
-                            intent="outline"
-                            title="Edit stay"
-                          >
-                            Edit
-                          </Button>
-                        </>
-                      )}
-                    </div>
-
-                    {bookingsContext.isEditing && (
-                      <>
-                        <Button
-                          icon={X}
-                          onClick={() => handleRemoveStay(stay, index)}
-                          size="sm"
-                          className="button--danger"
-                          intent="outline"
-                          title="Remove stay from booking"
-                        >
-                          Remove
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
       {isModalOpen && (
@@ -387,111 +242,68 @@ export function BookingForm() {
         basePath="bookings"
         displayName={getDisplayName}
       >
-        <div className="col-half">
-          <TextField
-            label="Confirmation No."
-            fieldPath="confirmationNo"
-            value={bookingsContext.selectedItem?.confirmationNo || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            required={true}
-            isChanged={isFieldChanged("confirmationNo")}
-          />
-          <TextField
-            label="Confirmation Date"
-            fieldPath="confirmationDate"
-            value={
-              bookingsContext.selectedItem?.confirmationDate ||
-              new Date().toISOString().split("T")[0]
-            }
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            type="date"
-            isChanged={isFieldChanged("confirmationDate")}
-          />
-          <RefField
-            label="Booker"
-            fieldPath="bookerId"
-            value={bookingsContext.selectedItem?.bookerId || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            collectionName="contacts"
-            displayFields={["general.firstName", "general.lastName"]}
-            isChanged={isFieldChanged("bookerId")}
-            setFieldLoading={bookingsContext.setFieldLoading}
-          />
-          <DropdownField
-            label="Cost Centre"
-            fieldPath="costCentre"
-            value={bookingsContext.selectedItem?.costCentre || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            options={COST_CENTRE_OPTIONS}
-            isChanged={isFieldChanged("costCentre")}
-          />
-          <TextField
-            label="Arrival date"
-            fieldPath="travelPeriodStart"
-            value={bookingsContext.selectedItem?.travelPeriodStart || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            type="date"
-            required={true}
-            isChanged={isFieldChanged("travelPeriodStart")}
-          />
-          <TextField
-            label="Departure date"
-            fieldPath="travelPeriodEnd"
-            value={bookingsContext.selectedItem?.travelPeriodEnd || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            type="date"
-            required={true}
-            isChanged={isFieldChanged("travelPeriodEnd")}
-          />
-        </div>
-        <div className="col-half">
-          <RefField
-            label="Company"
-            fieldPath="companyId"
-            value={bookingsContext.selectedItem?.companyId || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            collectionName="companies"
-            displayFields={["name", "address", "postal_code"]}
-            isChanged={isFieldChanged("companyId")}
-            setFieldLoading={bookingsContext.setFieldLoading}
-            displaySeparator="<br>" 
-          />
-
-          <DropdownField
-            label="Status"
-            fieldPath="status"
-            value={bookingsContext.selectedItem?.status || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            options={STATUS_OPTIONS}
-            required={true}
-            isChanged={isFieldChanged("status")}
-          />
-          <TextField
-            label="Notes"
-            fieldPath="notes"
-            value={bookingsContext.selectedItem?.notes || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            multiline={true}
-            rows={4}
-            isChanged={isFieldChanged("notes")}
-          />
-          <DownloadPDFButton
-            bookingData={bookingsContext.selectedItem}
+        <BookingDetails bookingsContext={bookingsContext} stays={stays} />
+        <div className="col-full">
+          <StaysList
+            bookingsContext={bookingsContext}
             stays={stays}
-            disabled={bookingsContext.isEditing}
+            onAddStay={handleAddStay}
+            onEditStay={handleEditStay}
+            onCopyStay={handleCopyStay}
+            onViewStay={handleViewStay}
+            onRemoveStay={handleRemoveStay}
           />
         </div>
-        <div className="col-full">{renderRelatedStays()}</div>
       </CommonForm>
+
+      {/* Include CSS for status badge styling */}
+      <style jsx global>{`
+        /* Custom style to modify the top bar title */
+        .top-bar__title {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+        }
+
+        .status-badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 14px;
+          font-weight: 500;
+          color: white;
+          white-space: nowrap;
+        }
+
+        /* Status colors */
+        .status-upcoming_no_action {
+          background-color: #8b5cf6; /* Purple */
+        }
+
+        .status-upcoming_confirmation_sent {
+          background-color: #3b82f6; /* Blue */
+        }
+
+        .status-stayed_missing_invoice {
+          background-color: #f59e0b; /* Amber */
+        }
+
+        .status-invoicing_missing_both {
+          background-color: #ef4444; /* Red */
+        }
+
+        .status-invoicing_missing_sales {
+          background-color: #f97316; /* Orange */
+        }
+
+        .status-invoicing_missing_commission {
+          background-color: #f97316; /* Orange */
+        }
+
+        .status-completed {
+          background-color: #10b981; /* Green */
+        }
+      `}</style>
     </>
   );
 }

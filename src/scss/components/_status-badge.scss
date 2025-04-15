@@ -1,0 +1,46 @@
+/* Add this to your global CSS file or as a styled-jsx block in BookingForm */
+
+.booking-title-with-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+  }
+  
+  /* Status colors */
+  .status-upcoming_no_action {
+    background-color: #8b5cf6; /* Purple */
+  }
+  
+  .status-upcoming_confirmation_sent {
+    background-color: #3b82f6; /* Blue */
+  }
+  
+  .status-stayed_missing_invoice {
+    background-color: #f59e0b; /* Amber */
+  }
+  
+  .status-invoicing_missing_both {
+    background-color: #ef4444; /* Red */
+  }
+  
+  .status-invoicing_missing_sales {
+    background-color: #f97316; /* Orange */
+  }
+  
+  .status-invoicing_missing_commission {
+    background-color: #f97316; /* Orange */
+  }
+  
+  .status-completed {
+    background-color: #10b981; /* Green */
+  }

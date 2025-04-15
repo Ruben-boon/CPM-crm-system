@@ -13,6 +13,7 @@ import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { MultiRefField } from "../fields/MultiRefField";
+import { RadioField } from "../fields/RadioField";
 import { ContactModal } from "../contact/ContactModal";
 
 // Constants for dropdown options
@@ -25,11 +26,19 @@ const CURRENCY_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: "confirmed", label: "Confirmed" },
-  { value: "checked_in", label: "Checked In" },
-  { value: "checked_out", label: "Checked Out" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "no_show", label: "No Show" },
+  { value: "unconfirmed", label: "Unconfirmed" },
+  { value: "unconfirmed_prepaid", label: "Unconfirmed Prepaid" },
+  { value: "confirmed_prepaid_upcoming", label: "Confirmed Prepaid Upcoming" },
+  { value: "confirmed_upcoming", label: "Confirmed Upcoming" },
+  { value: "confirmed_prepaid_stayed", label: "Confirmed Prepaid Stayed" },
+  { value: "confirmed_stayed", label: "Confirmed Stayed" },
+  { value: "purchase_invoice_received", label: "Purchase Invoice Received" },
+  { value: "cancelled", label: "Cancelled" }
+];
+
+const PREPAID_OPTIONS = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" }
 ];
 
 const DEFAULT_ROOM_TYPE_OPTIONS = [
@@ -118,7 +127,10 @@ export function StayModal({
     roomType: "",
     roomPrice: "",
     roomCurrency: "EUR",
-    status: "confirmed",
+    status: "unconfirmed",
+    prepaid: "no",
+    prepaidDetails: "",
+    purchaseInvoice: "",
     remarks: "",
     paymentInstructions: "",
     cancellations: "",
@@ -473,6 +485,49 @@ export function StayModal({
                   required={true}
                 />
 
+                {/* Status field */}
+                <DropdownField
+                  label="Status"
+                  fieldPath="status"
+                  value={stayData.status || "unconfirmed"}
+                  onChange={handleFieldChange}
+                  isEditing={true}
+                  options={STATUS_OPTIONS}
+                  required={true}
+                />
+
+                {/* Prepaid field */}
+                <RadioField
+                  label="Prepaid"
+                  fieldPath="prepaid"
+                  value={stayData.prepaid || "no"}
+                  updateField={handleFieldChange}
+                  isEditing={true}
+                  options={PREPAID_OPTIONS}
+                  required={true}
+                />
+
+                {/* Conditional prepaid details field */}
+                {stayData.prepaid === "yes" && (
+                  <TextField
+                    label="Prepaid Details"
+                    fieldPath="prepaidDetails"
+                    value={stayData.prepaidDetails || ""}
+                    onChange={handleFieldChange}
+                    isEditing={true}
+                    placeholder="e.g., Prepaid credit card 18/7"
+                  />
+                )}
+
+                {/* Purchase Invoice field - show for all statuses */}
+                <TextField
+                  label="Purchase Invoice"
+                  fieldPath="purchaseInvoice"
+                  value={stayData.purchaseInvoice || ""}
+                  onChange={handleFieldChange}
+                  isEditing={true}
+                />
+
                 <TextField
                   label="Special Requests"
                   fieldPath="specialRequests"
@@ -505,7 +560,6 @@ export function StayModal({
                   displayFields={["general.firstName", "general.lastName"]}
                   showQuickAdd={true}
                   setFieldLoading={setFieldLoading}
-                  onAddContact={handleAddContact}
                 />
               </div>
             </div>
@@ -535,6 +589,20 @@ export function StayModal({
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .grouper {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .currency-select {
+          width: 80px;
+        }
+        .price-input {
+          flex: 1;
+        }
+      `}</style>
     </>
   );
 }
