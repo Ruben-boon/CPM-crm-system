@@ -11,11 +11,27 @@ import { searchDocuments } from "@/app/actions/crudActions";
 import { toast } from "sonner";
 
 const CURRENCY_OPTIONS = [
-  { value: "EUR", label: "€" },
-  { value: "USD", label: "$" },
-  { value: "GBP", label: "£" },
-  { value: "JPY", label: "¥" },
+  { value: "EUR", label: "EUR" },
+  { value: "USD", label: "USD" },
+  { value: "GBP", label: "GBP" },
+  { value: "JPY", label: "JPY" },
   { value: "CHF", label: "CHF" },
+  { value: "HUF", label: "HUF" },
+  { value: "PLN", label: "PLN" },
+  { value: "DKK", label: "DKK" },
+  { value: "CAD", label: "CAD" },
+  { value: "SEK", label: "SEK" },
+  { value: "HKD", label: "HKD" },
+  { value: "BRL", label: "BRL" },
+  { value: "TRY", label: "TRY" },
+  { value: "CZK", label: "CZK" },
+  { value: "ISK", label: "ISK" },
+  { value: "INR", label: "INR" },
+  { value: "NOK", label: "NOK" },
+  { value: "RSD", label: "RSD" },
+  { value: "SGD", label: "SGD" },
+  { value: "HRK", label: "HRK" },
+  { value: "BGN", label: "BGN" },
 ];
 
 const CANCELLATION_OPTIONS = [
@@ -165,6 +181,7 @@ export function StayForm() {
         <RefField
           label="Hotel"
           fieldPath="hotelId"
+          nameFieldPath="hotelName"
           value={staysContext.selectedItem?.hotelId || ""}
           onChange={handleFieldChange}
           isEditing={staysContext.isEditing}
@@ -274,7 +291,7 @@ export function StayForm() {
           isChanged={isFieldChanged("roomNotes")}
         /> */}
 
-        <DropdownField
+        {/* <DropdownField
           label="Status"
           fieldPath="status"
           value={staysContext.selectedItem?.status || ""}
@@ -282,7 +299,7 @@ export function StayForm() {
           isEditing={staysContext.isEditing}
           options={STATUS_OPTIONS}
           isChanged={isFieldChanged("status")}
-        />
+        /> */}
 
         <TextField
           label="Special Requests"
@@ -291,6 +308,8 @@ export function StayForm() {
           onChange={handleFieldChange}
           isEditing={staysContext.isEditing}
           isChanged={isFieldChanged("specialRequests")}
+          multiline={true}
+          rows={4}
         />
         <TextField
           label="Remarks"

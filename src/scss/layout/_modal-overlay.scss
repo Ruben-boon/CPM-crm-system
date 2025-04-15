@@ -1,39 +1,52 @@
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  &.contact-modal {
+    justify-content: flex-start;
+    padding-left: 24px;
+
+    .modal-container {
+      width: fit-content;
+    }
   }
-  
   .modal-container {
     background-color: white;
     border-radius: 8px;
-    max-width: 90%;
-    max-height: 90vh;
-    width: 800px;
+    padding: 24px;
+    height: 95vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 1120px;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    .modal-content {
+      height:100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
   }
 
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 0px solid transparent;
+    margin-bottom: 24px;
   }
 
   .modal-header h2 {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.5rem;
   }
 
   .close-button {
@@ -41,35 +54,34 @@
     border: none;
     cursor: pointer;
     color: #666;
-    padding: 4px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
-  .close-button:hover {
-    background-color: #f0f0f0;
-  }
-
-  .modal-content {
-    padding: 1.5rem;
-    overflow-y: auto;
-    position: relative;
-  }
-  
-  .contact-fields-container {
+  .form-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    justify-content: space-between;
   }
-  
-  
+
+  .price-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .currency-select {
+    width: 80px;
+  }
+
+  .price-input {
+    flex: 1;
+  }
+
   .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
     margin-top: 24px;
     padding-top: 16px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 0px solid transparent;
   }
+}

@@ -48,12 +48,9 @@ export default function SearchBar({
   ] as const;
 
   const stayFields = [
-    { value: "reference", label: "Reference" },
-    { value: "roomNumber", label: "Room Number" },
+    { value: "hotelName", label: "Hotel" },
     { value: "checkInDate", label: "Check-in Date" },
     { value: "checkOutDate", label: "Check-out Date" },
-    { value: "status", label: "Status" },
-    { value: "guestName", label: "Guest Name" },
   ] as const;
 
   const getSearchableFields = () => {

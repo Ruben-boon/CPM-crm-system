@@ -1,6 +1,6 @@
 "use client";
 import { Item } from "@/types/types";
-import { Copy, Hotel, House, Mail, Phone } from "lucide-react";
+import { Briefcase, Calendar, Copy, Hotel, House, Mail, Phone, User } from "lucide-react";
 
 interface SearchResultProps {
   items: Item[];
@@ -26,11 +26,34 @@ const getRoleLabel = (role: string) => {
 // Helper function to format date
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
+  
   try {
-    return new Date(dateString).toLocaleDateString();
+    const date = new Date(dateString);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return dateString;
+    }
+    
+    // Format date as "DD MMM" (e.g., "12 Dec")
+    const day = date.getDate();
+    // Get month abbreviation
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = monthNames[date.getMonth()];
+    
+    return `${day} ${month}`;
   } catch (error) {
     return dateString;
   }
+};
+
+// Helper function to get guest count text
+const getGuestCountText = (guestIds: any[] | undefined) => {
+  if (!guestIds || !Array.isArray(guestIds)) return "0 guests";
+  
+  const count = guestIds.length;
+  return count === 1 ? "1 guest" : `${count} guests`;
 };
 
 // Helper function to get status label
@@ -95,10 +118,10 @@ export default function SearchResults({
                   : type === "hotels"
                   ? `${item.name}`
                   : type === "stays"
-                  ? `${item.hotel}`
+                  ? `${item.hotelName}`
                   : type === "bookings"
                   ? `${item.confirmationNo || "Booking"} - ${formatDate(
-                      item.travelPeriodStart
+                      item.confirmationDate
                     )}`
                   : `Unknown item type`}
               </div>
@@ -189,32 +212,42 @@ export default function SearchResults({
               ) : type === "stays" ? (
                 <>
                   <div className="search-results__details-section">
-                    <dd>
-                      {formatDate(item.checkInDate)} -{" "}
+                    <dd><Calendar size={14}></Calendar>
+                      {formatDate(item.checkInDate)} - {" "}
                       {formatDate(item.checkOutDate)}
                     </dd>
                   </div>
-                  {item.status && (
+                  <div className="search-results__details-section">
+                    <dd>
+                      <User size={14} />
+                      {getGuestCountText(item.guestIds)}
+                    </dd>
+                  </div>
+                  {/* {item.status && (
                     <div className="search-results__details-section">
                       <dd>Status: {getStatusLabel(item.status)}</dd>
                     </div>
-                  )}
+                  )} */}
                 </>
               ) : type === "bookings" ? (
                 <>
+                 <dd><Calendar size={14}></Calendar>
+                      {formatDate(item.travelPeriodStart)} - {" "}
+                      {formatDate(item.travelPeriodEnd)}
+                    </dd>
                   {item.companyName && (
                     <div className="search-results__details-section">
-                      <dd>Company: {item.companyName}</dd>
+                      <dd><Briefcase size={14}/> {item.companyName}</dd>
                     </div>
                   )}
                   {item.bookerName && (
                     <div className="search-results__details-section">
-                      <dd>Booker: {item.bookerName}</dd>
+                      <dd><User size={14}/>{item.bookerName}</dd>
                     </div>
                   )}
                   {item.status && (
                     <div className="search-results__details-section">
-                      <dd>Status: {getStatusLabel(item.status)}</dd>
+                      <dd>{getStatusLabel(item.status)}</dd>
                     </div>
                   )}
                 </>

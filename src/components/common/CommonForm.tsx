@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
+import { LoadingSpinner } from "../loadingSpinner";
+
 
 export interface DataContextState<T> {
   selectedItem: T | null;
@@ -53,6 +55,7 @@ export function CommonForm<T extends { _id?: string }>({
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showInitialSpinner, setShowInitialSpinner] = useState(true);
 
   useEffect(() => {
     if (selectedItem) {
@@ -174,7 +177,9 @@ export function CommonForm<T extends { _id?: string }>({
     : `this ${itemName.toLowerCase()}`;
 
   return (
-    <div className="detail-wrapper">
+    <div className="detail-wrapper relative">
+      {showInitialSpinner && <LoadingSpinner minDisplayTime={700} />}
+
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirmation}
         onClose={handleCancelDelete}

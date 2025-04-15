@@ -35,19 +35,15 @@ export function BookingForm() {
   const previousStayIdsRef = useRef([]); // For tracking changes to stayIds
 
   console.log("loaded stays:", stays);
-  console.log("booking context:", bookingsContext.selectedItem);
 
-  // Function to get display name for the booking
   const getDisplayName = (item) => {
     return item.confirmationNo || "this booking";
   };
 
-  // Handle field changes
   const handleFieldChange = (fieldPath, value, displayValue) => {
     bookingsContext.updateField(fieldPath, value);
   };
 
-  // Check if a field has pending changes
   const isFieldChanged = (fieldPath) => {
     return !!bookingsContext.pendingChanges[fieldPath];
   };
@@ -81,7 +77,7 @@ export function BookingForm() {
     bookingsContext.selectedItem?.stayIds,
   ]);
 
-  // Load stays data without loading state
+
   const loadRelatedStays = async (stayIds) => {
     if (!stayIds || stayIds.length === 0) {
       setStays([]);
@@ -106,7 +102,6 @@ export function BookingForm() {
     }
   };
 
-  // Handle adding a new stay
   const handleAddStay = (e) => {
     if (e) {
       e.preventDefault();
@@ -123,14 +118,12 @@ export function BookingForm() {
     setIsModalOpen(true);
   };
 
-  // Handle editing an existing stay
   const handleEditStay = (stay) => {
     setSelectedStay(stay);
     setIsCopyMode(false);
     setIsModalOpen(true);
   };
 
-  // Handle copying a stay
   const handleCopyStay = (stay) => {
     // Create a deep copy of the stay
     const stayCopy = JSON.parse(JSON.stringify(stay));
@@ -148,12 +141,10 @@ export function BookingForm() {
     setIsModalOpen(true);
   };
 
-  // Handle viewing a stay in a new tab
   const handleViewStay = (stayId) => {
     window.open(`/stays/${stayId}`, "_blank");
   };
 
-  // Handle removing a stay from the booking
   const handleRemoveStay = (stay, index) => {
     // Ask for confirmation before removing
     if (
@@ -182,7 +173,6 @@ export function BookingForm() {
     }
   };
 
-  // Handle saving a stay from the modal
   const handleStaySaved = (savedStay) => {
     if (!savedStay || !savedStay._id) {
       return; // Something went wrong with saving
@@ -224,17 +214,40 @@ export function BookingForm() {
     setIsModalOpen(false);
   };
 
-  // Helper function to format date
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     try {
-      return new Date(dateString).toLocaleDateString();
+      const date = new Date(dateString);
+      const day = date.getDate();
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const month = monthNames[date.getMonth()];
+
+      return `${day} ${month}`;
     } catch (error) {
       return dateString;
     }
   };
 
-  // Helper function to get status label
+  const getGuestCountText = (guestIds: any[] | undefined) => {
+    if (!guestIds || !Array.isArray(guestIds)) return "0 guests";
+
+    const count = guestIds.length;
+    return count === 1 ? "1 guest" : `${count} guests`;
+  };
+
   const getStatusLabel = (status) => {
     switch (status) {
       case "confirmed":
@@ -252,37 +265,6 @@ export function BookingForm() {
     }
   };
 
-  // Get stay display name
-  const getStayDisplayName = (stay) => {
-    if (!stay) return "New Stay";
-
-    let name = "";
-
-    // Add check-in/check-out dates if available
-    if (stay.checkInDate) {
-      name += formatDate(stay.checkInDate);
-
-      if (stay.checkOutDate) {
-        name += ` - ${formatDate(stay.checkOutDate)}`;
-      }
-    }
-
-    // Add hotel name if available
-    if (stay.hotelName) {
-      name += stay.hotelName ? ` at ${stay.hotelName}` : "";
-    }
-
-    // Add room info if available
-    if (stay.roomNumber) {
-      name += ` (Room ${stay.roomNumber})`;
-    } else if (stay.roomType) {
-      name += ` (${stay.roomType})`;
-    }
-
-    return name.trim() || `Stay ${formatDate(new Date().toISOString())}`;
-  };
-
-  // Function to render the related stays section
   const renderRelatedStays = () => {
     if (!bookingsContext.selectedItem?._id) return null;
 
@@ -307,72 +289,76 @@ export function BookingForm() {
               {stays.map((stay, index) => (
                 <div key={stay._id} className="stay-item">
                   <div className="stay-info">
+                    <div className="stay-hotel">{stay.hotelName}</div>
                     <div className="stay-dates">
                       {formatDate(stay.checkInDate)} -{" "}
                       {formatDate(stay.checkOutDate)}
                     </div>
-                    <div className="stay-details">
-                      <span className="stay-hotel">
-                        {stay.hotelName || "Unknown hotel"}
-                      </span>
-                      {stay.roomNumber && (
-                        <span className="stay-room">
-                          Room: {stay.roomNumber}
-                        </span>
-                      )}
-                      <span className="stay-status">
-                        Status: {getStatusLabel(stay.status)}
-                      </span>
-                    </div>
                     <div className="stay-guests">
-                      {stay.guestNames && stay.guestNames.length > 0 ? (
-                        <span>{stay.guestNames.join(", ")}</span>
+                      {getGuestCountText(stay.guestIds) ? (
+                        <span>{getGuestCountText(stay.guestIds)}</span>
                       ) : (
                         <span className="no-guests">No guests assigned</span>
                       )}
                     </div>
+                    <div className="stay-details">
+                      <div>
+                        {stay.roomCurrency} {stay.roomPrice}
+                      </div>
+                    </div>
+                    <span className="stay-status">
+                      Status: {getStatusLabel(stay.status)}
+                    </span>
                   </div>
                   <div className="stay-actions">
+                    <div className="edit-button-group">
+                      {!bookingsContext.isEditing && (
+                        <Button
+                          icon={ExternalLink}
+                          onClick={() => handleViewStay(stay._id)}
+                          size="sm"
+                          intent="ghost"
+                          title="View in new tab"
+                        >
+                          View
+                        </Button>
+                      )}
+                      {bookingsContext.isEditing && (
+                        <>
+                          <Button
+                            icon={Copy}
+                            onClick={() => handleCopyStay(stay)}
+                            size="sm"
+                            intent="outline"
+                            title="Copy stay"
+                          ></Button>
+                          <Button
+                            icon={Edit}
+                            onClick={() => handleEditStay(stay)}
+                            size="sm"
+                            intent="outline"
+                            title="Edit stay"
+                          >
+                            Edit
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
                     {bookingsContext.isEditing && (
                       <>
                         <Button
                           icon={X}
                           onClick={() => handleRemoveStay(stay, index)}
                           size="sm"
-                          intent="ghost"
+                          className="button--danger"
+                          intent="outline"
                           title="Remove stay from booking"
                         >
                           Remove
                         </Button>
-                        <Button
-                          icon={Copy}
-                          onClick={() => handleCopyStay(stay)}
-                          size="sm"
-                          intent="secondary"
-                          title="Copy stay"
-                        >
-                          Copy
-                        </Button>
-                        <Button
-                          icon={Edit}
-                          onClick={() => handleEditStay(stay)}
-                          size="sm"
-                          intent="secondary"
-                          title="Edit stay"
-                        >
-                          Edit
-                        </Button>
                       </>
                     )}
-                    <Button
-                      icon={ExternalLink}
-                      onClick={() => handleViewStay(stay._id)}
-                      size="sm"
-                      intent="ghost"
-                      title="View in new tab"
-                    >
-                      View
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -423,25 +409,16 @@ export function BookingForm() {
             type="date"
             isChanged={isFieldChanged("confirmationDate")}
           />
-          <TextField
-            label="Travel Period Start"
-            fieldPath="travelPeriodStart"
-            value={bookingsContext.selectedItem?.travelPeriodStart || ""}
+          <RefField
+            label="Booker"
+            fieldPath="bookerId"
+            value={bookingsContext.selectedItem?.bookerId || ""}
             onChange={handleFieldChange}
             isEditing={bookingsContext.isEditing}
-            type="date"
-            required={true}
-            isChanged={isFieldChanged("travelPeriodStart")}
-          />
-          <TextField
-            label="Travel Period End"
-            fieldPath="travelPeriodEnd"
-            value={bookingsContext.selectedItem?.travelPeriodEnd || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            type="date"
-            required={true}
-            isChanged={isFieldChanged("travelPeriodEnd")}
+            collectionName="contacts"
+            displayFields={["general.firstName", "general.lastName"]}
+            isChanged={isFieldChanged("bookerId")}
+            setFieldLoading={bookingsContext.setFieldLoading}
           />
           <DropdownField
             label="Cost Centre"
@@ -452,6 +429,41 @@ export function BookingForm() {
             options={COST_CENTRE_OPTIONS}
             isChanged={isFieldChanged("costCentre")}
           />
+          <TextField
+            label="Arrival date"
+            fieldPath="travelPeriodStart"
+            value={bookingsContext.selectedItem?.travelPeriodStart || ""}
+            onChange={handleFieldChange}
+            isEditing={bookingsContext.isEditing}
+            type="date"
+            required={true}
+            isChanged={isFieldChanged("travelPeriodStart")}
+          />
+          <TextField
+            label="Departure date"
+            fieldPath="travelPeriodEnd"
+            value={bookingsContext.selectedItem?.travelPeriodEnd || ""}
+            onChange={handleFieldChange}
+            isEditing={bookingsContext.isEditing}
+            type="date"
+            required={true}
+            isChanged={isFieldChanged("travelPeriodEnd")}
+          />
+        </div>
+        <div className="col-half">
+          <RefField
+            label="Company"
+            fieldPath="companyId"
+            value={bookingsContext.selectedItem?.companyId || ""}
+            onChange={handleFieldChange}
+            isEditing={bookingsContext.isEditing}
+            collectionName="companies"
+            displayFields={["name", "address", "postal_code"]}
+            isChanged={isFieldChanged("companyId")}
+            setFieldLoading={bookingsContext.setFieldLoading}
+            displaySeparator="<br>" 
+          />
+
           <DropdownField
             label="Status"
             fieldPath="status"
@@ -472,136 +484,14 @@ export function BookingForm() {
             rows={4}
             isChanged={isFieldChanged("notes")}
           />
-        </div>
-        <div className="col-half">
-          <RefField
-            label="Company"
-            fieldPath="companyId"
-            value={bookingsContext.selectedItem?.companyId || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            collectionName="companies"
-            displayFields={["name"]}
-            isChanged={isFieldChanged("companyId")}
-            setFieldLoading={bookingsContext.setFieldLoading}
-          />
-          <RefField
-            label="Booker"
-            fieldPath="bookerId"
-            value={bookingsContext.selectedItem?.bookerId || ""}
-            onChange={handleFieldChange}
-            isEditing={bookingsContext.isEditing}
-            collectionName="contacts"
-            displayFields={["general.firstName", "general.lastName"]}
-            isChanged={isFieldChanged("bookerId")}
-            setFieldLoading={bookingsContext.setFieldLoading}
+          <DownloadPDFButton
+            bookingData={bookingsContext.selectedItem}
+            stays={stays}
+            disabled={bookingsContext.isEditing}
           />
         </div>
-        <div className="col-full">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginBottom: "1rem",
-            }}
-          >
-            <DownloadPDFButton
-              bookingData={bookingsContext.selectedItem}
-              stays={stays}
-            />
-          </div>
-          {renderRelatedStays()}
-        </div>
+        <div className="col-full">{renderRelatedStays()}</div>
       </CommonForm>
-
-      <style jsx>{`
-        .related-stays-container {
-          margin-top: 2rem;
-          width: 100%;
-        }
-
-        .related-stays {
-          border: 1px solid #e0e0e0;
-          border-radius: 6px;
-          padding: 1rem;
-          background-color: #fafafa;
-        }
-
-        .related-stays-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-
-        .related-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          margin: 0;
-        }
-
-        .no-stays-message {
-          color: #757575;
-          padding: 2rem 0;
-          text-align: center;
-          font-style: italic;
-        }
-
-        .stays-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          max-height: 400px;
-          overflow-y: auto;
-        }
-
-        .stay-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem;
-          background-color: white;
-          border: 1px solid #e0e0e0;
-          border-radius: 4px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .stay-info {
-          flex: 1;
-        }
-
-        .stay-dates {
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-        }
-
-        .stay-details {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 0.5rem;
-          font-size: 0.9rem;
-        }
-
-        .stay-room,
-        .stay-status {
-          color: #616161;
-        }
-
-        .stay-guests {
-          font-size: 0.9rem;
-          color: #616161;
-        }
-
-        .no-guests {
-          font-style: italic;
-          color: #9e9e9e;
-        }
-
-        .stay-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-      `}</style>
     </>
   );
 }

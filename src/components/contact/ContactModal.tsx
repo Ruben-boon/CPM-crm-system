@@ -28,24 +28,30 @@ const TITLE_OPTIONS = [
   { value: "dr", label: "Dr." },
 ];
 
-export function ContactModal({ initialData = {}, callback, onClose }: ContactModalProps) {
+export function ContactModal({
+  initialData = {},
+  callback,
+  onClose,
+}: ContactModalProps) {
   // Create a blank contact with default role="guest"
   const [contact, setContact] = useState<any>({
     general: {
       role: "guest",
       ...initialData.general,
     },
-    ...initialData
+    ...initialData,
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Record<string, any>>({});
-  const [fieldLoadingStates, setFieldLoadingStates] = useState<Record<string, boolean>>({});
+  const [fieldLoadingStates, setFieldLoadingStates] = useState<
+    Record<string, boolean>
+  >({});
 
   // Function to check if any fields are loading
   const isAnyFieldLoading = () => {
-    return Object.values(fieldLoadingStates).some(isLoading => isLoading);
+    return Object.values(fieldLoadingStates).some((isLoading) => isLoading);
   };
 
   // Update loading state when field loading state changes
@@ -54,9 +60,9 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
   }, []);
 
   const setFieldLoading = (fieldPath: string, isLoading: boolean) => {
-    setFieldLoadingStates(prev => ({
+    setFieldLoadingStates((prev) => ({
       ...prev,
-      [fieldPath]: isLoading
+      [fieldPath]: isLoading,
     }));
   };
 
@@ -81,10 +87,10 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
 
       // Create the contact
       const result = await createDocument("contacts", contact);
-      
+
       if (result.success && result.data) {
         toast.success("Contact created successfully");
-        
+
         // Call the callback if provided
         if (callback) {
           callback(
@@ -92,11 +98,13 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
             `${contact.general.firstName} ${contact.general.lastName}`
           );
         }
-        
+
         // Close the modal
         onClose();
       } else {
-        toast.error(`Failed to create contact: ${result.error || "Unknown error"}`);
+        toast.error(
+          `Failed to create contact: ${result.error || "Unknown error"}`
+        );
       }
     } catch (error) {
       console.error("Error creating contact:", error);
@@ -108,10 +116,10 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
   const handleFieldChange = (fieldPath: string, value: any) => {
     // Create a deep copy of the contact
     const updatedContact = JSON.parse(JSON.stringify(contact));
-    
+
     // Handle nested fields (e.g., "general.firstName")
-    const fieldParts = fieldPath.split('.');
-    
+    const fieldParts = fieldPath.split(".");
+
     if (fieldParts.length === 1) {
       // Direct field update
       updatedContact[fieldPath] = value;
@@ -125,18 +133,18 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
       }
       current[fieldParts[fieldParts.length - 1]] = value;
     }
-    
+
     // Update contact state
     setContact(updatedContact);
-    
+
     // Track the change in pendingChanges
-    setPendingChanges(prev => ({
+    setPendingChanges((prev) => ({
       ...prev,
-      [fieldPath]: value
+      [fieldPath]: value,
     }));
 
     // If it's a reference field, mark it as loading
-    if (fieldPath.endsWith('Id')) {
+    if (fieldPath.endsWith("Id")) {
       setFieldLoading(fieldPath, true);
     }
   };
@@ -155,7 +163,7 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay contact-modal">
       <div className="modal-container">
         <div className="modal-header">
           <h2>Add Contact</h2>
@@ -163,103 +171,99 @@ export function ContactModal({ initialData = {}, callback, onClose }: ContactMod
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="modal-content">
           <LoadingSpinner isLoading={isFormLoading} />
-          
+
           <div className="contact-fields-container">
-            <div className="col-half">
-              <DropdownField
-                label="Title"
-                fieldPath="general.title"
-                value={getNestedValue(contact, "general.title")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                options={TITLE_OPTIONS}
-              />
+            <DropdownField
+              label="Title"
+              fieldPath="general.title"
+              value={getNestedValue(contact, "general.title")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              options={TITLE_OPTIONS}
+            />
 
-              <TextField
-                label="First Name"
-                fieldPath="general.firstName"
-                value={getNestedValue(contact, "general.firstName")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                required={true}
-              />
+            <TextField
+              label="First Name"
+              fieldPath="general.firstName"
+              value={getNestedValue(contact, "general.firstName")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              required={true}
+            />
 
-              <TextField
-                label="Last Name"
-                fieldPath="general.lastName"
-                value={getNestedValue(contact, "general.lastName")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                required={true}
-              />
+            <TextField
+              label="Last Name"
+              fieldPath="general.lastName"
+              value={getNestedValue(contact, "general.lastName")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              required={true}
+            />
 
-              <TextField
-                label="E-mail"
-                fieldPath="general.email"
-                value={getNestedValue(contact, "general.email")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                type="email"
-              />
+            <TextField
+              label="E-mail"
+              fieldPath="general.email"
+              value={getNestedValue(contact, "general.email")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              type="email"
+            />
 
-              <TextField
-                label="Phone"
-                fieldPath="general.phone"
-                value={getNestedValue(contact, "general.phone")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                type="tel"
-              />
+            <TextField
+              label="Phone"
+              fieldPath="general.phone"
+              value={getNestedValue(contact, "general.phone")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              type="tel"
+            />
 
-              <DropdownField
-                label="Role"
-                fieldPath="general.role"
-                value={getNestedValue(contact, "general.role")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                options={ROLE_OPTIONS}
-                required={true}
-              />
-            </div>
+            <DropdownField
+              label="Role"
+              fieldPath="general.role"
+              value={getNestedValue(contact, "general.role")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              options={ROLE_OPTIONS}
+              required={true}
+            />
 
-            <div className="col-half">
-              <RefField
-                label="Company"
-                fieldPath="general.companyId"
-                value={getNestedValue(contact, "general.companyId")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                collectionName="companies"
-                displayFields={["name"]}
-                setFieldLoading={setFieldLoading}
-              />
-            
-              <TextField
-                label="Remarks"
-                fieldPath="general.remarks"
-                value={getNestedValue(contact, "general.remarks")}
-                onChange={handleFieldChange}
-                isEditing={true}
-                multiline={true}
-                rows={4}
-              />
-            </div>
+            <RefField
+              label="Company"
+              fieldPath="general.companyId"
+              value={getNestedValue(contact, "general.companyId")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              collectionName="companies"
+              displayFields={["name"]}
+              setFieldLoading={setFieldLoading}
+            />
+
+            <TextField
+              label="Remarks"
+              fieldPath="general.remarks"
+              value={getNestedValue(contact, "general.remarks")}
+              onChange={handleFieldChange}
+              isEditing={true}
+              multiline={true}
+              rows={4}
+            />
           </div>
-          
+
           <div className="modal-footer">
-            <Button 
-              intent="secondary" 
-              icon={X} 
+            <Button
+              intent="secondary"
+              icon={X}
               onClick={onClose}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              icon={Save} 
+            <Button
+              icon={Save}
               onClick={handleSave}
               disabled={isSubmitting || isFormLoading}
               isLoading={isSubmitting}

@@ -1,9 +1,11 @@
 .search-area {
   background-color: #f6f6f8;
   height: 100vh;
-  width: 320px;
+  min-width: 320px;
+  width: 100%;
+  max-width: 380px;
   padding: 1em;
-  flex-shrink:0;
+  flex-shrink: 0;
   overflow-y: scroll;
   position: relative;
   .filter-search-container {
@@ -15,7 +17,7 @@
   .search-group {
     display: flex;
     flex-direction: column;
-    gap:8px;
+    gap: 8px;
   }
   .search-container {
     display: flex;

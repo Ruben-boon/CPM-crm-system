@@ -29,7 +29,7 @@ interface BookingData {
   travelPeriodEnd?: string;
   status?: string;
   costCentre?: string;
-  notes?: string;
+  notes?: string;å
   companyId?: string;
   bookerId?: string;
   stayIds?: string[];

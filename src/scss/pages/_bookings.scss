@@ -1,0 +1,26 @@
+.booking-form {
+  .related-stays {
+    .stay-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+        justify-content: space-between;
+      .edit-button-group {
+        display: flex;
+        gap: 8px;
+      }
+    }
+
+    .stay-item {
+      .stay-info {
+        gap: 4px;
+      }
+      .stay-hotel {
+        font-weight: bold;
+      }
+      .stay-dates {
+        font-weight: normal;
+      }
+    }
+  }
+}

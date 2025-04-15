@@ -1,0 +1,141 @@
+// Related Stays Component Styling
+
+.related-stays-container {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.related-stays {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f6f6f8;
+  overflow: hidden;
+
+  // Header section
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem 0rem 1rem;
+  }
+
+  .related-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+  }
+}
+
+// Empty state message
+.no-stays-message {
+  padding: 2rem;
+  text-align: center;
+  color: #718096;
+  font-style: italic;
+}
+
+// Stays list
+.stays-list {
+}
+
+// Individual stay items
+.stay-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s ease;
+  background-color: white;
+  margin:1em;
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: #f7fafc;
+  }
+}
+
+// Stay information sections
+.stay-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0; // Helps with text truncation in flex containers
+}
+
+.stay-dates {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.stay-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #4a5568;
+
+  .stay-hotel {
+    font-weight: 500;
+  }
+
+  .stay-room,
+  .stay-status {
+    color: #718096;
+  }
+}
+
+.stay-guests {
+  font-size: 0.9rem;
+  color: #718096;
+
+  .no-guests {
+    font-style: italic;
+    color: #a0aec0;
+  }
+}
+
+// Action buttons container
+.stay-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  flex-shrink: 0;
+}
+
+// Button styling for the component
+// (assuming you already have Button components styled elsewhere)
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .stay-item {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .stay-actions {
+    margin-left: 0;
+    margin-top: 0.5rem;
+    justify-content: flex-end;
+  }
+}
+
+// Animation for adding/removing stays
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stay-item {
+  animation: fadeIn 0.2s ease;
+}
