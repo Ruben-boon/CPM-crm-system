@@ -164,7 +164,7 @@ export function BookingDetails({ bookingsContext, stays }) {
           displaySeparator="<br>"
         />
 
-        <div className="status-field">
+        {/* <div className="status-field">
           <label className="field-label">Status</label>
           <div className="status-value">
             {getStatusLabel(statusValue, BOOKING_STATUS_OPTIONS)}
@@ -172,7 +172,7 @@ export function BookingDetails({ bookingsContext, stays }) {
           {isFieldChanged("status") && (
             <div className="field-changed-indicator"></div>
           )}
-        </div>
+        </div> */}
 
         <TextField
           label="Commission invoice no."

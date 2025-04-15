@@ -15,32 +15,43 @@
     color: white;
     white-space: nowrap;
   }
+
+  .status-badge-small {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
   
   /* Status colors */
   .status-upcoming_no_action {
-    background-color: #8b5cf6; /* Purple */
+    background-color: gray!important;
   }
   
   .status-upcoming_confirmation_sent {
-    background-color: #3b82f6; /* Blue */
+    background-color: #10b981!important; /* Blue */
   }
   
   .status-stayed_missing_invoice {
-    background-color: #f59e0b; /* Amber */
+    background-color: #ef4444!important; /* Amber */
   }
   
   .status-invoicing_missing_both {
-    background-color: #ef4444; /* Red */
+    background-color: #f59e0b!important; /* Red */
   }
   
   .status-invoicing_missing_sales {
-    background-color: #f97316; /* Orange */
+    background-color: #f59e0b!important; /* Orange */
   }
   
   .status-invoicing_missing_commission {
-    background-color: #f97316; /* Orange */
+    background-color: #f97316!important; /* Orange */
   }
   
   .status-completed {
-    background-color: #10b981; /* Green */
+    background-color: #10b981!important; /* Green */
   }

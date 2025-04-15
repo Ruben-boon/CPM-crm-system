@@ -68,6 +68,7 @@ export default function SearchBar({
 
   const [searchField, setSearchField] = useState(searchableFields[0].value);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusOptions, setStatusOptions] = useState<JSX.Element | null>(null);
 
   useEffect(() => {
     onSearch("", searchField);
@@ -77,6 +78,33 @@ export default function SearchBar({
   useEffect(() => {
     setSearchField(getSearchableFields()[0].value);
   }, [type]);
+
+  // Show status dropdown when status is selected
+  useEffect(() => {
+    if (searchField === "status" && type === "bookings") {
+      setStatusOptions(
+        <select 
+          className="status-dropdown"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            onSearch(e.target.value, searchField);
+          }}
+        >
+          <option value="">All Statuses</option>
+          <option value="upcoming_no_action">Upcoming - No action taken</option>
+          <option value="upcoming_confirmation_sent">Upcoming - Confirmation send</option>
+          <option value="stayed_missing_invoice">Stayed - Missing Purchase Invoice(s)</option>
+          <option value="invoicing_missing_both">Invoicing - Missing sales invoice and commision</option>
+          <option value="invoicing_missing_sales">Invoicing - Missing sales invoice</option>
+          <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
+          <option value="completed">Completed</option>
+        </select>
+      );
+    } else {
+      setStatusOptions(null);
+    }
+  }, [searchField, type]);
 
   const handleSearch = () => {
     onSearch(searchTerm.trim(), searchField);
@@ -92,20 +120,29 @@ export default function SearchBar({
     <div className="search-group">
       <div className="search-bar">
         <Search className="search-bar__icon" size={20} strokeWidth={1.5} />
-        <input
-          type="text"
-          className="search-bar__input"
-          placeholder={`Search by ${searchableFields.find(f => f.value === searchField)?.label}`}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isLoading}
-        />
+        {!statusOptions ? (
+          <input
+            type="text"
+            className="search-bar__input"
+            placeholder={`Search by ${searchableFields.find(f => f.value === searchField)?.label}`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+          />
+        ) : (
+          statusOptions
+        )}
       </div>
       <select
         className="search-filter"
         value={searchField}
-        onChange={(e) => setSearchField(e.target.value)}
+        onChange={(e) => {
+          setSearchField(e.target.value);
+          // Clear search term when changing fields
+          setSearchTerm("");
+          onSearch("", e.target.value);
+        }}
         disabled={isLoading}
       >
         {searchableFields.map((field) => (
@@ -114,6 +151,18 @@ export default function SearchBar({
           </option>
         ))}
       </select>
+
+      {/* Add some styling for the status dropdown */}
+      <style jsx>{`
+        .status-dropdown {
+          flex: 1;
+          padding: 8px 12px;
+          border: none;
+          background: transparent;
+          font-size: 14px;
+          outline: none;
+        }
+      `}</style>
     </div>
   );
 }

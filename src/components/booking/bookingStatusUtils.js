@@ -17,39 +17,39 @@ export function determineBookingStatus(booking, stays) {
 
   // When departure date has passed, we prioritize these statuses
   if (hasDepatureDatePassed) {
-    // Check if all stays have purchase invoices
+    // Check if all stays have purchase invoices - THIS HAS HIGHEST PRIORITY
     const allStaysHavePurchaseInvoices = stays.length > 0 && 
       stays.every(stay => stay.purchaseInvoice && stay.purchaseInvoice.trim() !== "");
     
     // When departure date has passed and at least one stay missing purchase invoice
+    // THIS TAKES PRECEDENCE OVER EVERYTHING ELSE
     if (!allStaysHavePurchaseInvoices) {
       return "stayed_missing_invoice";
     }
     
     // If we get here, all purchase invoices are present
-    if (allStaysHavePurchaseInvoices) {
-      const hasSalesInvoice = booking.salesInvoice && booking.salesInvoice.trim() !== "";
-      const hasCommission = booking.commissionInvoiceNo && booking.commissionInvoiceNo.trim() !== "";
+    // Only now do we check sales invoice and commission
+    const hasSalesInvoice = booking.salesInvoice && booking.salesInvoice.trim() !== "";
+    const hasCommission = booking.commissionInvoiceNo && booking.commissionInvoiceNo.trim() !== "";
 
-      // Both sales invoice and commission are missing
-      if (!hasSalesInvoice && !hasCommission) {
-        return "invoicing_missing_both";
-      }
-      
-      // Sales invoice is missing but commission is present
-      if (!hasSalesInvoice && hasCommission) {
-        return "invoicing_missing_sales";
-      }
-      
-      // Commission is missing but sales invoice is present
-      if (hasSalesInvoice && !hasCommission) {
-        return "invoicing_missing_commission";
-      }
-      
-      // Everything is present - completed
-      if (hasSalesInvoice && hasCommission) {
-        return "completed";
-      }
+    // Both sales invoice and commission are missing
+    if (!hasSalesInvoice && !hasCommission) {
+      return "invoicing_missing_both";
+    }
+    
+    // Sales invoice is missing but commission is present
+    if (!hasSalesInvoice && hasCommission) {
+      return "invoicing_missing_sales";
+    }
+    
+    // Commission is missing but sales invoice is present
+    if (hasSalesInvoice && !hasCommission) {
+      return "invoicing_missing_commission";
+    }
+    
+    // Everything is present - completed
+    if (hasSalesInvoice && hasCommission) {
+      return "completed";
     }
   } else {
     // For upcoming bookings (departure date hasn't passed yet)
