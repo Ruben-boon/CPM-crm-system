@@ -22,8 +22,8 @@ export function CompanyForm() {
     companiesContext.updateField(fieldPath, value);
   };
 
-  const handleRelationClick = (companyId: string, collection: string) => {
-    router.push(`/${collection}/${companyId}`);
+  const handleRelationClick = (itemId: string, collection: string) => {
+    router.push(`/${collection}/${itemId}`);
   };
 
   const isFieldChanged = (fieldPath: string) => {
@@ -125,6 +125,33 @@ export function CompanyForm() {
           </div>
         )}
       </div>
+      <div className="col-full">
+        {/* New Related Bookings Section */}
+        {companiesContext.selectedItem?._id && !companiesContext.isEditing && (
+          <div className="related-section">
+            <RelatedItems
+              id={companiesContext.selectedItem._id}
+              referenceField="companyId"
+              collectionName="bookings"
+              displayFields={[
+                { path: "confirmationNo" },
+                { path: "travelPeriodStart", label: "Travel Period" },
+                { path: "travelPeriodEnd" },
+              ]}
+              title="Bookings by this company"
+              emptyMessage="No bookings found for this company"
+              onItemClick={handleRelationClick}
+              isFormEditing={companiesContext.isEditing}
+            />
+          </div>
+        )}
+      </div>
+
+      <style jsx>{`
+        .related-section {
+          margin-bottom: 24px;
+        }
+      `}</style>
     </CommonForm>
   );
 }

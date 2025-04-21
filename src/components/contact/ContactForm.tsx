@@ -4,6 +4,8 @@ import { CommonForm } from "../common/CommonForm";
 import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
+import { RelatedItems } from "../fields/RelatedItems";
+import { useRouter } from "next/navigation";
 
 const ROLE_OPTIONS = [
   { value: "booker", label: "Booker" },
@@ -19,6 +21,7 @@ const TITLE_OPTIONS = [
 
 export function ContactForm() {
   const contactsContext = useContactsData();
+  const router = useRouter();
 
   const getDisplayName = (item: any) => {
     const firstName = getNestedValue(item, "general.firstName") || "";
@@ -52,6 +55,22 @@ export function ContactForm() {
   const isFieldChanged = (fieldPath: string) => {
     return !!contactsContext.pendingChanges[fieldPath];
   };
+
+  const handleRelationClick = (itemId: string, collection: string) => {
+    router.push(`/${collection}/${itemId}`);
+  };
+
+  // Determine if we should show stays and bookings based on role
+  const contactRole = getNestedValue(
+    contactsContext.selectedItem,
+    "general.role"
+  );
+  const isGuest = contactRole === "guest" || contactRole === "both";
+  const isBooker = contactRole === "booker" || contactRole === "both";
+
+  // Only show related sections when viewing (not editing) and when the contact has an ID
+  const shouldShowRelatedSections =
+    contactsContext.selectedItem?._id && !contactsContext.isEditing;
 
   return (
     <CommonForm
@@ -158,7 +177,51 @@ export function ContactForm() {
           rows={4}
           isChanged={isFieldChanged("general.remarks")}
         />
+
+        {shouldShowRelatedSections && isBooker && (
+          <div className="related-section">
+            <RelatedItems
+              id={contactsContext.selectedItem._id}
+              referenceField="bookerId"
+              collectionName="bookings"
+              displayFields={[
+                { path: "confirmationNo" },
+                { path: "travelPeriodStart", label: "Travel Period" },
+                { path: "travelPeriodEnd" },
+              ]}
+              title="Bookings as Booker"
+              emptyMessage="No bookings found where this contact is the booker"
+              onItemClick={handleRelationClick}
+              isFormEditing={contactsContext.isEditing}
+            />
+          </div>
+        )}
       </div>
+      <div className="col-full">
+        {shouldShowRelatedSections && isGuest && (
+          <div className="related-section">
+            <RelatedItems
+              id={contactsContext.selectedItem._id}
+              referenceField="guestIds"
+              collectionName="stays"
+              displayFields={[
+                { path: "hotelName" },
+                { path: "checkInDate", label: "Stay Period" },
+                { path: "checkOutDate" },
+              ]}
+              title="Stays as Guest"
+              emptyMessage="No stays found for this contact"
+              onItemClick={handleRelationClick}
+              isFormEditing={contactsContext.isEditing}
+            />
+          </div>
+        )}
+      </div>
+      <style jsx>{`
+        .related-section {
+          margin-top: 24px;
+        }
+      `}</style>
     </CommonForm>
   );
 }
