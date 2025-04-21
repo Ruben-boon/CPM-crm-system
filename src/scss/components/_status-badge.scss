@@ -1,57 +1,56 @@
 /* Add this to your global CSS file or as a styled-jsx block in BookingForm */
 
 .booking-title-with-status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .status-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    color: white;
-    white-space: nowrap;
-  }
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-  .status-badge-small {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-    color: white;
-    white-space: nowrap;
-    margin-top: 4px;
-  }
-  
-  /* Status colors */
-  .status-upcoming_no_action {
-    background-color: gray!important;
-  }
-  
-  .status-upcoming_confirmation_sent {
-    background-color: #10b981!important; /* Blue */
-  }
-  
-  .status-stayed_missing_invoice {
-    background-color: #ef4444!important; /* Amber */
-  }
-  
-  .status-invoicing_missing_both {
-    background-color: #f59e0b!important; /* Red */
-  }
-  
-  .status-invoicing_missing_sales {
-    background-color: #f59e0b!important; /* Orange */
-  }
-  
-  .status-invoicing_missing_commission {
-    background-color: #f97316!important; /* Orange */
-  }
-  
-  .status-completed {
-    background-color: #10b981!important; /* Green */
-  }
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  color: white;
+  white-space: nowrap;
+}
+
+.status-badge-small {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+/* Status colors */
+.status-upcoming_no_action {
+  background-color:#202124 !important;
+}
+
+.status-upcoming_confirmation_sent {
+  background-color: #10b981 !important; /* Blue */
+}
+
+.status-stayed_missing_invoice {
+  background-color: #ef4444 !important; /* Amber */
+}
+
+.status-invoicing_missing_both {
+  background-color: #f59e0b !important; /* Red */
+}
+
+.status-invoicing_missing_sales {
+  background-color: #f59e0b !important; /* Orange */
+}
+
+.status-invoicing_missing_commission {
+  background-color: #f97316 !important; /* Orange */
+}
+
+.status-completed {
+  background-color: #10b981 !important; /* Green */
+}

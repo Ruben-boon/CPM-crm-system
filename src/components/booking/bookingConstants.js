@@ -1,10 +1,5 @@
 // Define constants for dropdown options used across booking components
 
-export const COST_CENTRE_OPTIONS = [
-  { value: "CC1", label: "Cost Centre 1" },
-  { value: "CC2", label: "Cost Centre 2" },
-  { value: "CC3", label: "Cost Centre 3" },
-];
 
 export const BOOKING_STATUS_OPTIONS = [
   //default status when a booking is created
