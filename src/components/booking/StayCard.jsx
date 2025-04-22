@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Edit, ExternalLink, Copy, X, Save } from "lucide-react";
+import { Edit, ExternalLink, Copy, X } from "lucide-react";
 import Button from "@/components/common/Button";
 import { TextField } from "../fields/TextField";
 import { DropdownField } from "../fields/DropdownField";
@@ -41,31 +41,34 @@ export function StayCard({
     }));
   };
 
-  // Save stay updates directly
-  const handleSaveStayUpdates = async () => {
-    setIsSaving(true);
+  // Auto-save when field loses focus or Enter is pressed
+  const handleAutoSave = async (fieldPath, value) => {
+    // Only save if the value has changed
+    if (value !== stay.purchaseInvoice) {
+      setIsSaving(true);
 
-    try {
-      // Create updated stay with the changed fields
-      const updatedStay = {
-        ...stay,
-        ...stayUpdate,
-      };
+      try {
+        // Create updated stay with the changed field
+        const updatedStay = {
+          ...stay,
+          purchaseInvoice: value
+        };
 
-      const result = await updateDocument("stays", stay._id, updatedStay);
+        const result = await updateDocument("stays", stay._id, updatedStay);
 
-      if (result.success) {
-        toast.success("Stay updated successfully");
-      } else {
-        toast.error(
-          `Failed to update stay: ${result.error || "Unknown error"}`
-        );
+        if (result.success) {
+          toast.success("Purchase invoice updated");
+        } else {
+          toast.error(
+            `Failed to update purchase invoice: ${result.error || "Unknown error"}`
+          );
+        }
+      } catch (error) {
+        console.error("Error updating stay:", error);
+        toast.error("Failed to update purchase invoice");
+      } finally {
+        setIsSaving(false);
       }
-    } catch (error) {
-      console.error("Error updating stay:", error);
-      toast.error("Failed to update stay");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -101,82 +104,48 @@ export function StayCard({
           </div>
         </div>
 
-        {!isEditing && (
-          <span className="stay-status">
-            Status: {getStatusLabel(stay.status)}
-          </span>
-        )}
-
         {/* Add quick fields when in edit mode */}
         {isEditing && (
           <div className="stay-quick-edit">
-            {/* Status field */}
-            <DropdownField
-              label="Status"
-              fieldPath={`status-${stay._id}`}
-              value={stayUpdate.status}
-              onChange={(_, value) => handleStayFieldChange("status", value)}
-              isEditing={true}
-              options={STAY_STATUS_OPTIONS}
-              required={true}
-            />
-
-            {/* Prepaid field */}
-            <RadioField
-              label="Prepaid"
-              fieldPath={`prepaid-${stay._id}`}
-              value={stayUpdate.prepaid}
-              updateField={(_, value) =>
-                handleStayFieldChange("prepaid", value)
-              }
-              isEditing={true}
-              options={PREPAID_OPTIONS}
-              required={true}
-            />
-
-            {/* Conditional prepaid details field */}
-            {stayUpdate.prepaid === "yes" && (
-              <TextField
-                label="Prepaid Details"
-                fieldPath={`prepaidDetails-${stay._id}`}
-                value={stayUpdate.prepaidDetails}
-                onChange={(_, value) =>
-                  handleStayFieldChange("prepaidDetails", value)
-                }
-                isEditing={true}
-                placeholder="e.g., Prepaid credit card 18/7"
-              />
-            )}
-
-            {/* Purchase Invoice field */}
-            <TextField
-              label="Purchase Invoice"
-              fieldPath={`purchaseInvoice-${stay._id}`}
-              value={stayUpdate.purchaseInvoice}
-              onChange={(_, value) =>
-                handleStayFieldChange("purchaseInvoice", value)
-              }
-              isEditing={true}
-            />
-
-            {/* Save button for stay updates */}
-            <div className="stay-save-button">
-              <Button
-                icon={Save}
-                onClick={handleSaveStayUpdates}
-                size="sm"
-                intent="secondary"
-                isLoading={isSaving}
+            {/* Purchase Invoice field with auto-save functionality */}
+            <div className={`form-field ${isSaving ? 'field-saving' : ''}`}>
+              <label className="field-label">Purchase Invoice</label>
+              <input
+                type="text"
+                value={stayUpdate.purchaseInvoice}
+                onChange={(e) => handleStayFieldChange("purchaseInvoice", e.target.value)}
+                onBlur={() => handleAutoSave("purchaseInvoice", stayUpdate.purchaseInvoice)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAutoSave("purchaseInvoice", stayUpdate.purchaseInvoice);
+                  }
+                }}
+                className="input-base"
                 disabled={isSaving}
-              >
-                Save Changes
-              </Button>
+                placeholder="Enter invoice number..."
+              />
+              {isSaving && <div className="save-indicator">Saving...</div>}
             </div>
           </div>
         )}
       </div>
       <div className="stay-actions">
         <div className="edit-button-group">
+          {isEditing && (
+            <>
+              <Button
+                icon={X}
+                onClick={() => onRemoveStay(stay, index)}
+                size="sm"
+                className="button--danger"
+                intent="outline"
+                title="Remove stay from booking"
+              >
+                Remove
+              </Button>
+            </>
+          )}
           {!isEditing && (
             <Button
               icon={ExternalLink}
@@ -209,22 +178,29 @@ export function StayCard({
             </>
           )}
         </div>
-
-        {isEditing && (
-          <>
-            <Button
-              icon={X}
-              onClick={() => onRemoveStay(stay, index)}
-              size="sm"
-              className="button--danger"
-              intent="outline"
-              title="Remove stay from booking"
-            >
-              Remove
-            </Button>
-          </>
-        )}
       </div>
+
+      <style jsx>{`
+        .save-indicator {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 12px;
+          color: #6b7280;
+          background-color: white;
+          padding: 0 4px;
+        }
+        
+        .field-saving input {
+          background-color: #f9fafb;
+        }
+        
+        .form-field {
+          position: relative;
+          margin-bottom: 8px;
+        }
+      `}</style>
     </div>
   );
 }

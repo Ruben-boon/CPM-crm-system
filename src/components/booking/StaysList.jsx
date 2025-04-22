@@ -11,45 +11,45 @@ export function StaysList({
   onEditStay,
   onCopyStay,
   onViewStay,
-  onRemoveStay
+  onRemoveStay,
 }) {
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
-  
+
   // Sort stays based on hotel name and then by check-in date
   const sortedStays = useMemo(() => {
     if (!stays || stays.length === 0) return [];
-    
+
     return [...stays].sort((a, b) => {
       // First sort by hotel name
       const hotelA = (a.hotelName || "").toLowerCase();
       const hotelB = (b.hotelName || "").toLowerCase();
-      
+
       let comparison = 0;
       if (sortOrder === "asc") {
         comparison = hotelA.localeCompare(hotelB);
       } else {
         comparison = hotelB.localeCompare(hotelA);
       }
-      
+
       // If same hotel, sort by check-in date
       if (comparison === 0) {
         const dateA = a.checkInDate || "";
         const dateB = b.checkInDate || "";
-        
+
         if (sortOrder === "asc") {
           return dateA.localeCompare(dateB);
         } else {
           return dateB.localeCompare(dateA);
         }
       }
-      
+
       return comparison;
     });
   }, [stays, sortOrder]);
-  
+
   // Toggle sort order
   const toggleSortOrder = () => {
-    setSortOrder(prevOrder => prevOrder === "asc" ? "desc" : "asc");
+    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
   };
 
   return (
@@ -58,10 +58,10 @@ export function StaysList({
         <div className="related-stays-header">
           <div className="stays-header-left">
             <h4 className="related-title">Stays</h4>
-            <Button 
-              icon={ArrowUpDown} 
-              onClick={toggleSortOrder} 
-              size="sm" 
+            <Button
+              icon={ArrowUpDown}
+              onClick={toggleSortOrder}
+              size="sm"
               intent="ghost"
               title={`Sort ${sortOrder === "asc" ? "A to Z" : "Z to A"}`}
             >

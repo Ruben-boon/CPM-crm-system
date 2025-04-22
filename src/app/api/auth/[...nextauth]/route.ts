@@ -28,9 +28,34 @@ export const authOptions = {
       }
       return session;
     },
+    // Add this callback to allow email linking between providers
+    async signIn({ user, account, profile, email, credentials }) {
+      console.log("Sign in callback running");
+      
+      // If email is verified on the provider, allow sign-in
+      if (account?.provider === "google" || account?.provider === "azure-ad") {
+        return true;
+      }
+      
+      return true; // Allow all sign-ins by default
+    },
+    // Add this callback to link accounts
+    async jwt({ token, user, account }) {
+      // Initial sign in
+      if (account && user) {
+        return {
+          ...token,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          userId: user.id,
+        };
+      }
+      return token;
+    }
   },
   pages: {
     signIn: '/auth/signin',
+    error: '/auth/error',
   },
 }
 

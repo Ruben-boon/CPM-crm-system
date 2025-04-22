@@ -3,11 +3,11 @@
 .multi-ref-field {
   margin-bottom: 1.5rem;
   border-radius: 8px;
-  padding: 1em;
+  padding: 0;
   
-  &:has(.read-only) {
-    background-color: #f6f6f8;
-  }
+  // &:has(.read-only) {
+  //   background-color: #f6f6f8;
+  // }
 
   // Shared Label Styling
   .field-label {

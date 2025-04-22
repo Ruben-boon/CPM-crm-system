@@ -2,10 +2,7 @@
 .multi-text-field {
   margin-bottom: 1.5rem;
   border-radius: 8px;
-  padding: 1em;
-  &:has(.read-only) {
-    background-color: #f6f6f8;
-  }
+  padding: 0;
   .multi-text-field-container {
     width: 100%;
     &.field-changed {
