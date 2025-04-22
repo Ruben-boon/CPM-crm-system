@@ -328,19 +328,6 @@ export default function SearchResults({
                   </>
                 ) : type === "bookings" ? (
                   <>
-                    {item.status && (
-                      <div className="search-results__details-section">
-                        <dd className="status-container">
-                          <span
-                            className={`status-badge-small ${
-                              getStatusInfo(item.status).className
-                            }`}
-                          >
-                            {getStatusInfo(item.status).label}
-                          </span>
-                        </dd>
-                      </div>
-                    )}
                     <div className="search-results__details-section">
                       <dd>
                         <Calendar size={14}></Calendar>
@@ -355,10 +342,16 @@ export default function SearchResults({
                         </dd>
                       </div>
                     )}
-                    {item.bookerName && (
+                    {item.status && (
                       <div className="search-results__details-section">
-                        <dd>
-                          <User size={14} /> {item.bookerName}
+                        <dd className="status-container">
+                          <span
+                            className={`status-badge-small ${
+                              getStatusInfo(item.status).className
+                            }`}
+                          >
+                            {getStatusInfo(item.status).label}
+                          </span>
                         </dd>
                       </div>
                     )}

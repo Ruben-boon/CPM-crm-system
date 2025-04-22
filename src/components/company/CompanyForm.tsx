@@ -80,9 +80,6 @@ export function CompanyForm() {
           isEditing={companiesContext.isEditing}
           isChanged={isFieldChanged("country")}
         />
-      </div>
-
-      <div className="col-half">
         <RefField
           label="Parent Company"
           fieldPath="parentCompanyId"
@@ -94,6 +91,9 @@ export function CompanyForm() {
           isChanged={isFieldChanged("parentCompanyId")}
           setFieldLoading={companiesContext.setFieldLoading}
         />
+      </div>
+
+      <div className="col-half">
         {companiesContext.selectedItem?._id && !companiesContext.isEditing && (
           <div className="related-section">
             <RelatedItems
@@ -124,8 +124,6 @@ export function CompanyForm() {
             />
           </div>
         )}
-      </div>
-      <div className="col-full">
         {/* New Related Bookings Section */}
         {companiesContext.selectedItem?._id && !companiesContext.isEditing && (
           <div className="related-section">

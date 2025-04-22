@@ -527,6 +527,17 @@ export function StayModal({
                     />
                   </div>
                 </div>
+                <MultiRefField
+                  label="Guests"
+                  fieldPath="guestIds"
+                  value={stayData.guestIds || []}
+                  updateField={handleFieldChange}
+                  isEditing={true}
+                  collectionName="contacts"
+                  displayFields={["general.firstName", "general.lastName"]}
+                  showQuickAdd={true}
+                  setFieldLoading={setFieldLoading}
+                />
               </div>
 
               <div className="col-half">
@@ -611,20 +622,6 @@ export function StayModal({
                   isEditing={true}
                   multiline={true}
                   rows={4}
-                />
-              </div>
-
-              <div className="col-half">
-                <MultiRefField
-                  label="Guests"
-                  fieldPath="guestIds"
-                  value={stayData.guestIds || []}
-                  updateField={handleFieldChange}
-                  isEditing={true}
-                  collectionName="contacts"
-                  displayFields={["general.firstName", "general.lastName"]}
-                  showQuickAdd={true}
-                  setFieldLoading={setFieldLoading}
                 />
               </div>
             </div>

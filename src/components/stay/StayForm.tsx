@@ -306,6 +306,17 @@ export function StayForm() {
             />
           </div>
         </div>
+        <MultiRefField
+          label="Guests"
+          fieldPath="guestIds"
+          value={staysContext.selectedItem?.guestIds || []}
+          updateField={staysContext.updateField}
+          isEditing={staysContext.isEditing}
+          isChanged={isFieldChanged("guestIds")}
+          collectionName="contacts"
+          displayFields={["general.firstName", "general.lastName"]}
+          showQuickAdd={true}
+        />
       </div>
 
       <div className="col-half">
@@ -398,19 +409,7 @@ export function StayForm() {
           isChanged={isFieldChanged("remarks")}
         />
       </div>
-      <div className="col-half">
-        <MultiRefField
-          label="Guests"
-          fieldPath="guestIds"
-          value={staysContext.selectedItem?.guestIds || []}
-          updateField={staysContext.updateField}
-          isEditing={staysContext.isEditing}
-          isChanged={isFieldChanged("guestIds")}
-          collectionName="contacts"
-          displayFields={["general.firstName", "general.lastName"]}
-          showQuickAdd={true}
-        />
-      </div>
+
       
       {/* Related Bookings Section */}
       <div className="col-full">

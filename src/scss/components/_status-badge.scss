@@ -11,7 +11,7 @@
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 500;
-  color: white;
+  color: black;
   white-space: nowrap;
 }
 
@@ -21,36 +21,36 @@
   border-radius: 4px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: white;
+  color: black;
   white-space: nowrap;
   margin-top: 4px;
 }
 
 /* Status colors */
 .status-upcoming_no_action {
-  background-color:#202124 !important;
+  background-color:#f6f6f8 !important;
 }
 
 .status-upcoming_confirmation_sent {
-  background-color: #10b981 !important; /* Blue */
+  background-color: #10b98161 !important; /* Blue */
 }
 
 .status-stayed_missing_invoice {
-  background-color: #ef4444 !important; /* Amber */
+  background-color: #ef444448 !important; /* Amber */
 }
 
 .status-invoicing_missing_both {
-  background-color: #f59e0b !important; /* Red */
+  background-color: #f59f0b5b !important; /* Red */
 }
 
 .status-invoicing_missing_sales {
-  background-color: #f59e0b !important; /* Orange */
+  background-color: #f59f0b5d !important; /* Orange */
 }
 
 .status-invoicing_missing_commission {
-  background-color: #f97316 !important; /* Orange */
+  background-color: #f974165b !important; /* Orange */
 }
 
 .status-completed {
-  background-color: #10b981 !important; /* Green */
+  background-color: #10b98157 !important; /* Green */
 }

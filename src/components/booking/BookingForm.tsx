@@ -267,17 +267,11 @@ export function BookingForm() {
           display: flex !important;
           align-items: center !important;
           gap: 12px !important;
+          span {
+          font-size:1rem
+          }
         }
 
-        .status-badge {
-          display: inline-block;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 14px;
-          font-weight: 500;
-          color: white;
-          white-space: nowrap;
-        }
 
         /* Status colors */
         .status-upcoming_no_action {

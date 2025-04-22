@@ -6,9 +6,9 @@
 }
 
 .related-stays {
-  border: 1px solid #e2e8f0;
+  // border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background-color: #f6f6f8;
+  // background-color: #f6f6f8;
   overflow: hidden;
 
   // Header section
@@ -42,13 +42,16 @@
 // Individual stay items
 .stay-item {
   display: flex;
-  justify-content: space-between;
+  // background-color: #fafafa;
+
+  justify-content: flex-start;
+  gap: 24px;
   padding: 1rem;
   border-radius: 8px;
   border-bottom: 1px solid #e2e8f0;
   transition: background-color 0.2s ease;
-  background-color: white;
-  margin:1em;
+  // background-color: white;
+  margin: 1em;
   &:last-child {
     border-bottom: none;
   }
@@ -138,4 +141,65 @@
 
 .stay-item {
   animation: fadeIn 0.2s ease;
+}
+.group-row {
+  display: flex;
+  gap:24px;
+}
+.stay-header {
+  display: flex;
+  justify-content: flex-start;
+  gap:24px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.stay-confirmation-no {
+  font-size: 12px;
+  font-weight: 500;
+  background-color: #f0f9ff;
+  color: #0369a1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e0f2fe;
+}
+
+.stay-quick-edit {
+  margin-top: 10px;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 10px;
+}
+
+.stay-save-button {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.stay-item {
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .stay-item {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .stay-info {
+    flex: 1;
+  }
+
+  .stay-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 120px;
+  }
 }
