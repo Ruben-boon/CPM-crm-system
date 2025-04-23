@@ -71,6 +71,7 @@ interface StayModalProps {
   stay?: any;
   isCopyMode?: boolean;
   bookingConfirmationNo?: string;
+  bookingId?: string; // Add property for bookingId
   onSave?: (savedStay: any) => void;
   onClose: () => void;
 }
@@ -79,6 +80,7 @@ export function StayModal({
   stay = {},
   isCopyMode = false,
   bookingConfirmationNo = "",
+  bookingId = "", // Add parameter for bookingId
   onSave,
   onClose,
 }: StayModalProps) {
@@ -105,6 +107,7 @@ export function StayModal({
     cancellations: "",
     specialRequests: "",
     confirmationNo: "",
+    bookingId: bookingId || stay.bookingId || "", // Initialize with passed bookingId or from stay
     ...stay,
   });
 
@@ -304,6 +307,42 @@ export function StayModal({
     []
   );
 
+  // Update booking with new stay
+  const updateBookingWithStay = async (stayId, bookingId) => {
+    try {
+      // First, get the current booking data
+      const bookingResult = await searchDocuments("bookings", bookingId, "_id");
+      
+      if (!Array.isArray(bookingResult) || bookingResult.length === 0) {
+        console.error("Could not find booking to update");
+        return false;
+      }
+      
+      const booking = bookingResult[0];
+      
+      // Create an array of stayIds, making sure we include the new one
+      const stayIds = Array.isArray(booking.stayIds) ? [...booking.stayIds] : [];
+      
+      // Only add the stayId if it's not already in the array
+      if (!stayIds.includes(stayId)) {
+        stayIds.push(stayId);
+        
+        // Update the booking with the new stayIds array
+        const updateResult = await updateDocument("bookings", bookingId, {
+          ...booking,
+          stayIds: stayIds
+        });
+        
+        return updateResult.success;
+      }
+      
+      return true; // Stay was already in the booking
+    } catch (error) {
+      console.error("Error updating booking with new stay:", error);
+      return false;
+    }
+  };
+
   // Save the stay
   const handleSave = async () => {
     setIsSubmitting(true);
@@ -349,7 +388,18 @@ export function StayModal({
           return;
         }
 
-        toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully`);
+        // If we're creating a new stay and there's a booking ID, update the booking
+        if (stayData.bookingId && result.data && result.data._id) {
+          const bookingUpdated = await updateBookingWithStay(result.data._id, stayData.bookingId);
+          
+          if (bookingUpdated) {
+            toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully and added to booking`);
+          } else {
+            toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully, but could not update booking`);
+          }
+        } else {
+          toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully`);
+        }
       }
 
       // Call the callback with the saved stay data
