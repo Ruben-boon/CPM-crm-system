@@ -98,6 +98,9 @@ export function StaysList({
       </div>
 
       <style jsx>{`
+        .stay-list {
+          padding-bottom: 2px;
+        }
         .related-stays-header {
           display: flex;
           justify-content: space-between;
