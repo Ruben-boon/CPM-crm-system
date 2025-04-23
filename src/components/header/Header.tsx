@@ -32,7 +32,7 @@ export default function Header() {
             </div>
             <div className="log-section">
               <button className="logout-button" onClick={() => signOut()}>
-                <LogOut size={16} /> Sign Out
+                <LogOut size={20} /> Sign Out
               </button>
             </div>
           </div>

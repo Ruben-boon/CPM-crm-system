@@ -15,42 +15,44 @@
   }
   .user-section {
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     .user-info {
       font-size: 20px;
     }
   }
-  .log-section {
-    margin-top: auto;
-    .login-button {
-      padding: 12px 8px;
-      background-color: white;
-      width: 160px;
+  // .log-section {
+  //   margin-top: auto;
+  .login-button {
+    padding: 12px 8px;
+    background-color: white;
+    width: 160px;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    * {
       color: black;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 16px;
-      cursor: pointer;
-      * {
-        color: black;
-      }
-    }
-    .logout-button {
-      padding: 12px 8px;
-      width: 100%;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 16px;
-      background-color: transparent;
-      box-shadow: none;
-      cursor: pointer;
-      * {
-        color: white;
-      }
     }
   }
+  .logout-button {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    cursor: pointer;
+    justify-content: space-between;
+    * {
+      color: white;
+      background-color: transparent;
+    }
+  }
+  // }
   .menu-link-container {
     padding: 1em;
     border-radius: 2px;
@@ -71,10 +73,26 @@
     }
   }
   .theme-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    &__text {
+      display: flex;
+      justify-content: space-between;
+    }
     &__color {
       display: flex;
       gap: 16px;
       align-items: center;
+      justify-content: space-between;
     }
+  }
+}
+
+//hide header on signing
+
+body:has(.auth-container) {
+  #main-menu {
+    display: none;
   }
 }

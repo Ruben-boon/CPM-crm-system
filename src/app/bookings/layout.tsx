@@ -23,7 +23,6 @@ function BookingsLayoutContent({ children }) {
     }
   };
 
-  // Handle copying a booking - directly fetch and set the data
   const handleCopyBooking = async (booking) => {
     try {
       // First navigate to the new page

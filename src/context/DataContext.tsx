@@ -92,6 +92,44 @@ function createDataContext(collectionName: string) {
       setIsEditing(false);
     }, []);
 
+    const copyItem = async (id: string) => {
+      try {
+        setIsLoading(true);
+
+        // Fetch the item to copy
+        const result = await searchDocuments(collectionName, id, "_id");
+
+        if (Array.isArray(result) && result.length > 0) {
+          // Make a deep clone of the source item
+          const sourceItem = JSON.parse(JSON.stringify(result[0]));
+
+          // Remove the _id to create a new item
+          delete sourceItem._id;
+
+          // Update name/identifier fields to indicate it's a copy
+          if (sourceItem.name) {
+            sourceItem.name = `${sourceItem.name} (Copy)`;
+          } else if (sourceItem.confirmationNo) {
+            sourceItem.confirmationNo = `${sourceItem.confirmationNo} (Copy)`;
+          } else if (sourceItem.reference) {
+            sourceItem.reference = `${sourceItem.reference} (Copy)`;
+          } else if (sourceItem.general?.firstName) {
+            sourceItem.general.firstName = `${sourceItem.general.firstName} (Copy)`;
+          }
+
+          // Select the item with edit mode enabled
+          selectItem(sourceItem, true);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error(`Error creating ${collectionName} copy:`, error);
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     // In DataContext.tsx, modify the searchItems function
 
     const searchItems = async (searchTerm?: string, searchField?: string) => {

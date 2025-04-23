@@ -1,3 +1,6 @@
+import { redirect } from 'next/navigation';
+
 export default function HomePage() {
-  return;
+  redirect('/api/auth/signin');
+  return null;
 }

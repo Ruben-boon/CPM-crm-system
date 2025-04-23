@@ -126,6 +126,8 @@ export const ThemeControls = () => {
   return (
     <div className="theme-controls">
       <div className="theme-controls__text">
+        <Type size={20} />
+
         <input
           type="range"
           min="14"
@@ -135,9 +137,10 @@ export const ThemeControls = () => {
           onChange={handleFontSizeChange}
           style={{ width: "80px" }}
         />
-        <Type size={20} />
       </div>
       <div className="theme-controls__color">
+        <Palette size={20} />
+
         <input
           type="color"
           value={color}
@@ -149,7 +152,6 @@ export const ThemeControls = () => {
             cursor: "pointer",
           }}
         />
-        <Palette size={20} />
       </div>
     </div>
   );
