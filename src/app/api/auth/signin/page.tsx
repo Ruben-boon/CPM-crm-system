@@ -17,7 +17,7 @@ export default function SignIn() {
           <img src="/cmp_logo.png" alt="Company Logo" className="company-logo" />
         </div>
         <h1>Welcome Back</h1>
-        <p>Sign in to continue</p>
+        <p>Please sign in to Miceflow</p>
         
         <div className="auth-buttons">
           <button
@@ -45,9 +45,10 @@ export default function SignIn() {
             </svg>
             Sign in with Google
           </button>
-          {/* <button 
+          <button 
             onClick={() => handleSignIn('azure-ad')} 
-            disabled={isLoading}
+            // disabled={isLoading}
+            disabled={true}
             className="microsoft-signin-btn"
           >
             <svg width="20" height="20" viewBox="0 0 23 23" className="provider-icon">
@@ -58,7 +59,9 @@ export default function SignIn() {
               <path fill="#ffba08" d="M12 12h10v10H12z"/>
             </svg>
             Sign in with Microsoft
-          </button> */}
+          </button>
+          <p>Microsoft login unavaible at this time.</p>
+
         </div>
         
 
