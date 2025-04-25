@@ -142,3 +142,8 @@
 .button--ghost.button--danger:hover:not(:disabled) {
   background-color: rgba(225, 29, 72, 0.05);
 }
+
+.download-button-container {
+  display: flex;
+  gap:12px;
+}
