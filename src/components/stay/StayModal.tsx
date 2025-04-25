@@ -74,6 +74,7 @@ interface StayModalProps {
   bookingId?: string; // Add property for bookingId
   onSave?: (savedStay: any) => void;
   onClose: () => void;
+  autoUpdateBooking?: boolean; // New prop to indicate if booking should be updated automatically
 }
 
 export function StayModal({
@@ -83,6 +84,7 @@ export function StayModal({
   bookingId = "", // Add parameter for bookingId
   onSave,
   onClose,
+  autoUpdateBooking = true, // Default to true for backward compatibility
 }: StayModalProps) {
   // Create a stay object with defaults applied
   const [stayData, setStayData] = useState<any>({
@@ -307,114 +309,116 @@ export function StayModal({
     []
   );
 
-  // Update booking with new stay
-  const updateBookingWithStay = async (stayId, bookingId) => {
-    try {
-      // First, get the current booking data
-      const bookingResult = await searchDocuments("bookings", bookingId, "_id");
-      
-      if (!Array.isArray(bookingResult) || bookingResult.length === 0) {
-        console.error("Could not find booking to update");
-        return false;
-      }
-      
-      const booking = bookingResult[0];
-      
-      // Create an array of stayIds, making sure we include the new one
-      const stayIds = Array.isArray(booking.stayIds) ? [...booking.stayIds] : [];
-      
-      // Only add the stayId if it's not already in the array
-      if (!stayIds.includes(stayId)) {
-        stayIds.push(stayId);
-        
-        // Update the booking with the new stayIds array
-        const updateResult = await updateDocument("bookings", bookingId, {
-          ...booking,
-          stayIds: stayIds
-        });
-        
-        return updateResult.success;
-      }
-      
-      return true; // Stay was already in the booking
-    } catch (error) {
-      console.error("Error updating booking with new stay:", error);
+// In src/components/stay/StayModal.tsx:
+
+// Update booking with new stay
+const updateBookingWithStay = async (stayId, bookingId) => {
+  try {
+    // Don't attempt to update if we don't have both IDs
+    if (!stayId || !bookingId) {
+      console.error("Missing stayId or bookingId for updating booking");
       return false;
     }
-  };
+    
+    // First, get the current booking data
+    const bookingResult = await searchDocuments("bookings", bookingId, "_id");
+    
+    if (!Array.isArray(bookingResult) || bookingResult.length === 0) {
+      console.error("Could not find booking to update");
+      return false;
+    }
+    
+    const booking = bookingResult[0];
+    
+    // Create an array of stayIds, making sure we include the new one
+    const stayIds = Array.isArray(booking.stayIds) ? [...booking.stayIds] : [];
+    
+    // Only add the stayId if it's not already in the array
+    if (!stayIds.includes(stayId)) {
+      stayIds.push(stayId);
+      
+      // Update the booking with the new stayIds array
+      const updateResult = await updateDocument("bookings", bookingId, {
+        ...booking,
+        stayIds: stayIds
+      });
+      
+      return updateResult.success;
+    }
+    
+    return true; // Stay was already in the booking
+  } catch (error) {
+    console.error("Error updating booking with new stay:", error);
+    return false;
+  }
+}
+// In src/components/stay/StayModal.tsx, modify the handleSave function:
 
-  // Save the stay
-  const handleSave = async () => {
-    setIsSubmitting(true);
+const handleSave = async () => {
+  setIsSubmitting(true);
 
-    try {
-      // Basic validation
-      if (!stayData.checkInDate || !stayData.checkOutDate) {
-        toast.error("Please fill in required fields");
+  try {
+    // Basic validation
+    if (!stayData.checkInDate || !stayData.checkOutDate) {
+      toast.error("Please fill in required fields");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Generate a reference if not provided
+    if (!stayData.reference) {
+      stayData.reference = `Stay ${new Date().toISOString().slice(0, 10)}`;
+    }
+
+    // Make sure we pass the bookingId through
+    if (bookingId && !stayData.bookingId) {
+      stayData.bookingId = bookingId;
+    }
+
+    let result;
+
+    // Either update or create based on if the stay has an ID
+    if (!isCopyMode && stayData._id) {
+      // Update existing stay
+      result = await updateDocument("stays", stayData._id, stayData);
+      if (!result.success) {
+        toast.error(
+          `Failed to update stay: ${result.error || "Unknown error"}`
+        );
         setIsSubmitting(false);
         return;
       }
 
-      // Generate a reference if not provided
-      if (!stayData.reference) {
-        stayData.reference = `Stay ${new Date().toISOString().slice(0, 10)}`;
+      toast.success("Stay updated successfully");
+    } else {
+      // Create new stay
+      result = await createDocument("stays", stayData);
+      if (!result.success) {
+        toast.error(
+          `Failed to ${isCopyMode ? "copy" : "create"} stay: ${
+            result.error || "Unknown error"
+          }`
+        );
+        setIsSubmitting(false);
+        return;
       }
 
-      let result;
-
-      // Either update or create based on if the stay has an ID
-      if (!isCopyMode && stayData._id) {
-        // Update existing stay
-        result = await updateDocument("stays", stayData._id, stayData);
-        if (!result.success) {
-          toast.error(
-            `Failed to update stay: ${result.error || "Unknown error"}`
-          );
-          setIsSubmitting(false);
-          return;
-        }
-
-        toast.success("Stay updated successfully");
-      } else {
-        // Create new stay
-        result = await createDocument("stays", stayData);
-        if (!result.success) {
-          toast.error(
-            `Failed to ${isCopyMode ? "copy" : "create"} stay: ${
-              result.error || "Unknown error"
-            }`
-          );
-          setIsSubmitting(false);
-          return;
-        }
-
-        // If we're creating a new stay and there's a booking ID, update the booking
-        if (stayData.bookingId && result.data && result.data._id) {
-          const bookingUpdated = await updateBookingWithStay(result.data._id, stayData.bookingId);
-          
-          if (bookingUpdated) {
-            toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully and added to booking`);
-          } else {
-            toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully, but could not update booking`);
-          }
-        } else {
-          toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully`);
-        }
-      }
-
-      // Call the callback with the saved stay data
-      if (onSave && result.data) {
-        onSave(result.data);
-      }
-
-      // Close the modal
-      onClose();
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error("An unexpected error occurred");
-      setIsSubmitting(false);
+      toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully`);
     }
-  };
+
+    // Call the callback with the saved stay data
+    if (onSave && result.data) {
+      onSave(result.data);
+    }
+
+    // Close the modal
+    onClose();
+  } catch (error) {
+    console.error("Save error:", error);
+    toast.error("An unexpected error occurred");
+    setIsSubmitting(false);
+  }
+}
 
   // Determine if this stay should show a booking number or its own number
   const isLinkedToBooking = !!stayData.bookingId || !!bookingConfirmationNo;

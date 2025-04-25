@@ -22,7 +22,9 @@
     background-color: hsla(240, 5%, 84%, 0.502);
     color: hsl(240 5.9% 10%);
     border: 1px solid hsla(240, 5%, 84%, 0.52);
-
+    a {
+      text-decoration: none;
+    }
     &:hover {
       background-color: hsla(240, 6%, 90%, 0.514);
       border-color: hsla(240, 6%, 90%, 0.46);

@@ -72,7 +72,6 @@ export function StayCard({
     }
   };
 
-  // Format the stay confirmation number if it exists
   const stayConfirmationNo = stay.confirmationNo
     ? formatConfirmationNumber(stay.confirmationNo, "stay")
     : null;
@@ -132,7 +131,7 @@ export function StayCard({
       </div>
       <div className="stay-actions">
         <div className="edit-button-group">
-          {isEditing && (
+          {isEditing ? (
             <>
               <Button
                 icon={X}
@@ -144,21 +143,6 @@ export function StayCard({
               >
                 Remove
               </Button>
-            </>
-          )}
-          {!isEditing && (
-            <Button
-              icon={ExternalLink}
-              onClick={() => onViewStay(stay._id)}
-              size="sm"
-              intent="ghost"
-              title="View in new tab"
-            >
-              View
-            </Button>
-          )}
-          {isEditing && (
-            <>
               <Button
                 icon={Copy}
                 onClick={() => onCopyStay(stay)}
@@ -176,6 +160,17 @@ export function StayCard({
                 Edit
               </Button>
             </>
+          ) : (
+            // In non-edit mode, just show the "View" button
+            <Button
+              icon={ExternalLink}
+              onClick={() => onViewStay(stay._id)}
+              size="sm"
+              intent="ghost"
+              title="View stay details"
+            >
+              View
+            </Button>
           )}
         </div>
       </div>

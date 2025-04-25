@@ -106,6 +106,47 @@ export function DownloadPDFButton({
     fetchBookerData();
   }, [bookingData?.bookerId]);
 
+  const prepareStaysWithGuestNames = async (
+    staysData: Stay[]
+  ): Promise<Stay[]> => {
+    if (!staysData || staysData.length === 0) return [];
+
+    const staysWithNames = [...staysData];
+
+    for (let i = 0; i < staysWithNames.length; i++) {
+      const stay = staysWithNames[i];
+      if (
+        stay.guestIds &&
+        stay.guestIds.length > 0 &&
+        (!stay.guestNames || stay.guestNames.length === 0)
+      ) {
+        stay.guestNames = [];
+
+        for (const guestId of stay.guestIds) {
+          try {
+            const result = await searchDocuments("contacts", guestId, "_id");
+            if (Array.isArray(result) && result.length > 0) {
+              const contact = result[0];
+              const firstName = contact.general?.firstName || "";
+              const lastName = contact.general?.lastName || "";
+              const fullName = `${firstName} ${lastName}`.trim();
+              if (fullName) {
+                stay.guestNames.push(fullName);
+              }
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching guest name for ID ${guestId}:`,
+              error
+            );
+          }
+        }
+      }
+    }
+
+    return staysWithNames;
+  };
+
   // Helper function to format date
   const formatDate = (dateString?: string): string => {
     if (!dateString) return "-";
@@ -156,7 +197,25 @@ export function DownloadPDFButton({
     return bookingData.bookerId || "-";
   };
 
+  // Helper function to format guest names
+  const formatGuestNames = (stay: Stay): string => {
+    // If there are no guests, return a dash
+    if (!stay.guestIds || stay.guestIds.length === 0) {
+      return "-";
+    }
 
+    // If we have guestNames array (which contains the display names)
+    if (
+      stay.guestNames &&
+      Array.isArray(stay.guestNames) &&
+      stay.guestNames.length > 0
+    ) {
+      return stay.guestNames.join(", ");
+    }
+
+    // Fallback to IDs if names aren't available (shouldn't happen normally)
+    return stay.guestIds.join(", ");
+  };
 
   // Get cost center label
   const getCostCenterLabel = (code?: string): string => {
@@ -172,6 +231,9 @@ export function DownloadPDFButton({
     setIsGenerating(true);
 
     try {
+      // First, prepare stays with guest names
+      const preparedStays = await prepareStaysWithGuestNames(stays);
+
       // Create a new PDF document
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -318,7 +380,7 @@ export function DownloadPDFButton({
 
       // Confirmation section with room count on the same line
       const confirmationNumber = bookingData.confirmationNo || bookingData._id;
-      const roomCount = stays?.length || 0;
+      const roomCount = preparedStays?.length || 0;
 
       // Add confirmation number on the left with "Confirmation" in bold
       pdf.setFontSize(16);
@@ -448,8 +510,25 @@ export function DownloadPDFButton({
 
       y += 5; // Add some extra space
 
+      // Simplified helper for guest names with prepared data
+      const formatGuestNames = (stay: Stay): string => {
+        if (!stay.guestIds || stay.guestIds.length === 0) {
+          return "-";
+        }
+
+        if (
+          stay.guestNames &&
+          Array.isArray(stay.guestNames) &&
+          stay.guestNames.length > 0
+        ) {
+          return stay.guestNames.join(", ");
+        }
+
+        return stay.guestIds.join(", ");
+      };
+
       // If no stays, show message
-      if (!stays || stays.length === 0) {
+      if (!preparedStays || preparedStays.length === 0) {
         checkNewPage(10); // Check if we need a new page for this message
 
         pdf.setFontSize(10);
@@ -460,8 +539,8 @@ export function DownloadPDFButton({
         y += 10;
       } else {
         // Process each stay
-        for (let i = 0; i < stays.length; i++) {
-          const stay = stays[i];
+        for (let i = 0; i < preparedStays.length; i++) {
+          const stay = preparedStays[i];
 
           // Estimate height needed for this stay
           let stayHeight = 80; // Base height for a stay
@@ -493,7 +572,25 @@ export function DownloadPDFButton({
           // Stay header
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
-          pdf.text(`Room ${i + 1}: `, pageMargins.left, y);
+          
+          // Create a more informative stay header with confirmation number, guest names, and room type
+          const guestNamesForTitle = formatGuestNames(stay);
+          const roomTypeForTitle = stay.roomType || "Room";
+          const confirmationForTitle = stay.confirmationNo ? ` ${stay.confirmationNo}: ` : ": ";
+          
+          // Combine all parts into a full title
+          const fullTitle = `Stay${confirmationForTitle}${guestNamesForTitle} - ${roomTypeForTitle}`;
+          
+          // Calculate maximum width for the title
+          const maxTitleWidth = 130; // Adjust based on your layout
+          const truncatedTitle = pdf.splitTextToSize(fullTitle, maxTitleWidth)[0];
+          
+          // Add ellipsis if the title was truncated
+          const displayTitle = truncatedTitle.length < fullTitle.length 
+            ? truncatedTitle + "..." 
+            : truncatedTitle;
+          
+          pdf.text(displayTitle, pageMargins.left, y);
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "normal");
 
@@ -562,7 +659,7 @@ export function DownloadPDFButton({
               : "-"
           );
           // y += addRow("Reference:", stay.reference || "-");
-          y += addRow("Guests:", stay.guestIds?.join(", ") || "-");
+          y += addRow("Guests:", formatGuestNames(stay));
 
           if (stay.specialRequests) {
             y += addRow("Special Requests:", stay.specialRequests);
@@ -642,8 +739,8 @@ export function DownloadPDFButton({
       >
         {isGenerating ? "Generating PDF..." : "Generate Confirmation PDF"}
       </Button>
-      <Button icon={Mail} intent="ghost">
-        <a href="mailto:ruben95bo@gmail.com?subject=Order Confirmed – We’ve Got Your Order!&body=Hi%20%5BCustomer%20Name%5D%2C%0A%0AThanks%20for%20your%20purchase!%20We%E2%80%99re%20excited%20to%20let%20you%20know%20that%20your%20order%20has%20been%20successfully%20received%20and%20is%20now%20being%20processed.%0A%0AOnce%20your%20items%20are%20on%20the%20way%2C%20we%E2%80%99ll%20send%20you%20a%20shipping%20confirmation%20with%20tracking%20info%20so%20you%20can%20follow%20your%20delivery%20right%20to%20your%20doorstep.%0A%0AIf%20you%20have%20any%20questions%20in%20the%20meantime%2C%20feel%20free%20to%20reply%20to%20this%20email%20or%20reach%20out%20to%20our%20support%20team%20at%20support%40spacegoodies.com%20%E2%80%94%20we%E2%80%99re%20here%20to%20help!%0A%0AThanks%20again%20for%20choosing%20Space%20Goodies.%20We%20can%E2%80%99t%20wait%20for%20you%20to%20enjoy%20your%20new%20gear!%20%F0%9F%9A%80%0A%0AAll%20the%20best%2C%0AThe%20Space%20Goodies%20Team%0Aspacegoodies.com">
+      <Button icon={Mail} intent="secondary">
+        <a href="mailto:ruben95bo@gmail.com?subject=Order Confirmed – We've Got Your Order!&body=Hi%20%5BCustomer%20Name%5D%2C%0A%0AThanks%20for%20your%20purchase!%20We%E2%80%99re%20excited%20to%20let%20you%20know%20that%20your%20order%20has%20been%20successfully%20received%20and%20is%20now%20being%20processed.%0A%0AOnce%20your%20items%20are%20on%20the%20way%2C%20we%E2%80%99ll%20send%20you%20a%20shipping%20confirmation%20with%20tracking%20info%20so%20you%20can%20follow%20your%20delivery%20right%20to%20your%20doorstep.%0A%0AIf%20you%20have%20any%20questions%20in%20the%20meantime%2C%20feel%20free%20to%20reply%20to%20this%20email%20or%20reach%20out%20to%20our%20support%20team%20at%20support%40spacegoodies.com%20%E2%80%94%20we%E2%80%99re%20here%20to%20help!%0A%0AThanks%20again%20for%20choosing%20Space%20Goodies.%20We%20can%E2%80%99t%20wait%20for%20you%20to%20enjoy%20your%20new%20gear!%20%F0%9F%9A%80%0A%0AAll%20the%20best%2C%0AThe%20Space%20Goodies%20Team%0Aspacegoodies.com">
           Send confirmation
         </a>
       </Button>

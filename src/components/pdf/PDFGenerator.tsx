@@ -29,7 +29,7 @@ interface BookingData {
   travelPeriodEnd?: string;
   status?: string;
   costCentre?: string;
-  notes?: string;å
+  notes?: string;
   companyId?: string;
   bookerId?: string;
   stayIds?: string[];
@@ -80,6 +80,22 @@ export function PDFGenerator({ bookingData, stays }: PDFGeneratorProps) {
       "CC3": "Cost Centre 3",
     };
     return costCenters[code as keyof typeof costCenters] || code || "-";
+  };
+
+  // Helper function to format guest names
+  const formatGuestNames = (stay: Stay): string => {
+    // If there are no guests, return a dash
+    if (!stay.guestIds || stay.guestIds.length === 0) {
+      return "-";
+    }
+    
+    // If we have guestNames array (which contains the display names)
+    if (stay.guestNames && Array.isArray(stay.guestNames) && stay.guestNames.length > 0) {
+      return stay.guestNames.join(", ");
+    }
+    
+    // Fallback to IDs if names aren't available (shouldn't happen normally)
+    return stay.guestIds.join(", ");
   };
 
   return `
@@ -195,8 +211,8 @@ export function PDFGenerator({ bookingData, stays }: PDFGeneratorProps) {
                     <td style="padding: 6px 5px; vertical-align: top;">${stay.reference || "-"}</td>
                   </tr>
                   <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 6px 5px; font-weight: 600; vertical-align: top;">Guest IDs:</td>
-                    <td style="padding: 6px 5px; vertical-align: top; font-family: monospace; font-size: 12px;">${stay.guestIds?.join(", ") || "-"}</td>
+                    <td style="padding: 6px 5px; font-weight: 600; vertical-align: top;">Guests:</td>
+                    <td style="padding: 6px 5px; vertical-align: top;">${formatGuestNames(stay)}</td>
                   </tr>
                   ${stay.specialRequests ? `
                   <tr style="border-bottom: 1px solid #eee;">

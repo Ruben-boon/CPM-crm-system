@@ -115,6 +115,21 @@ export function BookingForm() {
     }
   };
 
+  const autoSaveBooking = async (updatedBooking) => {
+    try {
+      const success = await bookingsContext.updateItem(updatedBooking);
+      if (success) {
+        return true;
+      } else {
+        console.error("Failed to auto-save booking");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error auto-saving booking:", error);
+      return false;
+    }
+  };
+
   const handleAddStay = (e) => {
     if (e) {
       e.preventDefault();
@@ -156,7 +171,39 @@ export function BookingForm() {
   };
 
   const handleViewStay = (stayId) => {
-    window.open(`/stays/${stayId}`, "_blank");
+    // Find the stay in our current stays array
+    const stayToView = stays.find(stay => stay._id === stayId);
+    
+    if (stayToView) {
+      // Set the stay data for the modal
+      setSelectedStay(stayToView);
+      
+      // Not in copy mode
+      setIsCopyMode(false);
+      
+      // Open the modal
+      setIsModalOpen(true);
+    } else {
+      // If for some reason we can't find the stay in our current data,
+      // fetch it from the database
+      const fetchStay = async () => {
+        try {
+          const result = await searchDocuments("stays", stayId, "_id");
+          if (Array.isArray(result) && result.length > 0) {
+            setSelectedStay(result[0]);
+            setIsCopyMode(false);
+            setIsModalOpen(true);
+          } else {
+            toast.error("Could not find stay details");
+          }
+        } catch (error) {
+          console.error("Error fetching stay details:", error);
+          toast.error("Error loading stay details");
+        }
+      };
+      
+      fetchStay();
+    }
   };
 
   const handleRemoveStay = (stay, index) => {
@@ -187,47 +234,69 @@ export function BookingForm() {
     }
   };
 
-  const handleStaySaved = (savedStay) => {
+  const handleStaySaved = async (savedStay) => {
     if (!savedStay || !savedStay._id) {
       return; // Something went wrong with saving
     }
-
+  
     // Check if this is a new stay or an update
     const existingIndex =
       bookingsContext.selectedItem.stayIds?.indexOf(savedStay._id) ?? -1;
     let newStayIds;
-
+  
     if (existingIndex === -1) {
       // This is a new stay - add it to our arrays
       newStayIds = [
         ...(bookingsContext.selectedItem.stayIds || []),
         savedStay._id,
       ];
-
+  
       // Update the booking with the new stay
       bookingsContext.updateField("stayIds", newStayIds);
-
+      
       // Add the new stay to our local state for immediate UI feedback
       setStays((prevStays) => [...prevStays, savedStay]);
+      
+      // Auto-save the booking to database with the new stay ID
+      if (bookingsContext.selectedItem._id) {
+        const updatedBooking = {
+          ...bookingsContext.selectedItem,
+          stayIds: newStayIds
+        };
+        
+        const saveSuccess = await autoSaveBooking(updatedBooking);
+        
+        if (saveSuccess) {
+          toast.success("Stay added and booking updated", {
+            description: "The stay has been created and linked to this booking"
+          });
+        } else {
+          toast.warning("Stay created but booking not updated", {
+            description: "Please save the booking to confirm changes"
+          });
+        }
+      }
     } else {
       // This is an existing stay that's been updated
       newStayIds = [...bookingsContext.selectedItem.stayIds];
-
+  
       // Update the stay in our local state
       setStays((prevStays) => {
         const newStays = [...prevStays];
         newStays[existingIndex] = savedStay;
         return newStays;
       });
+  
+      toast.success("Stay updated successfully");
     }
-
+  
     // Update our reference to prevent unnecessary reloading
     previousStayIdsRef.current = newStayIds || [];
-
+  
     // Close the modal
     setIsModalOpen(false);
-  };
-
+  }
+  
   return (
     <>
       {isModalOpen && (
