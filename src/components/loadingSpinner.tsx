@@ -5,7 +5,7 @@ interface LoadingSpinnerProps {
   minDisplayTime?: number;
 }
 
-export function LoadingSpinner({ minDisplayTime = 1500 }: LoadingSpinnerProps) {
+export function LoadingSpinner({ minDisplayTime = 3000 }: LoadingSpinnerProps) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
