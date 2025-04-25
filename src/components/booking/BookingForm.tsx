@@ -99,24 +99,21 @@ export function BookingForm() {
     bookingsContext.selectedItem?.stayIds,
     stays.length
   ]);
-
   const loadRelatedStays = async (stayIds) => {
     if (!stayIds || stayIds.length === 0) {
       setStays([]);
       return;
     }
-
+  
     try {
-      const loadedStays = [];
-
-      // Fetch each stay by ID
-      for (const stayId of stayIds) {
-        const result = await searchDocuments("stays", stayId, "_id");
-        if (Array.isArray(result) && result.length > 0) {
-          loadedStays.push(result[0]);
-        }
-      }
-
+      const results = await Promise.all(
+        stayIds.map((stayId) => searchDocuments("stays", stayId, "_id"))
+      );
+  
+      const loadedStays = results
+        .filter((res) => Array.isArray(res) && res.length > 0)
+        .map((res) => res[0]);
+  
       setStays(loadedStays);
     } catch (err) {
       console.error("Error loading related stays:", err);
