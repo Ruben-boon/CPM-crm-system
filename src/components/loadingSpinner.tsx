@@ -5,7 +5,7 @@ interface LoadingSpinnerProps {
   minDisplayTime?: number;
 }
 
-export function LoadingSpinner({ minDisplayTime = 100 }: LoadingSpinnerProps) {
+export function LoadingSpinner({ minDisplayTime = 1500 }: LoadingSpinnerProps) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -34,7 +34,6 @@ export function LoadingSpinner({ minDisplayTime = 100 }: LoadingSpinnerProps) {
           background-color: #f6f6f8;
           display: flex;
           justify-content: center;
-          align-items: center;
           z-index: 1000;
           height:100vh;
         }

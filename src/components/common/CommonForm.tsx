@@ -177,7 +177,7 @@ export function CommonForm<T extends { _id?: string }>({
 
   return (
     <>
-      {showInitialSpinner && <LoadingSpinner minDisplayTime={700} />}
+      {<LoadingSpinner />}
 
       <div className="detail-wrapper relative">
         <DeleteConfirmationDialog
