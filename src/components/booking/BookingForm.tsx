@@ -18,6 +18,7 @@ export function BookingForm() {
   const [isCopyMode, setIsCopyMode] = useState(false);
   const [stays, setStays] = useState([]);
   const previousStayIdsRef = useRef([]); // For tracking changes to stayIds
+  const previousBookingIdRef = useRef(null); // For tracking changes to booking ID
 
   const getDisplayName = (item) => {
     return item.confirmationNo 
@@ -62,33 +63,41 @@ export function BookingForm() {
     bookingsContext.selectedItem?.confirmationNo,
   ]);
 
-  // Improved effect to load related stays only when stayIds actually change
+  // Improved effect to load related stays
   useEffect(() => {
+    // Reset stays when booking ID changes (most important fix)
+    if (bookingsContext.selectedItem?._id !== previousBookingIdRef.current) {
+      setStays([]);
+      previousStayIdsRef.current = [];
+      previousBookingIdRef.current = bookingsContext.selectedItem?._id;
+    }
+
     const currentStayIds = bookingsContext.selectedItem?.stayIds || [];
     const previousStayIds = previousStayIdsRef.current;
 
-    // Check if the arrays are different (different length or content)
+    // Check if stayIds array is different
     const haveStayIdsChanged =
       currentStayIds.length !== previousStayIds.length ||
       currentStayIds.some((id, index) => id !== previousStayIds[index]);
 
-    // Only reload stays if there's an actual change to stayIds
+    // Load stays if the booking has an ID and stayIds array is not empty and has changed
     if (
       bookingsContext.selectedItem?._id &&
       currentStayIds.length > 0 &&
-      haveStayIdsChanged
+      (haveStayIdsChanged || stays.length === 0)
     ) {
       loadRelatedStays(currentStayIds);
-      // Update the reference to current stayIds
+      // Update reference to current stayIds
       previousStayIdsRef.current = [...currentStayIds];
-    } else if (currentStayIds.length === 0 && previousStayIds.length > 0) {
-      // Clear stays if stayIds was cleared
+    } else if (currentStayIds.length === 0) {
+      // Clear stays if stayIds is empty
       setStays([]);
       previousStayIdsRef.current = [];
     }
   }, [
     bookingsContext.selectedItem?._id,
     bookingsContext.selectedItem?.stayIds,
+    stays.length
   ]);
 
   const loadRelatedStays = async (stayIds) => {
