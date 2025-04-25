@@ -29,13 +29,14 @@ export function LoadingSpinner({ minDisplayTime = 100 }: LoadingSpinnerProps) {
           border-radius:12px;
           top: 0;
           left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(255, 255, 255, 1);
+          right:0;
+          left:0;
+          background-color: #f6f6f8;
           display: flex;
           justify-content: center;
           align-items: center;
           z-index: 1000;
+          height:100vh;
         }
         .loading-spinner {
           display: flex;
