@@ -99,6 +99,7 @@ export function BookingForm() {
     bookingsContext.selectedItem?.stayIds,
     stays.length
   ]);
+  
   const loadRelatedStays = async (stayIds) => {
     if (!stayIds || stayIds.length === 0) {
       setStays([]);

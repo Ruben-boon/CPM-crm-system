@@ -572,24 +572,30 @@ export function DownloadPDFButton({
           // Stay header
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
-          
+
           // Create a more informative stay header with confirmation number, guest names, and room type
           const guestNamesForTitle = formatGuestNames(stay);
           const roomTypeForTitle = stay.roomType || "Room";
-          const confirmationForTitle = stay.confirmationNo ? ` ${stay.confirmationNo}: ` : ": ";
-          
+          const confirmationForTitle = stay.confirmationNo
+            ? ` ${stay.confirmationNo}: `
+            : ": ";
+
           // Combine all parts into a full title
           const fullTitle = `Stay${confirmationForTitle}${guestNamesForTitle} - ${roomTypeForTitle}`;
-          
+
           // Calculate maximum width for the title
           const maxTitleWidth = 130; // Adjust based on your layout
-          const truncatedTitle = pdf.splitTextToSize(fullTitle, maxTitleWidth)[0];
-          
+          const truncatedTitle = pdf.splitTextToSize(
+            fullTitle,
+            maxTitleWidth
+          )[0];
+
           // Add ellipsis if the title was truncated
-          const displayTitle = truncatedTitle.length < fullTitle.length 
-            ? truncatedTitle + "..." 
-            : truncatedTitle;
-          
+          const displayTitle =
+            truncatedTitle.length < fullTitle.length
+              ? truncatedTitle + "..."
+              : truncatedTitle;
+
           pdf.text(displayTitle, pageMargins.left, y);
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "normal");
@@ -729,26 +735,28 @@ export function DownloadPDFButton({
   };
 
   return (
-    <div className="download-button-container">
-      <Button
-        icon={FileDown}
-        onClick={handleDownloadPDF}
-        size="md"
-        intent="primary"
-        disabled={isGenerating || disabled}
-      >
-        {isGenerating ? "Generating PDF..." : "Generate Confirmation PDF"}
-      </Button>
-      <Button icon={Mail} intent="secondary">
-        <a href="mailto:ruben95bo@gmail.com?subject=Order Confirmed – We've Got Your Order!&body=Hi%20%5BCustomer%20Name%5D%2C%0A%0AThanks%20for%20your%20purchase!%20We%E2%80%99re%20excited%20to%20let%20you%20know%20that%20your%20order%20has%20been%20successfully%20received%20and%20is%20now%20being%20processed.%0A%0AOnce%20your%20items%20are%20on%20the%20way%2C%20we%E2%80%99ll%20send%20you%20a%20shipping%20confirmation%20with%20tracking%20info%20so%20you%20can%20follow%20your%20delivery%20right%20to%20your%20doorstep.%0A%0AIf%20you%20have%20any%20questions%20in%20the%20meantime%2C%20feel%20free%20to%20reply%20to%20this%20email%20or%20reach%20out%20to%20our%20support%20team%20at%20support%40spacegoodies.com%20%E2%80%94%20we%E2%80%99re%20here%20to%20help!%0A%0AThanks%20again%20for%20choosing%20Space%20Goodies.%20We%20can%E2%80%99t%20wait%20for%20you%20to%20enjoy%20your%20new%20gear!%20%F0%9F%9A%80%0A%0AAll%20the%20best%2C%0AThe%20Space%20Goodies%20Team%0Aspacegoodies.com">
-          Send confirmation
-        </a>
-      </Button>
+    <>
+      <div className="download-button-container">
+        <Button
+          icon={FileDown}
+          onClick={handleDownloadPDF}
+          size="md"
+          intent="primary"
+          disabled={isGenerating || disabled}
+        >
+          {isGenerating ? "Generating PDF..." : "Generate Confirmation PDF"}
+        </Button>
+        <Button icon={Mail} intent="secondary">
+          <a href="mailto:ruben95bo@gmail.com?subject=Order Confirmed – We've Got Your Order!&body=Hi%20%5BCustomer%20Name%5D%2C%0A%0AThanks%20for%20your%20purchase!%20We%E2%80%99re%20excited%20to%20let%20you%20know%20that%20your%20order%20has%20been%20successfully%20received%20and%20is%20now%20being%20processed.%0A%0AOnce%20your%20items%20are%20on%20the%20way%2C%20we%E2%80%99ll%20send%20you%20a%20shipping%20confirmation%20with%20tracking%20info%20so%20you%20can%20follow%20your%20delivery%20right%20to%20your%20doorstep.%0A%0AIf%20you%20have%20any%20questions%20in%20the%20meantime%2C%20feel%20free%20to%20reply%20to%20this%20email%20or%20reach%20out%20to%20our%20support%20team%20at%20support%40spacegoodies.com%20%E2%80%94%20we%E2%80%99re%20here%20to%20help!%0A%0AThanks%20again%20for%20choosing%20Space%20Goodies.%20We%20can%E2%80%99t%20wait%20for%20you%20to%20enjoy%20your%20new%20gear!%20%F0%9F%9A%80%0A%0AAll%20the%20best%2C%0AThe%20Space%20Goodies%20Team%0Aspacegoodies.com">
+            Send confirmation
+          </a>
+        </Button>
+      </div>
       {disabled && (
         <div className="download-disabled-message">
           Save or discard changes before downloading
         </div>
       )}
-    </div>
+    </>
   );
 }
