@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { LoadingSpinner } from "../loadingSpinner";
 
-
 export interface DataContextState<T> {
   selectedItem: T | null;
   originalItem: T | null;
@@ -177,76 +176,82 @@ export function CommonForm<T extends { _id?: string }>({
     : `this ${itemName.toLowerCase()}`;
 
   return (
-    <div className="detail-wrapper relative">
+    <>
       {showInitialSpinner && <LoadingSpinner minDisplayTime={700} />}
 
-      <DeleteConfirmationDialog
-        isOpen={showDeleteConfirmation}
-        onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-        itemName={itemDisplayName}
-      />
+      <div className="detail-wrapper relative">
+        <DeleteConfirmationDialog
+          isOpen={showDeleteConfirmation}
+          onClose={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+          itemName={itemDisplayName}
+        />
 
-      <form onSubmit={handleSave} className={`${entityType}-form`}>
-        <div className="top-bar">
-          <div className="top-bar__title">
-            {selectedItem?._id ? `${itemName}` : `New ${itemName}`}
+        <form onSubmit={handleSave} className={`${entityType}-form`}>
+          <div className="top-bar">
+            <div className="top-bar__title">
+              {selectedItem?._id ? `${itemName}` : `New ${itemName}`}
+            </div>
+
+            <div className="top-bar__edit">
+              {!isEditing && selectedItem?._id && (
+                <>
+                  <Button
+                    intent="outline"
+                    icon={Edit}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    intent="ghost"
+                    icon={X}
+                    type="button"
+                    onClick={handleClose}
+                  >
+                    Close
+                  </Button>
+                </>
+              )}
+
+              {isEditing && (
+                <>
+                  <Button
+                    intent="secondary"
+                    icon={X}
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    icon={Save}
+                    type="submit"
+                    disabled={isSubmitting || (!isCreating && !isDirty)}
+                  >
+                    Save
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="top-bar__edit">
-            {!isEditing && selectedItem?._id && (
-              <>
-                <Button intent="outline" icon={Edit} onClick={() => setIsEditing(true)}>
-                  Edit
-                </Button>
-                <Button
-                  intent="ghost"
-                  icon={X}
-                  type="button"
-                  onClick={handleClose}
-                >
-                  Close
-                </Button>
-              </>
-            )}
+          <div className="detail-content">{children}</div>
 
-            {isEditing && (
-              <>
-                <Button
-                  intent="secondary"
-                  icon={X}
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  icon={Save}
-                  type="submit"
-                  disabled={isSubmitting || (!isCreating && !isDirty)}
-                >
-                  Save
-                </Button>
-              </>
+          <div className="bottom-bar">
+            {isEditing && !isCreating && selectedItem?._id && (
+              <Button
+                intent="danger"
+                icon={Trash2}
+                onClick={handleDeleteClick}
+                disabled={isDeleting}
+              >
+                Delete
+              </Button>
             )}
           </div>
-        </div>
-
-        <div className="detail-content">{children}</div>
-
-        <div className="bottom-bar">
-          {isEditing && !isCreating && selectedItem?._id && (
-            <Button
-              intent="danger"
-              icon={Trash2}
-              onClick={handleDeleteClick}
-              disabled={isDeleting}
-            >
-              Delete
-            </Button>
-          )}
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </>
   );
 }
