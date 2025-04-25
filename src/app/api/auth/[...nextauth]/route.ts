@@ -1,11 +1,16 @@
-// app/api/auth/[...nextauth]/route.ts
-import NextAuth from "next-auth"
-import GoogleProvider from "next-auth/providers/google"
-import AzureADProvider from "next-auth/providers/azure-ad"
-import { MongoDBAdapter } from "@auth/mongodb-adapter"
-import clientPromise from "@/lib/mongoDB"
+import NextAuth from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import AzureADProvider from "next-auth/providers/azure-ad";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import clientPromise from "@/lib/mongoDB";
 
 export const authOptions = {
+  baseUrl:
+    process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"),
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -31,12 +36,12 @@ export const authOptions = {
     // Add this callback to allow email linking between providers
     async signIn({ user, account, profile, email, credentials }) {
       console.log("Sign in callback running");
-      
+
       // If email is verified on the provider, allow sign-in
       if (account?.provider === "google" || account?.provider === "azure-ad") {
         return true;
       }
-      
+
       return true; // Allow all sign-ins by default
     },
     // Add this callback to link accounts
@@ -51,13 +56,13 @@ export const authOptions = {
         };
       }
       return token;
-    }
+    },
   },
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
+    signIn: "/auth/signin",
+    error: "/auth/error",
   },
-}
+};
 
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
