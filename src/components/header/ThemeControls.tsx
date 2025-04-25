@@ -14,7 +14,7 @@ export const ThemeControls = () => {
   const { data: session } = useSession();
   const userId = session?.user?.id;
 
-  const [color, setColor] = useState("#7c3aed");
+  const [color, setColor] = useState("#F17827");
   const [fontSize, setFontSize] = useState("16px");
   const [isLoading, setIsLoading] = useState(true);
 

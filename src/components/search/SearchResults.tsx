@@ -138,7 +138,7 @@ export default function SearchResults({
   type = "contacts",
 }: SearchResultProps) {
   if (!items || items.length === 0) {
-    return <div className="search-results__empty">No results found</div>;
+    return <div className="search-results__empty"></div>;
   }
 
   // Handle the click event for an item
