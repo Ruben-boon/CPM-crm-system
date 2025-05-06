@@ -1,6 +1,6 @@
 :root {
   /* Colors */
-  --accent-color: black;
+  --accent-color: #f17826;
   /* Typography */
   --font-size: 14px;
   --font1: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -37,7 +37,7 @@ picture {
 }
 
 body {
-  background-color: black;
+  background-color: #1a1a1a;
   position: relative;
   display: flex;
 }
@@ -229,7 +229,7 @@ em {
 }
 
 #main-menu {
-  background-color: #202124;
+  background-color: #1a1a1a;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -768,8 +768,12 @@ body:has(.auth-container) #main-menu {
 
 .download-button-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 12px;
+}
+.download-button-container button {
+  min-width: 240px;
 }
 
 .input-base {

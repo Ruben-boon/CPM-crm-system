@@ -1,3 +1,4 @@
+// CommonForm.tsx
 "use client";
 import Button from "@/components/common/Button";
 import { Save, X, Edit, Trash2 } from "lucide-react";
@@ -54,6 +55,7 @@ export function CommonForm<T extends { _id?: string }>({
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [lastSavedState, setLastSavedState] = useState<any>(null);
 
   useEffect(() => {
     if (selectedItem) {
@@ -62,6 +64,11 @@ export function CommonForm<T extends { _id?: string }>({
       // Auto-enable editing for new items
       if (isNewItem && !isEditing) {
         setIsEditing(true);
+      }
+      
+      // Update last saved state when item loads (but not during editing)
+      if (!isEditing) {
+        setLastSavedState(JSON.stringify(selectedItem));
       }
     }
   }, [selectedItem, isEditing, setIsEditing]);
@@ -90,6 +97,8 @@ export function CommonForm<T extends { _id?: string }>({
         );
         setIsEditing(false);
         setIsCreating(false);
+        // Update last saved state after successful save
+        setLastSavedState(JSON.stringify(selectedItem));
 
         // For new items, navigate to the detail view with the new ID
         if (!isUpdate && (selectedItem as any)?._id) {
@@ -174,9 +183,12 @@ export function CommonForm<T extends { _id?: string }>({
     ? displayName(selectedItem)
     : `this ${itemName.toLowerCase()}`;
 
+  // Only show Save button if truly dirty (comparing with last saved state)
+  const isReallyDirty = isCreating || 
+    (isEditing && selectedItem && lastSavedState !== JSON.stringify(selectedItem));
+
   return (
     <>
-
       <div className="detail-wrapper relative">
         <DeleteConfirmationDialog
           isOpen={showDeleteConfirmation}
@@ -225,7 +237,7 @@ export function CommonForm<T extends { _id?: string }>({
                   <Button
                     icon={Save}
                     type="submit"
-                    disabled={isSubmitting || (!isCreating && !isDirty)}
+                    disabled={isSubmitting || !isReallyDirty}
                   >
                     Save
                   </Button>

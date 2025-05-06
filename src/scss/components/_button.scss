@@ -145,6 +145,11 @@
 
 .download-button-container {
   display: flex;
+  flex-wrap:wrap;
+
   gap:12px;
   margin-bottom: 12px;
+  button {
+    min-width: 240px;
+  }
 }

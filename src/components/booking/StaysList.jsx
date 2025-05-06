@@ -1,3 +1,4 @@
+// StaysList.jsx
 "use client";
 import { useState, useMemo } from "react";
 import { Plus, ArrowUpDown } from "lucide-react";
@@ -14,10 +15,6 @@ function StaySkeletonLoader({ count = 2 }) {
             <div className="skeleton-bar skeleton-title"></div>
             <div className="skeleton-bar skeleton-badge"></div>
           </div>
-          {/* <div className="stay-skeleton-content">
-            <div className="skeleton-bar skeleton-date"></div>
-            <div className="skeleton-bar skeleton-info"></div>
-          </div> */}
         </div>
       ))}
     </>
@@ -68,11 +65,13 @@ export function StaysList({
     });
   }, [stays, sortOrder]);
 
-  // Toggle sort order
-  const toggleSortOrder = () => {
+  // Toggle sort order - make sure this doesn't trigger form updates
+  const toggleSortOrder = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
   };
-  console.log("stays: ",stays);
+
   return (
     <div className="related-stays-container">
       <div className="related-stays">
@@ -85,12 +84,18 @@ export function StaysList({
               size="sm"
               intent="ghost"
               title={`Sort ${sortOrder === "asc" ? "A to Z" : "Z to A"}`}
+              type="button"
             >
               {sortOrder === "asc" ? "A → Z" : "Z → A"}
             </Button>
           </div>
           {bookingsContext.isEditing && (
-            <Button icon={Plus} onClick={onAddStay} size="sm">
+            <Button 
+              icon={Plus} 
+              onClick={onAddStay} 
+              size="sm"
+              type="button"
+            >
               Add Stay
             </Button>
           )}
