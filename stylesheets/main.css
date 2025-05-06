@@ -914,13 +914,13 @@ body:has(.auth-container) #main-menu {
 .skeleton-loader-related {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
   width: 100%;
 }
 .skeleton-loader-related .skeleton-item {
   display: flex;
   align-items: center;
-  padding: 16px;
+  padding: 8px;
   border-radius: 4px;
   background-color: #fafafa;
   position: relative;
@@ -985,6 +985,56 @@ body:has(.auth-container) #main-menu {
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+.stay-skeleton {
+  height: 86px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  animation: pulse 1s infinite alternate;
+  height: 86px;
+  margin: 0 14px;
+  margin-bottom: 16px;
+}
+.stay-skeleton .stay-skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.stay-skeleton .stay-skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stay-skeleton .skeleton-bar {
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  height: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.stay-skeleton .skeleton-title {
+  width: 40%;
+}
+.stay-skeleton .skeleton-badge {
+  width: 20%;
+}
+.stay-skeleton .skeleton-date {
+  width: 60%;
+}
+.stay-skeleton .skeleton-info {
+  width: 80%;
+}
+@keyframes pulse {
+  0% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -1673,7 +1723,6 @@ body:has(.auth-container) #main-menu {
   padding: 1rem;
   border-radius: 8px;
   border-bottom: 1px solid #e2e8f0;
-  transition: background-color 0.2s ease;
   margin: 1em;
 }
 .stay-item:last-child {
@@ -1748,10 +1797,6 @@ body:has(.auth-container) #main-menu {
     transform: translateY(0);
   }
 }
-.stay-item {
-  animation: fadeIn 0.2s ease;
-}
-
 .group-row {
   display: flex;
   gap: 24px;
@@ -2211,6 +2256,9 @@ body:has(.auth-container) #main-menu {
   background-color: #3a9fd5;
 }
 
+.booking-form .top-bar__title {
+  height: 35px;
+}
 .booking-form .related-stays .stay-actions {
   display: flex;
   flex-direction: column;

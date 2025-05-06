@@ -105,7 +105,7 @@ export function DropdownField({
       <style jsx>{`
         .skeleton-wrapper {
           width: 180px;
-          height: ${compact ? "30px" : "38px"};
+          height: ${compact ? "24px" : "27px"};
         }
       `}</style>
     </div>

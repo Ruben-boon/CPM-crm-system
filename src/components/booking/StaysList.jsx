@@ -4,9 +4,30 @@ import { Plus, ArrowUpDown } from "lucide-react";
 import Button from "@/components/common/Button";
 import { StayCard } from "./StayCard";
 
+// Simple skeletal loader for stays
+function StaySkeletonLoader({ count = 2 }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className="stay-skeleton">
+          <div className="stay-skeleton-header">
+            <div className="skeleton-bar skeleton-title"></div>
+            <div className="skeleton-bar skeleton-badge"></div>
+          </div>
+          {/* <div className="stay-skeleton-content">
+            <div className="skeleton-bar skeleton-date"></div>
+            <div className="skeleton-bar skeleton-info"></div>
+          </div> */}
+        </div>
+      ))}
+    </>
+  );
+}
+
 export function StaysList({
   bookingsContext,
-  stays,
+  stays = [],
+  isLoading = false,
   onAddStay,
   onEditStay,
   onCopyStay,
@@ -51,7 +72,7 @@ export function StaysList({
   const toggleSortOrder = () => {
     setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
   };
-
+  console.log("stays: ",stays);
   return (
     <div className="related-stays-container">
       <div className="related-stays">
@@ -75,7 +96,9 @@ export function StaysList({
           )}
         </div>
 
-        {sortedStays.length === 0 ? (
+        {isLoading ? (
+          <StaySkeletonLoader count={4} />
+        ) : sortedStays.length === 0 ? (
           <div className="no-stays-message">
             No stays found for this booking
           </div>
@@ -83,7 +106,7 @@ export function StaysList({
           <div className="stays-list">
             {sortedStays.map((stay, index) => (
               <StayCard
-                key={stay._id}
+                key={stay._id || index}
                 stay={stay}
                 index={index}
                 isEditing={bookingsContext.isEditing}

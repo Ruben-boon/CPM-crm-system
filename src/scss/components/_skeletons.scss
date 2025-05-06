@@ -1,12 +1,12 @@
 .skeleton-loader-related {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
   width: 100%;
   .skeleton-item {
     display: flex;
     align-items: center;
-    padding: 16px;
+    padding: 8px;
     border-radius: 4px;
     background-color: #fafafa;
     position: relative;
@@ -89,6 +89,63 @@
   @keyframes shimmer {
     100% {
       transform: translateX(100%);
+    }
+  }
+}
+
+.stay-skeleton {
+  height: 86px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  animation: pulse 1s infinite alternate;
+  height: 86px;
+  margin: 0 14px;
+  margin-bottom: 16px;
+  .stay-skeleton-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .stay-skeleton-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .skeleton-bar {
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    height: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-title {
+    width: 40%;
+  }
+
+  .skeleton-badge {
+    width: 20%;
+  }
+
+  .skeleton-date {
+    width: 60%;
+  }
+
+  .skeleton-info {
+    width: 80%;
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 0.3;
+    }
+    100% {
+      opacity: 1;
     }
   }
 }

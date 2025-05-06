@@ -17,12 +17,12 @@ export function BookingForm() {
   const [selectedStay, setSelectedStay] = useState(null);
   const [isCopyMode, setIsCopyMode] = useState(false);
   const [stays, setStays] = useState([]);
-  const previousStayIdsRef = useRef([]); // For tracking changes to stayIds
-  const previousBookingIdRef = useRef(null); // For tracking changes to booking ID
+  const [loadingStays, setLoadingStays] = useState(false);
+  const loadingRef = useRef(false); // Prevent concurrent stay loads
 
   const getDisplayName = (item) => {
-    return item.confirmationNo 
-      ? formatConfirmationNumber(item.confirmationNo) 
+    return item.confirmationNo
+      ? formatConfirmationNumber(item.confirmationNo)
       : "New Booking";
   };
 
@@ -38,8 +38,10 @@ export function BookingForm() {
 
           // Create and append confirmation number
           const confirmationSpan = document.createElement("span");
-          const confirmationText = bookingsContext.selectedItem.confirmationNo 
-            ? formatConfirmationNumber(bookingsContext.selectedItem.confirmationNo)
+          const confirmationText = bookingsContext.selectedItem.confirmationNo
+            ? formatConfirmationNumber(
+                bookingsContext.selectedItem.confirmationNo
+              )
             : "New Booking";
           confirmationSpan.textContent = confirmationText;
           topBarTitle.appendChild(confirmationSpan);
@@ -63,77 +65,52 @@ export function BookingForm() {
     bookingsContext.selectedItem?.confirmationNo,
   ]);
 
-  // Improved effect to load related stays
+  // Load related stays when booking ID changes
   useEffect(() => {
-    // Reset stays when booking ID changes (most important fix)
-    if (bookingsContext.selectedItem?._id !== previousBookingIdRef.current) {
+    // Clear stays when booking ID changes
+    if (bookingsContext.selectedItem?._id) {
       setStays([]);
-      previousStayIdsRef.current = [];
-      previousBookingIdRef.current = bookingsContext.selectedItem?._id;
-    }
-
-    const currentStayIds = bookingsContext.selectedItem?.stayIds || [];
-    const previousStayIds = previousStayIdsRef.current;
-
-    // Check if stayIds array is different
-    const haveStayIdsChanged =
-      currentStayIds.length !== previousStayIds.length ||
-      currentStayIds.some((id, index) => id !== previousStayIds[index]);
-
-    // Load stays if the booking has an ID and stayIds array is not empty and has changed
-    if (
-      bookingsContext.selectedItem?._id &&
-      currentStayIds.length > 0 &&
-      (haveStayIdsChanged || stays.length === 0)
-    ) {
-      loadRelatedStays(currentStayIds);
-      // Update reference to current stayIds
-      previousStayIdsRef.current = [...currentStayIds];
-    } else if (currentStayIds.length === 0) {
-      // Clear stays if stayIds is empty
+      loadRelatedStays(bookingsContext.selectedItem._id);
+    } else {
       setStays([]);
-      previousStayIdsRef.current = [];
     }
-  }, [
-    bookingsContext.selectedItem?._id,
-    bookingsContext.selectedItem?.stayIds,
-    stays.length
-  ]);
-  
-  const loadRelatedStays = async (stayIds) => {
-    if (!stayIds || stayIds.length === 0) {
-      setStays([]);
-      return;
-    }
-  
+  }, [bookingsContext.selectedItem?._id]);
+
+  const loadRelatedStays = async (bookingId) => {
+    if (!bookingId || loadingRef.current) return;
+
     try {
-      const results = await Promise.all(
-        stayIds.map((stayId) => searchDocuments("stays", stayId, "_id"))
+      loadingRef.current = true;
+      setLoadingStays(true);
+
+      // Get stayIds directly from the current booking context
+      // This avoids an extra API call since we already have the booking data
+      const stayIds = bookingsContext.selectedItem?.stayIds || [];
+
+      if (stayIds.length === 0) {
+        setStays([]);
+        return;
+      }
+
+      // Load all stays at once with a single batch of promises
+      // This reduces the number of unnecessary API calls
+      const stayPromises = stayIds.map((stayId) =>
+        searchDocuments("stays", stayId, "_id")
       );
-  
-      const loadedStays = results
-        .filter((res) => Array.isArray(res) && res.length > 0)
-        .map((res) => res[0]);
-  
+
+      const stayResults = await Promise.all(stayPromises);
+
+      const loadedStays = stayResults
+        .filter((result) => Array.isArray(result) && result.length > 0)
+        .map((result) => result[0]);
+
       setStays(loadedStays);
     } catch (err) {
       console.error("Error loading related stays:", err);
       toast.error("Failed to load stays");
-    }
-  };
-
-  const autoSaveBooking = async (updatedBooking) => {
-    try {
-      const success = await bookingsContext.updateItem(updatedBooking);
-      if (success) {
-        return true;
-      } else {
-        console.error("Failed to auto-save booking");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error auto-saving booking:", error);
-      return false;
+    } finally {
+      loadingRef.current = false;
+      setLoadingStays(false);
     }
   };
 
@@ -179,15 +156,15 @@ export function BookingForm() {
 
   const handleViewStay = (stayId) => {
     // Find the stay in our current stays array
-    const stayToView = stays.find(stay => stay._id === stayId);
-    
+    const stayToView = stays.find((stay) => stay._id === stayId);
+
     if (stayToView) {
       // Set the stay data for the modal
       setSelectedStay(stayToView);
-      
+
       // Not in copy mode
       setIsCopyMode(false);
-      
+
       // Open the modal
       setIsModalOpen(true);
     } else {
@@ -208,7 +185,7 @@ export function BookingForm() {
           toast.error("Error loading stay details");
         }
       };
-      
+
       fetchStay();
     }
   };
@@ -233,9 +210,6 @@ export function BookingForm() {
       // Update the stays list locally for immediate UI feedback
       setStays(newStays);
 
-      // Update our reference to prevent unnecessary reloading
-      previousStayIdsRef.current = [...newStayIds];
-
       // Show success message
       toast.success("Stay removed from booking");
     }
@@ -245,71 +219,69 @@ export function BookingForm() {
     if (!savedStay || !savedStay._id) {
       return; // Something went wrong with saving
     }
-  
+
     // Check if this is a new stay or an update
     const existingIndex =
       bookingsContext.selectedItem.stayIds?.indexOf(savedStay._id) ?? -1;
     let newStayIds;
-  
+
     if (existingIndex === -1) {
       // This is a new stay - add it to our arrays
       newStayIds = [
         ...(bookingsContext.selectedItem.stayIds || []),
         savedStay._id,
       ];
-  
+
       // Update the booking with the new stay
       bookingsContext.updateField("stayIds", newStayIds);
-      
+
       // Add the new stay to our local state for immediate UI feedback
       setStays((prevStays) => [...prevStays, savedStay]);
-      
+
       // Auto-save the booking to database with the new stay ID
       if (bookingsContext.selectedItem._id) {
         const updatedBooking = {
           ...bookingsContext.selectedItem,
-          stayIds: newStayIds
+          stayIds: newStayIds,
         };
-        
-        const saveSuccess = await autoSaveBooking(updatedBooking);
-        
+
+        const saveSuccess = await bookingsContext.updateItem(updatedBooking);
+
         if (saveSuccess) {
           toast.success("Stay added and booking updated", {
-            description: "The stay has been created and linked to this booking"
+            description: "The stay has been created and linked to this booking",
           });
         } else {
           toast.warning("Stay created but booking not updated", {
-            description: "Please save the booking to confirm changes"
+            description: "Please save the booking to confirm changes",
           });
         }
       }
     } else {
       // This is an existing stay that's been updated
       newStayIds = [...bookingsContext.selectedItem.stayIds];
-  
+
       // Update the stay in our local state
       setStays((prevStays) => {
         const newStays = [...prevStays];
         newStays[existingIndex] = savedStay;
         return newStays;
       });
-  
+
       toast.success("Stay updated successfully");
     }
-  
-    // Update our reference to prevent unnecessary reloading
-    previousStayIdsRef.current = newStayIds || [];
-  
+
     // Close the modal
     setIsModalOpen(false);
-  }
-  
+  };
+
   return (
     <>
       {isModalOpen && (
         <StayModal
           stay={selectedStay}
           isCopyMode={isCopyMode}
+          bookingId={bookingsContext.selectedItem?._id}
           onSave={handleStaySaved}
           onClose={() => setIsModalOpen(false)}
         />
@@ -324,15 +296,16 @@ export function BookingForm() {
       >
         <BookingDetails bookingsContext={bookingsContext} stays={stays} />
         <div className="col-full">
-          <StaysList
-            bookingsContext={bookingsContext}
-            stays={stays}
-            onAddStay={handleAddStay}
-            onEditStay={handleEditStay}
-            onCopyStay={handleCopyStay}
-            onViewStay={handleViewStay}
-            onRemoveStay={handleRemoveStay}
-          />
+            <StaysList
+              bookingsContext={bookingsContext}
+              stays={stays}
+              isLoading={loadingStays}
+              onAddStay={handleAddStay}
+              onEditStay={handleEditStay}
+              onCopyStay={handleCopyStay}
+              onViewStay={handleViewStay}
+              onRemoveStay={handleRemoveStay}
+            />
         </div>
       </CommonForm>
 
@@ -344,10 +317,9 @@ export function BookingForm() {
           align-items: center !important;
           gap: 12px !important;
           span {
-          font-size:1rem
+            font-size: 1rem;
           }
         }
-
 
         /* Status colors */
         .status-upcoming_no_action {
