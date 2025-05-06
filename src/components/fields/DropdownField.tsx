@@ -1,4 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
+
+function SkeletonLoader() {
+  console.log("skeleton loader triggered nice!");
+  return <div className="skeleton-item-ref-field"></div>;
+}
 
 interface Option {
   value: string;
@@ -19,6 +24,8 @@ interface DropdownFieldProps {
   placeholder?: string;
   className?: string;
   compact?: boolean;
+  isLoading?: boolean;
+  setFieldLoading?: (isLoading: boolean) => void;
 }
 
 export function DropdownField({
@@ -35,7 +42,14 @@ export function DropdownField({
   placeholder = "Select an option",
   className = "",
   compact = false,
+  isLoading = false,
+  setFieldLoading,
 }: DropdownFieldProps) {
+  const [localLoading, setLocalLoading] = useState(false);
+
+  // Determine if we're in a loading state
+  const isFieldLoading = isLoading || localLoading;
+
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (updateField) {
       updateField(fieldPath, e.target.value);
@@ -55,7 +69,11 @@ export function DropdownField({
         </label>
       )}
 
-      {isEditing ? (
+      {isFieldLoading ? (
+        <div className="skeleton-wrapper">
+          <SkeletonLoader />
+        </div>
+      ) : isEditing ? (
         <select
           value={value}
           onChange={handleChange}
@@ -83,6 +101,13 @@ export function DropdownField({
           }`}
         />
       )}
+
+      <style jsx>{`
+        .skeleton-wrapper {
+          width: 180px;
+          height: ${compact ? "30px" : "38px"};
+        }
+      `}</style>
     </div>
   );
 }

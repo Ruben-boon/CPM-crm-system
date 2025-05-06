@@ -2,23 +2,26 @@
 import { useState, useEffect, memo } from "react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { ExternalLink } from "lucide-react";
+import { SkeletonLoader } from "../SkeletonLoader";
 
 interface DisplayField {
-  path: string; // Support for nested paths like "general.firstName"
-  label?: string; // Optional label to display
+  path: string;
+  label?: string;
 }
 
 interface RelatedItemsProps {
-  id: string; // The ID to search for
-  referenceField: string; // Field in the target collection that contains the ID (e.g., "general.companyId")
-  collectionName: string; // The collection to search in (e.g., "contacts")
-  displayFields: DisplayField[]; // Fields to display from the results
-  title: string; // Title for the section (e.g., "Related Contacts")
-  emptyMessage?: string; // Message to show when no items are found
+  id: string;
+  referenceField: string;
+  collectionName: string;
+  displayFields: DisplayField[];
+  title: string;
+  emptyMessage?: string;
   onItemClick?: (id: string, collection: string) => void;
-  isFormEditing?: boolean; // Whether the parent form is in edit mode
-  onLoadingChange?: (isLoading: boolean) => void; // Callback for loading changes
+  isFormEditing?: boolean;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
+
+
 
 // Use React.memo to prevent unnecessary rerenders
 const RelatedItems = memo(function RelatedItems({
@@ -30,34 +33,41 @@ const RelatedItems = memo(function RelatedItems({
   emptyMessage = "No items found",
   onItemClick,
   isFormEditing = false,
-  onLoadingChange
+  onLoadingChange,
 }: RelatedItemsProps) {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Simplified useEffect that prevents unnecessary fetches
   useEffect(() => {
     // Skip if no ID or already loading
     if (!id || isLoading) return;
-    
-    console.log(`[RelatedItems] Loading ${collectionName} for ${id} in ${referenceField}`);
-    
+
+    console.log(
+      `[RelatedItems] Loading ${collectionName} for ${id} in ${referenceField}`
+    );
+
     // Set loading state
     setIsLoading(true);
     if (onLoadingChange) onLoadingChange(true);
-    
+
     // Reset error state
     setError(null);
-    
+
     // Fetch data
     searchDocuments(collectionName, id, referenceField)
-      .then(results => {
-        console.log(`[RelatedItems] Loaded ${results.length} items from ${collectionName}`);
+      .then((results) => {
+        console.log(
+          `[RelatedItems] Loaded ${results.length} items from ${collectionName}`
+        );
         setItems(results);
       })
-      .catch(err => {
-        console.error(`[RelatedItems] Error loading related ${collectionName}:`, err);
+      .catch((err) => {
+        console.error(
+          `[RelatedItems] Error loading related ${collectionName}:`,
+          err
+        );
         setError(`Failed to load ${collectionName}`);
       })
       .finally(() => {
@@ -92,8 +102,10 @@ const RelatedItems = memo(function RelatedItems({
       <div className="related-items related-items--edit-mode">
         <h3 className="related-items__title">{title}</h3>
         <div className="related-items__edit-message">
-          {items.length > 0 
-            ? `${items.length} ${items.length === 1 ? 'item' : 'items'} (visible after saving)` 
+          {items.length > 0
+            ? `${items.length} ${
+                items.length === 1 ? "item" : "items"
+              } (visible after saving)`
             : emptyMessage}
         </div>
       </div>
@@ -105,7 +117,7 @@ const RelatedItems = memo(function RelatedItems({
       <h3 className="related-items__title">{title}</h3>
       {isLoading ? (
         <div className="related-items__loading">
-          <span>Loading...</span>
+          <SkeletonLoader count={1} />
         </div>
       ) : error ? (
         <div className="related-items__error">{error}</div>
@@ -115,7 +127,9 @@ const RelatedItems = memo(function RelatedItems({
             <div
               key={item._id}
               className="related-items__item"
-              onClick={() => onItemClick && onItemClick(item._id, collectionName)}
+              onClick={() =>
+                onItemClick && onItemClick(item._id, collectionName)
+              }
             >
               <span>{formatItemDisplay(item)}</span>
               {onItemClick && (

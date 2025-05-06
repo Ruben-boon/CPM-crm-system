@@ -2,6 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 
+// Simple skeleton loader component
+export function SkeletonLoader() {
+  console.log("skeleton loader triggered nice!");
+  return (
+    <div className="skeleton-item-ref-field">
+    </div>
+  );
+}
+
 interface DisplayFieldConfig {
   path: string;
   label?: string; // Optional label for the field
@@ -27,6 +36,7 @@ interface RefFieldProps {
   onLoadComplete?: (loaded: boolean, error?: string) => void;
   // Optional prop to save the name/display value in a separate field
   nameFieldPath?: string;
+  setFieldLoading?: (isLoading: boolean) => void;
 }
 
 export function RefField({
@@ -46,7 +56,8 @@ export function RefField({
   displaySeparator = " ",
   onLoadComplete,
   // Optional - if provided, will save the display name to this field
-  nameFieldPath
+  nameFieldPath,
+  setFieldLoading,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -61,8 +72,8 @@ export function RefField({
   const shouldSaveName = !!nameFieldPath;
 
   // Normalize display fields to always use the object format
-  const normalizedDisplayFields = displayFields.map(field => 
-    typeof field === 'string' ? { path: field } : field
+  const normalizedDisplayFields = displayFields.map((field) =>
+    typeof field === "string" ? { path: field } : field
   );
 
   // Helper function to extract field value from an object using dot notation
@@ -81,13 +92,13 @@ export function RefField({
     if (displayTemplate) {
       // Use template string if provided
       let result = displayTemplate;
-      normalizedDisplayFields.forEach(field => {
+      normalizedDisplayFields.forEach((field) => {
         const value = getNestedValue(doc, field.path);
         const formattedValue = field.format ? field.format(value) : value;
-        result = result.replace(`{${field.path}}`, formattedValue || '');
+        result = result.replace(`{${field.path}}`, formattedValue || "");
       });
       return result;
-    } else if (displaySeparator === '<br>') {
+    } else if (displaySeparator === "<br>") {
       // Special case for <br> separator - return JSX with line breaks
       return (
         <>
@@ -108,7 +119,7 @@ export function RefField({
     } else {
       // Otherwise join field values with separator
       return normalizedDisplayFields
-        .map(field => {
+        .map((field) => {
           const value = getNestedValue(doc, field.path);
           return field.format ? field.format(value) : value;
         })
@@ -133,9 +144,9 @@ export function RefField({
     if (previousValueRef.current === value) {
       return;
     }
-    
+
     previousValueRef.current = value;
-    
+
     async function fetchDisplayName() {
       if (!value) {
         setDisplayValue("");
@@ -144,23 +155,29 @@ export function RefField({
         }
         return;
       }
-  
+
       try {
+        console.log(`[RefField] Loading started for ${collectionName} with ID: ${value}`);
+
         setIsLocalLoading(true);
-        
+        // Notify parent about loading state if callback provided
+        if (setFieldLoading) {
+          setFieldLoading(true);
+        }
+
         const response = await searchDocuments(collectionName, value, "_id");
-  
+
         if (response && response.length > 0) {
           // Format the document using our helper
           const display = formatDisplayString(response[0]);
-  
+
           setDisplayValue(display);
-          
+
           // Only save the display name if nameFieldPath is provided
           if (shouldSaveName && nameFieldPath) {
             handleUpdate(nameFieldPath, display);
           }
-          
+
           if (onLoadComplete) {
             onLoadComplete(true);
           }
@@ -170,7 +187,7 @@ export function RefField({
           if (shouldSaveName && nameFieldPath) {
             handleUpdate(nameFieldPath, "");
           }
-          
+
           if (onLoadComplete) {
             onLoadComplete(true, "Referenced item not found");
           }
@@ -182,18 +199,38 @@ export function RefField({
         if (shouldSaveName && nameFieldPath) {
           handleUpdate(nameFieldPath, "");
         }
-        
+
         if (onLoadComplete) {
-          onLoadComplete(false, error instanceof Error ? error.message : "Unknown error");
+          onLoadComplete(
+            false,
+            error instanceof Error ? error.message : "Unknown error"
+          );
         }
       } finally {
+        console.log(`[RefField] Loading finished for ${collectionName} with ID: ${value}`);
+
         setIsLocalLoading(false);
+        // Notify parent about loading complete if callback provided
+        if (setFieldLoading) {
+          setFieldLoading(false);
+        }
       }
     }
-  
+
     fetchDisplayName();
     // The dependency array - include all variables used in the effect
-  }, [value, collectionName, normalizedDisplayFields, displayTemplate, displaySeparator, fieldPath, nameFieldPath, shouldSaveName, onLoadComplete]);
+  }, [
+    value,
+    collectionName,
+    normalizedDisplayFields,
+    displayTemplate,
+    displaySeparator,
+    fieldPath,
+    nameFieldPath,
+    shouldSaveName,
+    onLoadComplete,
+    setFieldLoading,
+  ]);
 
   // When value changes, update the showSearchInput state
   useEffect(() => {
@@ -237,18 +274,18 @@ export function RefField({
     const display = formatDisplayString(result);
 
     setDisplayValue(display);
-    
+
     // Update the ID field
     handleUpdate(fieldPath, result._id, { displayValue: display });
-    
+
     // Also update the name field if nameFieldPath is provided
     if (shouldSaveName && nameFieldPath) {
       handleUpdate(nameFieldPath, display);
     }
-    
+
     setSearchTerm("");
     setIsSearching(false);
-    
+
     // Force the UI to show the selected value view
     setShowSearchInput(false);
   };
@@ -259,18 +296,18 @@ export function RefField({
     setDisplayValue("");
     setSearchTerm("");
     setIsSearching(false);
-    
+
     // Force UI to show search input
     setShowSearchInput(true);
-    
+
     // Notify parent about ID being cleared
     handleUpdate(fieldPath, "");
-    
+
     // Also clear the name field if we're saving names
     if (shouldSaveName && nameFieldPath) {
       handleUpdate(nameFieldPath, "");
     }
-    
+
     // Notify onLoadComplete
     if (onLoadComplete) {
       onLoadComplete(true);
@@ -283,7 +320,9 @@ export function RefField({
       <div className="form-field">
         <label className="field-label">{label}</label>
         <div className={`read-only ${className}`}>
-          {value && displayValue ? (
+          {value && isLocalLoading ? (
+            <SkeletonLoader />
+          ) : value && displayValue ? (
             displayValue
           ) : (
             <span className="empty-reference">-</span>
@@ -309,7 +348,7 @@ export function RefField({
                 isChanged ? "field-changed" : ""
               } ${className}`}
             >
-              {isLocalLoading ? "Loading..." : displayValue || "-"}
+              {isLocalLoading ? <SkeletonLoader /> : displayValue || "-"}
             </div>
             <button
               type="button"

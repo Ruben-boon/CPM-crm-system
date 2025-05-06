@@ -3,6 +3,7 @@ import { Search, X, Plus } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import Button from "@/components/common/Button";
 import { ContactModal } from "../contact/ContactModal";
+import { SkeletonLoader } from "../SkeletonLoader";
 
 interface MultiRefFieldProps {
   label: string;
@@ -17,6 +18,7 @@ interface MultiRefFieldProps {
   collectionName: string;
   displayFields?: string[];
   showQuickAdd?: boolean;
+  setFieldLoading?: (isLoading: boolean) => void;
 }
 
 interface SearchResult {
@@ -37,16 +39,17 @@ export function MultiRefField({
   collectionName,
   displayFields = ["name"],
   showQuickAdd = false,
+  setFieldLoading,
 }: MultiRefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [displayNames, setDisplayNames] = useState<string[]>([]);
+  const [displayNames, setDisplayNames] = useState<{[id: string]: string}>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(true);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const previousValuesRef = useRef<string[]>([]);
+  const loadedIdsRef = useRef<Set<string>>(new Set());
 
   // Helper function to extract nested values
   const getNestedValue = (obj: any, path: string) => {
@@ -67,48 +70,77 @@ export function MultiRefField({
       .join(" ");
   };
 
-  // Set initial loading state when component mounts or value changes
+  // Load display names for IDs that haven't been loaded yet
   useEffect(() => {
-    const hasValueChanges =
-      JSON.stringify(value) !== JSON.stringify(previousValuesRef.current);
-
-    if (hasValueChanges && value.length > 0) {
-      // Only set loading state if there are values to load
-      setIsLoading(true);
-      fetchDisplayNames();
-      previousValuesRef.current = [...value];
-    } else if (hasValueChanges && value.length === 0) {
-      // Clear display names if no values
-      setDisplayNames([]);
-      previousValuesRef.current = [];
-    }
-  }, [value, fieldPath]);
-
-  // Fetch display names for the references
-  const fetchDisplayNames = async () => {
-    if (value.length === 0) {
-      setDisplayNames([]);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const namePromises = value.map((id) =>
-        searchDocuments<SearchResult>(collectionName, id, "_id")
-      );
-      const results = await Promise.all(namePromises);
-      const names = results
-        .map((result) => (result[0] ? formatDisplayValue(result[0]) : ""))
-        .filter(Boolean);
-
-      setDisplayNames(names);
-    } catch (error) {
-      console.error(`Failed to load ${collectionName} display names:`, error);
-      setDisplayNames(value.map(() => "Error loading name"));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // Skip if no values
+    if (value.length === 0) return;
+    
+    // Find IDs that need to be loaded (excluding ones we've already tried to load)
+    const idsToLoad = value.filter(id => !loadedIdsRef.current.has(id));
+    
+    // Skip if all IDs are already loaded or already loading
+    if (idsToLoad.length === 0 || isLoading) return;
+    
+    // Set loading state and notify parent
+    setIsLoading(true);
+    if (setFieldLoading) setFieldLoading(true);
+    
+    // Load display names for new IDs
+    const loadDisplayNames = async () => {
+      try {
+        // Create a copy of the current display names
+        const newDisplayNames = { ...displayNames };
+        
+        // Process each ID individually to prevent one failure from affecting others
+        for (const id of idsToLoad) {
+          try {
+            // Mark this ID as processed even before the search completes
+            // This prevents infinite loops by ensuring we don't try to load it again
+            loadedIdsRef.current.add(id);
+            
+            const result = await searchDocuments<SearchResult>(collectionName, id, "_id");
+            
+            if (result && Array.isArray(result) && result.length > 0) {
+              newDisplayNames[id] = formatDisplayValue(result[0]);
+            } else {
+              // Handle case where the item was not found
+              console.warn(`Item not found in ${collectionName}: ${id}`);
+              newDisplayNames[id] = `[Not found]`;
+            }
+          } catch (itemError) {
+            // Handle errors for individual items
+            console.error(`Error loading ${id} from ${collectionName}:`, itemError);
+            newDisplayNames[id] = `[Error loading]`;
+            // Still mark as processed to avoid retrying
+            loadedIdsRef.current.add(id);
+          }
+        }
+        
+        // Update display names all at once
+        setDisplayNames(newDisplayNames);
+      } catch (error) {
+        console.error(`Failed to load ${collectionName} display names:`, error);
+        
+        // Mark all ids as processed to prevent retrying
+        idsToLoad.forEach(id => {
+          loadedIdsRef.current.add(id);
+          
+          // Only add error messages for ids that don't have display names yet
+          if (!displayNames[id]) {
+            const newDisplayNames = { ...displayNames };
+            newDisplayNames[id] = `[Error]`;
+            setDisplayNames(newDisplayNames);
+          }
+        });
+      } finally {
+        setIsLoading(false);
+        if (setFieldLoading) setFieldLoading(false);
+      }
+    };
+    
+    loadDisplayNames();
+    // Dependencies don't include displayNames to prevent infinite loops
+  }, [value, collectionName, displayFields, setFieldLoading]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -129,32 +161,33 @@ export function MultiRefField({
   // Handle search
   const handleSearch = async (term: string) => {
     setSearchTerm(term);
-    if (term.length > 0) {
-      try {
-        const searchPromises = displayFields.map((field) =>
-          searchDocuments<SearchResult>(collectionName, term, field)
-        );
+    if (term.length < 2) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
+    
+    try {
+      const searchPromises = displayFields.map((field) =>
+        searchDocuments<SearchResult>(collectionName, term, field)
+      );
 
-        const results = await Promise.all(searchPromises);
+      const results = await Promise.all(searchPromises);
 
-        // Combine and deduplicate results, removing already selected items
-        const filteredResults = Array.from(
-          new Map(
-            results
-              .flat()
-              .filter((item) => !value.includes(item._id))
-              .map((item) => [item._id, item])
-          ).values()
-        );
+      // Combine and deduplicate results, removing already selected items
+      const filteredResults = Array.from(
+        new Map(
+          results
+            .flat()
+            .filter((item) => !value.includes(item._id))
+            .map((item) => [item._id, item])
+        ).values()
+      );
 
-        setResults(filteredResults);
-        setIsSearching(filteredResults.length > 0);
-      } catch (error) {
-        console.error("Search failed:", error);
-        setResults([]);
-        setIsSearching(false);
-      }
-    } else {
+      setResults(filteredResults);
+      setIsSearching(filteredResults.length > 0);
+    } catch (error) {
+      console.error("Search failed:", error);
       setResults([]);
       setIsSearching(false);
     }
@@ -162,15 +195,29 @@ export function MultiRefField({
 
   // Handle selecting a result
   const handleSelect = (result: SearchResult) => {
+    const displayName = formatDisplayValue(result);
+    
+    // Update display names cache
+    setDisplayNames(prev => ({
+      ...prev,
+      [result._id]: displayName
+    }));
+    
+    // Mark as loaded
+    loadedIdsRef.current.add(result._id);
+    
+    // Update the value
     const newValue = [...value, result._id];
     updateField(fieldPath, newValue);
+    
+    // Reset search
     setSearchTerm("");
     setIsSearching(false);
   };
 
   // Handle removing an item
-  const handleRemove = (index: number) => {
-    const newValue = value.filter((_, i) => i !== index);
+  const handleRemove = (id: string) => {
+    const newValue = value.filter(item => item !== id);
     updateField(fieldPath, newValue);
   };
 
@@ -183,6 +230,16 @@ export function MultiRefField({
 
   // Callback for when a contact is created
   const handleContactCreated = (contactId: string, displayName: string) => {
+    // Update display names cache
+    setDisplayNames(prev => ({
+      ...prev,
+      [contactId]: displayName
+    }));
+    
+    // Mark as loaded
+    loadedIdsRef.current.add(contactId);
+    
+    // Update the value
     const newValue = [...value, contactId];
     updateField(fieldPath, newValue);
 
@@ -200,15 +257,18 @@ export function MultiRefField({
         <label className="field-label">{label}</label>
         <div className={`read-only ${className}`}>
           {isLoading ? (
-            <div className="loading-indicator">Loading...</div>
-          ) : displayNames.length > 0 ? (
+            <SkeletonLoader count={value.length || 1} type="ref-field" />
+          ) : value.length > 0 ? (
             <div className="selected-items-readonly">
-              {displayNames.map((name, index) => (
-                <div
-                  key={`${value[index]}-${index}`}
-                  className="selected-item-readonly"
-                >
-                  {name}
+              {value.map(id => (
+                <div key={id} className="selected-item-readonly">
+                  {displayNames[id] ? (
+                    displayNames[id].startsWith('[Not found]') || displayNames[id].startsWith('[Error]') ? (
+                      <span className="error-text">{displayNames[id]}</span>
+                    ) : (
+                      displayNames[id]
+                    )
+                  ) : id}
                 </div>
               ))}
             </div>
@@ -234,15 +294,25 @@ export function MultiRefField({
           ref={dropdownRef}
         >
           <div className="selected-items">
-            {isLoading ? (
-              <div className="loading-indicator">Loading...</div>
+            {isLoading && Object.keys(displayNames).length === 0 ? (
+              <SkeletonLoader count={value.length || 1} type="ref-field" />
             ) : (
-              value.map((id, index) => (
-                <div key={`${id}-${index}`} className="selected-item">
-                  <span>{displayNames[index] || id}</span>
+              value.map(id => (
+                <div key={id} className="selected-item">
+                  <span>
+                    {displayNames[id] ? (
+                      displayNames[id].startsWith('[Not found]') || displayNames[id].startsWith('[Error]') ? (
+                        <span className="error-text">{displayNames[id]}</span>
+                      ) : (
+                        displayNames[id]
+                      )
+                    ) : (
+                      <span className="loading-inline">Loading...</span>
+                    )}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => handleRemove(index)}
+                    onClick={() => handleRemove(id)}
                     className="remove-button"
                     disabled={disabled}
                   >
@@ -309,6 +379,17 @@ export function MultiRefField({
           onClose={() => setIsContactModalOpen(false)}
         />
       )}
+
+      <style jsx>{`
+        .loading-inline {
+          font-style: italic;
+          color: #888;
+        }
+        .error-text {
+          color: #d32f2f;
+          font-style: italic;
+        }
+      `}</style>
     </>
   );
 }
