@@ -6,6 +6,7 @@ import { DropdownField } from "../fields/DropdownField";
 import { RefField } from "../fields/RefField";
 import { RelatedItems } from "../fields/RelatedItems";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const ROLE_OPTIONS = [
   { value: "booker", label: "Booker" },
@@ -22,6 +23,18 @@ const TITLE_OPTIONS = [
 export function ContactForm() {
   const contactsContext = useContactsData();
   const router = useRouter();
+  
+  // Log when contact changes
+  useEffect(() => {
+    if (contactsContext.selectedItem?._id) {
+      console.log(`[ContactForm] Contact loaded: ${contactsContext.selectedItem._id}`);
+      console.log(`[ContactForm] Contact data:`, {
+        name: `${getNestedValue(contactsContext.selectedItem, "general.firstName")} ${getNestedValue(contactsContext.selectedItem, "general.lastName")}`,
+        role: getNestedValue(contactsContext.selectedItem, "general.role"),
+        companyId: getNestedValue(contactsContext.selectedItem, "general.companyId")
+      });
+    }
+  }, [contactsContext.selectedItem?._id]);
 
   const getDisplayName = (item: any) => {
     const firstName = getNestedValue(item, "general.firstName") || "";
@@ -49,6 +62,7 @@ export function ContactForm() {
     value: string,
     displayValue?: string
   ) => {
+    console.log(`[ContactForm] Field changed: ${fieldPath} = ${value}`);
     contactsContext.updateField(fieldPath, value);
   };
 
@@ -57,6 +71,7 @@ export function ContactForm() {
   };
 
   const handleRelationClick = (itemId: string, collection: string) => {
+    console.log(`[ContactForm] Relation clicked: ${collection}/${itemId}`);
     router.push(`/${collection}/${itemId}`);
   };
 
@@ -71,6 +86,14 @@ export function ContactForm() {
   // Only show related sections when viewing (not editing) and when the contact has an ID
   const shouldShowRelatedSections =
     contactsContext.selectedItem?._id && !contactsContext.isEditing;
+    
+  console.log(`[ContactForm] Render state:`, {
+    contactId: contactsContext.selectedItem?._id,
+    isEditing: contactsContext.isEditing,
+    isGuest,
+    isBooker,
+    shouldShowRelatedSections
+  });
 
   return (
     <CommonForm
@@ -150,6 +173,7 @@ export function ContactForm() {
       </div>
 
       <div className="col-half">
+        {console.log(`[ContactForm] Rendering RefField - companyId: ${getNestedValue(contactsContext.selectedItem, "general.companyId")}`)}
         <RefField
           label="Company"
           fieldPath="general.companyId"
@@ -180,7 +204,9 @@ export function ContactForm() {
 
         {shouldShowRelatedSections && isBooker && (
           <div className="related-section">
+            {console.log(`[ContactForm] Rendering Bookings RelatedItems for ${contactsContext.selectedItem._id}`)}
             <RelatedItems
+              key={`bookings-${contactsContext.selectedItem._id}`}
               id={contactsContext.selectedItem._id}
               referenceField="bookerId"
               collectionName="bookings"
@@ -200,7 +226,9 @@ export function ContactForm() {
       <div className="col-full">
         {shouldShowRelatedSections && isGuest && (
           <div className="related-section">
+            {console.log(`[ContactForm] Rendering Stays RelatedItems for ${contactsContext.selectedItem._id}`)}
             <RelatedItems
+              key={`stays-${contactsContext.selectedItem._id}`}
               id={contactsContext.selectedItem._id}
               referenceField="guestIds"
               collectionName="stays"

@@ -5,6 +5,7 @@ import Header from "@/components/header/Header";
 import { Toaster } from "sonner";
 import { Inter } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import { StrictMode } from "react";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,16 +20,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
-        <SessionProvider>
-          <Header />
-          {children}
-          <Toaster
-            position="bottom-right"
-            expand={false}
-            richColors
-            closeButton
-          />
-        </SessionProvider>
+          <SessionProvider>
+            <Header />
+            {children}
+            <Toaster
+              position="bottom-right"
+              expand={false}
+              richColors
+              closeButton
+            />
+          </SessionProvider>
       </body>
     </html>
   );

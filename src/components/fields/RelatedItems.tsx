@@ -1,8 +1,7 @@
 "use client";
-import { useState, useEffect, useRef, memo, useCallback } from "react";
+import { useState, useEffect, memo } from "react";
 import { searchDocuments } from "@/app/actions/crudActions";
 import { ExternalLink } from "lucide-react";
-import { LoadingSpinner } from "../loadingSpinner";
 
 interface DisplayField {
   path: string; // Support for nested paths like "general.firstName"
@@ -36,81 +35,36 @@ const RelatedItems = memo(function RelatedItems({
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const loadedRef = useRef(false); // Track if data has been loaded once
-  const isMountedRef = useRef(true); // Track if component is mounted
-
-  // Memoize the function to report loading state to prevent it from changing on each render
-  const reportLoadingState = useCallback((loading: boolean) => {
-    // Report loading state to the parent component
-    if (onLoadingChange) {
-      onLoadingChange(loading);
-    }
-  }, [onLoadingChange]);
-
-  // Load related items when component mounts or ID changes
+  
+  // Simplified useEffect that prevents unnecessary fetches
   useEffect(() => {
-    isMountedRef.current = true;
-
-    // Skip data loading when in edit mode if data was already loaded once
-    if (isFormEditing && loadedRef.current && items.length > 0) {
-      return;
-    }
-
-    const loadRelatedItems = async () => {
-      if (!id) {
-        if (isMountedRef.current) {
-          setItems([]);
-        }
-        return;
-      }
-
-      // Only show loading indicator when no data is already loaded
-      if (!loadedRef.current) {
-        if (isMountedRef.current) {
-          setIsLoading(true);
-          // Report loading state
-          reportLoadingState(true);
-        }
-      }
-
-      if (isMountedRef.current) {
-        setError(null);
-      }
-
-      try {
-        const results = await searchDocuments(
-          collectionName,
-          id,
-          referenceField
-        );
-
-        if (isMountedRef.current) {
-          setItems(results);
-          loadedRef.current = true; // Mark data as loaded
-          setIsLoading(false);
-          // Report loading complete
-          reportLoadingState(false);
-        }
-      } catch (err) {
-        console.error(`Error loading related ${collectionName}:`, err);
-        if (isMountedRef.current) {
-          setError(`Failed to load ${collectionName}`);
-          setIsLoading(false);
-          // Report loading complete even on error
-          reportLoadingState(false);
-        }
-      }
-    };
-
-    loadRelatedItems();
-
-    // Cleanup function to handle unmounting
-    return () => {
-      isMountedRef.current = false;
-      // Make sure to mark as not loading when component unmounts
-      reportLoadingState(false);
-    };
-  }, [id, referenceField, collectionName, items.length, isFormEditing, reportLoadingState]);
+    // Skip if no ID or already loading
+    if (!id || isLoading) return;
+    
+    console.log(`[RelatedItems] Loading ${collectionName} for ${id} in ${referenceField}`);
+    
+    // Set loading state
+    setIsLoading(true);
+    if (onLoadingChange) onLoadingChange(true);
+    
+    // Reset error state
+    setError(null);
+    
+    // Fetch data
+    searchDocuments(collectionName, id, referenceField)
+      .then(results => {
+        console.log(`[RelatedItems] Loaded ${results.length} items from ${collectionName}`);
+        setItems(results);
+      })
+      .catch(err => {
+        console.error(`[RelatedItems] Error loading related ${collectionName}:`, err);
+        setError(`Failed to load ${collectionName}`);
+      })
+      .finally(() => {
+        setIsLoading(false);
+        if (onLoadingChange) onLoadingChange(false);
+      });
+  }, [id, referenceField, collectionName]); // Removed onLoadingChange from dependencies
 
   // Helper function to get a value from an object using a path string
   const getNestedValue = (obj: any, path: string): string => {
@@ -132,14 +86,8 @@ const RelatedItems = memo(function RelatedItems({
       .join(" | ");
   };
 
-  const handleItemClick = (itemId: string) => {
-    if (onItemClick) {
-      onItemClick(itemId, collectionName);
-    }
-  };
-
-  // If in edit mode and we've already loaded data once, render a simpler version
-  if (isFormEditing && loadedRef.current) {
+  // If in edit mode, render a simpler version
+  if (isFormEditing) {
     return (
       <div className="related-items related-items--edit-mode">
         <h3 className="related-items__title">{title}</h3>
@@ -157,7 +105,6 @@ const RelatedItems = memo(function RelatedItems({
       <h3 className="related-items__title">{title}</h3>
       {isLoading ? (
         <div className="related-items__loading">
-          <LoadingSpinner isLoading={true} />
           <span>Loading...</span>
         </div>
       ) : error ? (
@@ -168,7 +115,7 @@ const RelatedItems = memo(function RelatedItems({
             <div
               key={item._id}
               className="related-items__item"
-              onClick={() => handleItemClick(item._id)}
+              onClick={() => onItemClick && onItemClick(item._id, collectionName)}
             >
               <span>{formatItemDisplay(item)}</span>
               {onItemClick && (

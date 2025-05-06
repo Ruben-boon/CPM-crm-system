@@ -54,7 +54,6 @@ export function CommonForm<T extends { _id?: string }>({
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [showInitialSpinner, setShowInitialSpinner] = useState(true);
 
   useEffect(() => {
     if (selectedItem) {
@@ -177,7 +176,6 @@ export function CommonForm<T extends { _id?: string }>({
 
   return (
     <>
-      {<LoadingSpinner />}
 
       <div className="detail-wrapper relative">
         <DeleteConfirmationDialog
