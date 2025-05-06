@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Button from "@/components/common/Button";
 import { Save, X, Plus } from "lucide-react";
-import { LoadingSpinner } from "../loadingSpinner";
 import { toast } from "sonner";
 import {
   createDocument,
@@ -450,7 +449,6 @@ const handleSave = async () => {
           </div>
 
           <div className="modal-content">
-            <LoadingSpinner isLoading={isFormLoading} />
 
             <div className="form-container">
               <div className="col-half">
