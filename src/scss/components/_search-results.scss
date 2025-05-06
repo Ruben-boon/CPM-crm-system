@@ -9,7 +9,7 @@
     }
     &__item {
       background-color: hsl(0 0% 100%);
-      border: 1px solid hsl(240 5.9% 90%);
+      border: 1px solid #f1f1f1;
       border-radius: 0.5rem;
       box-shadow: 0 1px 2px #0000000d;
       width:100%;
@@ -17,7 +17,7 @@
       transition: all 0.2s ease-in-out;
       overflow: hidden;
       &:hover {
-        box-shadow: 0 1px 2px #00000085;
+        border: 1px solid rgb(170, 170, 170)
       }
     }
     &__content {
