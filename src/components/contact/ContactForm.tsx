@@ -11,7 +11,8 @@ import { useEffect } from "react";
 const ROLE_OPTIONS = [
   { value: "booker", label: "Booker" },
   { value: "guest", label: "Guest" },
-  { value: "both", label: "Both" },
+  { value: "supplierContact", label: "Supplier contact" },
+  { value: "both", label: "Booker and Guest" },
 ];
 const TITLE_OPTIONS = [
   { value: "mr", label: "Mr." },
@@ -40,6 +41,10 @@ export function ContactForm() {
           contactsContext.selectedItem,
           "general.companyId"
         ),
+        companyName: getNestedValue(
+          contactsContext.selectedItem,
+          "general.companyName"
+        ), // NEW: Log the company name
       });
     }
   }, [contactsContext.selectedItem?._id]);
@@ -187,6 +192,8 @@ export function ContactForm() {
             "general.companyId"
           )}`
         )}
+        
+        {/* NEW: Enhanced RefField with additionalData prop */}
         <RefField
           label="Company"
           fieldPath="general.companyId"
@@ -200,7 +207,16 @@ export function ContactForm() {
           displayFields={["name"]}
           isChanged={isFieldChanged("general.companyId")}
           setFieldLoading={contactsContext.setFieldLoading}
+          // NEW: Use additionalData to store the company name
+          additionalData={[
+            {
+              fieldPath: "general.companyName", // Where to store the company name
+              sourcePath: "name", // Which field from the company to store
+            }
+          ]}
+          required={true}
         />
+        
         <TextField
           label="Remarks"
           fieldPath="general.remarks"

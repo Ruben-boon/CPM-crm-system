@@ -19,6 +19,7 @@ import { useSession } from "next-auth/react";
 interface RoleFilter {
   bookerChecked: boolean;
   guestChecked: boolean;
+  supplierContactChecked: boolean;
 }
 
 interface DataContextType {
@@ -62,8 +63,9 @@ function createDataContext(collectionName: string) {
       Record<string, ChangeRecord>
     >({});
     const [roleFilter, setRoleFilterState] = useState<RoleFilter>({
-      bookerChecked: false,
-      guestChecked: false,
+      bookerChecked: true,
+      guestChecked: true,
+      supplierContactChecked: true,
     });
     const [fieldLoading, setFieldLoadingState] = useState<
       Record<string, boolean>
@@ -136,31 +138,39 @@ function createDataContext(collectionName: string) {
       try {
         setIsLoading(true);
 
-        // Pass userId as an optional parameter (for auditing or future use)
-        // but don't filter by it in the actual query
         const results = await searchDocuments(
           collectionName,
           searchTerm,
           searchField,
-          userId // Pass this for potential future use, but don't filter by it
+          userId
         );
 
-        // Rest of your function remains the same
         let filteredResults = [...results];
-        if (
-          collectionName === "contacts" &&
-          (roleFilter.bookerChecked || roleFilter.guestChecked)
-        ) {
-          filteredResults = results.filter((item) => {
-            const role = item.general?.role;
-            const includeBooker =
-              roleFilter.bookerChecked &&
-              (role === "booker" || role === "both");
-            const includeGuest =
-              roleFilter.guestChecked && (role === "guest" || role === "both");
 
-            return includeBooker || includeGuest;
-          });
+        // Apply role filtering for contacts
+        if (collectionName === "contacts") {
+          // Only filter if at least one filter is checked
+          const hasAnyFilter =
+            roleFilter.bookerChecked ||
+            roleFilter.guestChecked ||
+            roleFilter.supplierContactChecked;
+
+          if (hasAnyFilter) {
+            filteredResults = results.filter((item) => {
+              const role = item.general?.role;
+
+              const includeBooker =
+                roleFilter.bookerChecked &&
+                (role === "booker" || role === "both");
+              const includeGuest =
+                roleFilter.guestChecked &&
+                (role === "guest" || role === "both");
+              const includeSupplier =
+                roleFilter.supplierContactChecked && role === "supplierContact";
+
+              return includeBooker || includeGuest || includeSupplier;
+            });
+          }
         }
 
         setItems(filteredResults);

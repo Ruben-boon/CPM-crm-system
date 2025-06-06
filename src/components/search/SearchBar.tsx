@@ -17,6 +17,8 @@ export default function SearchBar({
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },
     { value: "general.email", label: "Email" },
+    { value: "general.companyName", label: "Company" },
+
   ] as const;
 
   const companyFields = [

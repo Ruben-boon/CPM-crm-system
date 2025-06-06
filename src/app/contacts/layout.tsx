@@ -63,7 +63,7 @@ function ContactsLayoutContent({ children }) {
   // Re-run search when role filters change
   useEffect(() => {
     searchItems();
-  }, [roleFilter.bookerChecked, roleFilter.guestChecked]);
+  }, [roleFilter.bookerChecked, roleFilter.guestChecked, roleFilter.supplierContactChecked]);
 
   return (
     <>
@@ -75,11 +75,15 @@ function ContactsLayoutContent({ children }) {
             <RoleFilter
               bookerChecked={roleFilter.bookerChecked}
               guestChecked={roleFilter.guestChecked}
+              supplierContactChecked={roleFilter.supplierContactChecked}
               onBookerChange={(checked) =>
                 setRoleFilter({ bookerChecked: checked })
               }
               onGuestChange={(checked) =>
                 setRoleFilter({ guestChecked: checked })
+              }
+              onSupplierContactChange={(checked) =>
+                setRoleFilter({ supplierContactChecked: checked })
               }
             />
 

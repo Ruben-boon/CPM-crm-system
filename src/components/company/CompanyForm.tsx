@@ -106,6 +106,7 @@ export function CompanyForm({ key }: { key?: string }) {
               displayFields={["name"]}
               isChanged={isFieldChanged("parentCompanyId")}
               setFieldLoading={setIsFieldLoading}
+              required={true}
             />
           </div>
 

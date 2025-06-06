@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 
-// Simple skeleton loader component
 export function SkeletonLoader() {
   console.log("skeleton loader triggered nice!");
   return (
@@ -13,30 +12,36 @@ export function SkeletonLoader() {
 
 interface DisplayFieldConfig {
   path: string;
-  label?: string; // Optional label for the field
-  format?: (value: any) => string; // Optional formatter function
+  label?: string;
+  format?: (value: any) => string;
+}
+
+interface AdditionalDataConfig {
+  fieldPath: string;
+  sourcePath: string;
+  format?: (value: any) => string;
 }
 
 interface RefFieldProps {
   label: string;
-  fieldPath: string; // Path to the field in the data model
+  fieldPath: string;
   value: string;
   updateField?: (fieldPath: string, value: any, metadata?: any) => void;
-  onChange?: (fieldPath: string, value: any, metadata?: any) => void; // Alternative callback
+  onChange?: (fieldPath: string, value: any, metadata?: any) => void;
   required?: boolean;
   disabled?: boolean;
   isEditing?: boolean;
   isChanged?: boolean;
   className?: string;
   collectionName: string;
-  // Enhanced display fields configuration
   displayFields?: (string | DisplayFieldConfig)[];
-  displayTemplate?: string; // Optional template like "{name} - {email}"
-  displaySeparator?: string; // Separator between fields (default: space)
+  displayTemplate?: string;
+  displaySeparator?: string;
   onLoadComplete?: (loaded: boolean, error?: string) => void;
-  // Optional prop to save the name/display value in a separate field
+  additionalData?: AdditionalDataConfig[];
   nameFieldPath?: string;
   setFieldLoading?: (isLoading: boolean) => void;
+  searchDebounceMs?: number; // New prop for customizable debounce delay
 }
 
 export function RefField({
@@ -55,9 +60,10 @@ export function RefField({
   displayTemplate,
   displaySeparator = " ",
   onLoadComplete,
-  // Optional - if provided, will save the display name to this field
+  additionalData = [],
   nameFieldPath,
   setFieldLoading,
+  searchDebounceMs = 300, // Default 300ms debounce
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -65,11 +71,25 @@ export function RefField({
   const [displayValue, setDisplayValue] = useState<React.ReactNode>("");
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(!value);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousValueRef = useRef<string>("");
+  const searchInputRef = useRef<HTMLInputElement>(null); // Ref for search input
+  const debounceTimerRef = useRef<NodeJS.Timeout>(); // Ref for debounce timer
 
-  // We'll only save the name if nameFieldPath is explicitly provided
-  const shouldSaveName = !!nameFieldPath;
+  // Backward compatibility handling
+  const finalAdditionalData = React.useMemo(() => {
+    const data = [...additionalData];
+    
+    if (nameFieldPath && !data.some(item => item.fieldPath === nameFieldPath)) {
+      data.push({
+        fieldPath: nameFieldPath,
+        sourcePath: "name",
+      });
+    }
+    
+    return data;
+  }, [additionalData, nameFieldPath]);
 
   // Normalize display fields to always use the object format
   const normalizedDisplayFields = displayFields.map((field) =>
@@ -87,10 +107,9 @@ export function RefField({
     return result;
   };
 
-  // Format a document into a display string or JSX element based on configuration
+  // Format a document into a display string or JSX element
   const formatDisplayString = (doc: any): React.ReactNode => {
     if (displayTemplate) {
-      // Use template string if provided
       let result = displayTemplate;
       normalizedDisplayFields.forEach((field) => {
         const value = getNestedValue(doc, field.path);
@@ -99,7 +118,6 @@ export function RefField({
       });
       return result;
     } else if (displaySeparator === "<br>") {
-      // Special case for <br> separator - return JSX with line breaks
       return (
         <>
           {normalizedDisplayFields
@@ -117,7 +135,6 @@ export function RefField({
         </>
       );
     } else {
-      // Otherwise join field values with separator
       return normalizedDisplayFields
         .map((field) => {
           const value = getNestedValue(doc, field.path);
@@ -128,7 +145,7 @@ export function RefField({
     }
   };
 
-  // Use the appropriate update function - handle both callback patterns
+  // Use the appropriate update function
   const handleUpdate = (path: string, val: any, metadata?: any) => {
     if (onChange) {
       onChange(path, val, metadata);
@@ -139,108 +156,27 @@ export function RefField({
     }
   };
 
-  useEffect(() => {
-    // Skip effect if value hasn't changed
-    if (previousValueRef.current === value) {
-      return;
-    }
+  // Store additional data fields
+  const storeAdditionalData = (doc: any) => {
+    finalAdditionalData.forEach((config) => {
+      const sourceValue = getNestedValue(doc, config.sourcePath);
+      const formattedValue = config.format ? config.format(sourceValue) : sourceValue;
+      
+      console.log(`[RefField] Storing additional data: ${config.fieldPath} = ${formattedValue}`);
+      handleUpdate(config.fieldPath, formattedValue || "");
+    });
+  };
 
-    previousValueRef.current = value;
+  // Clear additional data fields
+  const clearAdditionalData = () => {
+    finalAdditionalData.forEach((config) => {
+      console.log(`[RefField] Clearing additional data: ${config.fieldPath}`);
+      handleUpdate(config.fieldPath, "");
+    });
+  };
 
-    async function fetchDisplayName() {
-      if (!value) {
-        setDisplayValue("");
-        if (onLoadComplete) {
-          onLoadComplete(true);
-        }
-        return;
-      }
-
-      try {
-        console.log(`[RefField] Loading started for ${collectionName} with ID: ${value}`);
-
-        setIsLocalLoading(true);
-        // Notify parent about loading state if callback provided
-        if (setFieldLoading) {
-          setFieldLoading(true);
-        }
-
-        const response = await searchDocuments(collectionName, value, "_id");
-
-        if (response && response.length > 0) {
-          // Format the document using our helper
-          const display = formatDisplayString(response[0]);
-
-          setDisplayValue(display);
-
-          // Only save the display name if nameFieldPath is provided
-          if (shouldSaveName && nameFieldPath) {
-            handleUpdate(nameFieldPath, display);
-          }
-
-          if (onLoadComplete) {
-            onLoadComplete(true);
-          }
-        } else {
-          setDisplayValue("");
-          // Clear the name field too if we're saving names
-          if (shouldSaveName && nameFieldPath) {
-            handleUpdate(nameFieldPath, "");
-          }
-
-          if (onLoadComplete) {
-            onLoadComplete(true, "Referenced item not found");
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to load ${collectionName} details:`, error);
-        setDisplayValue(`[Unable to load ${collectionName}]`);
-        // Clear the name field on error if we're saving names
-        if (shouldSaveName && nameFieldPath) {
-          handleUpdate(nameFieldPath, "");
-        }
-
-        if (onLoadComplete) {
-          onLoadComplete(
-            false,
-            error instanceof Error ? error.message : "Unknown error"
-          );
-        }
-      } finally {
-        console.log(`[RefField] Loading finished for ${collectionName} with ID: ${value}`);
-
-        setIsLocalLoading(false);
-        // Notify parent about loading complete if callback provided
-        if (setFieldLoading) {
-          setFieldLoading(false);
-        }
-      }
-    }
-
-    fetchDisplayName();
-    // The dependency array - include all variables used in the effect
-  }, [
-    value,
-    collectionName,
-    normalizedDisplayFields,
-    displayTemplate,
-    displaySeparator,
-    fieldPath,
-    nameFieldPath,
-    shouldSaveName,
-    onLoadComplete,
-    setFieldLoading,
-  ]);
-
-  // When value changes, update the showSearchInput state
-  useEffect(() => {
-    setShowSearchInput(!value);
-  }, [value]);
-
-  // Handle search input
-  const handleSearch = async (term: string) => {
-    setSearchTerm(term);
-
+  // Debounced search function
+  const performSearch = useCallback(async (term: string) => {
     if (!term.trim()) {
       setResults([]);
       setIsSearching(false);
@@ -248,14 +184,11 @@ export function RefField({
     }
 
     try {
-      // Search across all display fields for better results
       const searchPromises = normalizedDisplayFields.map((field) =>
         searchDocuments(collectionName, term, field.path)
       );
 
       const resultsArrays = await Promise.all(searchPromises);
-
-      // Combine and deduplicate results
       const combinedResults = Array.from(
         new Map(resultsArrays.flat().map((item) => [item._id, item])).values()
       );
@@ -267,51 +200,148 @@ export function RefField({
       setResults([]);
       setIsSearching(false);
     }
+  }, [collectionName, normalizedDisplayFields]);
+
+  // Handle search input with debounce
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      performSearch(term);
+    }, searchDebounceMs);
   };
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Load display value effect (unchanged)
+  useEffect(() => {
+    if (previousValueRef.current === value) {
+      return;
+    }
+
+    previousValueRef.current = value;
+
+    async function fetchDisplayName() {
+      if (!value) {
+        setDisplayValue("");
+        clearAdditionalData();
+        if (onLoadComplete) {
+          onLoadComplete(true);
+        }
+        return;
+      }
+
+      try {
+        console.log(`[RefField] Loading started for ${collectionName} with ID: ${value}`);
+
+        setIsLocalLoading(true);
+        if (setFieldLoading) {
+          setFieldLoading(true);
+        }
+
+        const response = await searchDocuments(collectionName, value, "_id");
+
+        if (response && response.length > 0) {
+          const display = formatDisplayString(response[0]);
+          setDisplayValue(display);
+          storeAdditionalData(response[0]);
+
+          if (onLoadComplete) {
+            onLoadComplete(true);
+          }
+        } else {
+          setDisplayValue("");
+          clearAdditionalData();
+
+          if (onLoadComplete) {
+            onLoadComplete(true, "Referenced item not found");
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load ${collectionName} details:`, error);
+        setDisplayValue(`[Unable to load ${collectionName}]`);
+        clearAdditionalData();
+
+        if (onLoadComplete) {
+          onLoadComplete(
+            false,
+            error instanceof Error ? error.message : "Unknown error"
+          );
+        }
+      } finally {
+        console.log(`[RefField] Loading finished for ${collectionName} with ID: ${value}`);
+
+        setIsLocalLoading(false);
+        if (setFieldLoading) {
+          setFieldLoading(false);
+        }
+      }
+    }
+
+    fetchDisplayName();
+  }, [
+    value,
+    collectionName,
+    normalizedDisplayFields,
+    displayTemplate,
+    displaySeparator,
+    fieldPath,
+    finalAdditionalData,
+    onLoadComplete,
+    setFieldLoading,
+  ]);
+
+  // Update showSearchInput when value changes
+  useEffect(() => {
+    setShowSearchInput(!value);
+  }, [value]);
 
   // Handle selecting a search result
   const handleSelect = (result: any) => {
     const display = formatDisplayString(result);
 
     setDisplayValue(display);
-
-    // Update the ID field
     handleUpdate(fieldPath, result._id, { displayValue: display });
-
-    // Also update the name field if nameFieldPath is provided
-    if (shouldSaveName && nameFieldPath) {
-      handleUpdate(nameFieldPath, display);
-    }
+    storeAdditionalData(result);
 
     setSearchTerm("");
+    setResults([]);
     setIsSearching(false);
-
-    // Force the UI to show the selected value view
     setShowSearchInput(false);
   };
 
   // Clear the selection
   const handleClear = () => {
-    // Update local states
     setDisplayValue("");
     setSearchTerm("");
+    setResults([]);
     setIsSearching(false);
-
-    // Force UI to show search input
     setShowSearchInput(true);
 
-    // Notify parent about ID being cleared
     handleUpdate(fieldPath, "");
+    clearAdditionalData();
 
-    // Also clear the name field if we're saving names
-    if (shouldSaveName && nameFieldPath) {
-      handleUpdate(nameFieldPath, "");
-    }
-
-    // Notify onLoadComplete
     if (onLoadComplete) {
       onLoadComplete(true);
     }
+
+    // Focus the search input after clearing
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
   };
 
   // Read-only view
@@ -362,6 +392,7 @@ export function RefField({
         ) : (
           <div className="search-container">
             <input
+              ref={searchInputRef}
               type="text"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
@@ -370,6 +401,7 @@ export function RefField({
               } ${className}`}
               placeholder="Search..."
               disabled={disabled}
+              autoFocus
             />
             <Search className="search-icon" />
 
