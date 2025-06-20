@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { MultiTextField } from "../fields/MultiTextFields";
 import { useState } from "react";
 import { SkeletonLoader } from "../SkeletonLoader";
+import { RefField } from "../fields/RefField";
 
 export function HotelForm() {
   const hotelsContext = useHotelsData();
@@ -46,7 +47,7 @@ export function HotelForm() {
       entityType="hotel"
       basePath="hotels"
       displayName={getDisplayName}
-      isLoading={isFieldLoading}
+      isLoading={isFieldLoading || relatedItemsLoading}
     >
       {!hotelsContext.selectedItem ? (
         <div className="loading-skeleton">
@@ -114,6 +115,93 @@ export function HotelForm() {
               type="tel"
               isChanged={isFieldChanged("phone")}
             />
+
+            {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
+              <div className="related-section">
+                <RelatedItems
+                  id={hotelsContext.selectedItem._id}
+                  referenceField="general.hotelId"
+                  collectionName="contacts"
+                  displayFields={[
+                    { path: "general.firstName" },
+                    { path: "general.lastName" },
+                  ]}
+                  title="Supplier contacts"
+                  emptyMessage="No supplier contacts found for this hotel"
+                  onItemClick={handleRelationClick}
+                  onLoadingChange={handleRelatedItemsLoading}
+                />
+              </div>
+            )}
+            
+            <br />
+            <br />
+            <TextField
+              label="Legal/Invoicing Name"
+              fieldPath="legal.nameInvoicing"
+              value={hotelsContext.selectedItem?.legal?.nameInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.nameInvoicing")}
+            />
+            <TextField
+              label="Invoicing Contact"
+              fieldPath="legal.contactInvoicing"
+              value={hotelsContext.selectedItem?.legal?.contactInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.contactInvoicing")}
+            />
+            <TextField
+              label="Invoicing Address"
+              fieldPath="legal.addressInvoicing"
+              value={hotelsContext.selectedItem?.legal?.addressInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.addressInvoicing")}
+            />
+            <TextField
+              label="Invoicing Postal Code"
+              fieldPath="legal.postalCodeInvoicing"
+              value={
+                hotelsContext.selectedItem?.legal?.postalCodeInvoicing || ""
+              }
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.postalCodeInvoicing")}
+            />
+            <TextField
+              label="Invoicing City"
+              fieldPath="legal.cityInvoicing"
+              value={hotelsContext.selectedItem?.legal?.cityInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.cityInvoicing")}
+            />
+            <TextField
+              label="Invoicing Country"
+              fieldPath="legal.countryInvoicing"
+              value={hotelsContext.selectedItem?.legal?.countryInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.countryInvoicing")}
+            />
+            <TextField
+              label="Invoicing Email"
+              fieldPath="legal.emailInvoicing"
+              value={hotelsContext.selectedItem?.legal?.emailInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.emailInvoicing")}
+            />
+            <TextField
+              label="Invoicing Phone"
+              fieldPath="legal.phoneInvoicing"
+              value={hotelsContext.selectedItem?.legal?.phoneInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              isChanged={isFieldChanged("legal.phoneInvoicing")}
+            />
           </div>
 
           <div className="col-half">
@@ -127,6 +215,27 @@ export function HotelForm() {
               placeholder="Add a room type..."
             />
             <TextField
+              label="Credit details"
+              fieldPath="creditDetails"
+              value={hotelsContext.selectedItem?.creditDetails || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              multiline={true}
+              rows={4}
+              isChanged={isFieldChanged("creditDetails")}
+            />
+            <TextField
+              label="Commission details"
+              fieldPath="commissionDetails"
+              value={hotelsContext.selectedItem?.commissionDetails || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              multiline={true}
+              rows={4}
+              isChanged={isFieldChanged("commissionDetails")}
+            />
+
+            <TextField
               label="Notes"
               fieldPath="notes"
               value={hotelsContext.selectedItem?.notes || ""}
@@ -136,6 +245,32 @@ export function HotelForm() {
               rows={4}
               isChanged={isFieldChanged("notes")}
             />
+            <RefField
+              label="Parent Hotel"
+              fieldPath="parentHotelId"
+              value={hotelsContext.selectedItem?.parentHotelId || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              collectionName="hotels"
+              displayFields={["name"]}
+              isChanged={isFieldChanged("parentHotelId")}
+              setFieldLoading={setIsFieldLoading}
+            />
+
+            {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
+              <div className="related-section">
+                <RelatedItems
+                  id={hotelsContext.selectedItem._id}
+                  referenceField="parentHotelId"
+                  collectionName="hotels"
+                  displayFields={[{ path: "name" }, { path: "city" }]}
+                  title="Child Hotels"
+                  emptyMessage="No child hotels found"
+                  onItemClick={handleRelationClick}
+                  onLoadingChange={handleRelatedItemsLoading}
+                />
+              </div>
+            )}
           </div>
           <div className="col-full">
             {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (

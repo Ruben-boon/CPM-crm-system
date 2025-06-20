@@ -95,6 +95,7 @@ export function ContactForm() {
   );
   const isGuest = contactRole === "guest" || contactRole === "both";
   const isBooker = contactRole === "booker" || contactRole === "both";
+  const isSupplierContact = contactRole === "supplierContact";
 
   // Only show related sections when viewing (not editing) and when the contact has an ID
   const shouldShowRelatedSections =
@@ -166,7 +167,7 @@ export function ContactForm() {
         <TextField
           label="Phone"
           fieldPath="general.phone"
-          value={getNestedValue(contactsContext.selectedItem, "general.phone")}
+          value={getNestedValue(contactsContext.selecteditem, "general.phone")}
           onChange={handleFieldChange}
           isEditing={contactsContext.isEditing}
           type="tel"
@@ -183,6 +184,22 @@ export function ContactForm() {
           required={true}
           isChanged={isFieldChanged("general.role")}
         />
+        {isSupplierContact && (
+          <RefField
+            label="Supplier Hotel"
+            fieldPath="general.hotelId"
+            value={getNestedValue(
+              contactsContext.selectedItem,
+              "general.hotelId"
+            )}
+            onChange={handleFieldChange}
+            isEditing={contactsContext.isEditing}
+            collectionName="hotels"
+            displayFields={["name"]}
+            isChanged={isFieldChanged("general.hotelId")}
+            setFieldLoading={contactsContext.setFieldLoading}
+          />
+        )}
       </div>
 
       <div className="col-half">
@@ -192,8 +209,7 @@ export function ContactForm() {
             "general.companyId"
           )}`
         )}
-        
-        {/* NEW: Enhanced RefField with additionalData prop */}
+
         <RefField
           label="Company"
           fieldPath="general.companyId"
@@ -207,16 +223,15 @@ export function ContactForm() {
           displayFields={["name"]}
           isChanged={isFieldChanged("general.companyId")}
           setFieldLoading={contactsContext.setFieldLoading}
-          // NEW: Use additionalData to store the company name
           additionalData={[
             {
               fieldPath: "general.companyName", // Where to store the company name
               sourcePath: "name", // Which field from the company to store
-            }
+            },
           ]}
           required={true}
         />
-        
+
         <TextField
           label="Remarks"
           fieldPath="general.remarks"
@@ -233,9 +248,6 @@ export function ContactForm() {
 
         {shouldShowRelatedSections && isBooker && (
           <div className="related-section">
-            {console.log(
-              `[ContactForm] Rendering Bookings RelatedItems for ${contactsContext.selectedItem._id}`
-            )}
             <RelatedItems
               key={`bookings-${contactsContext.selectedItem._id}`}
               id={contactsContext.selectedItem._id}
@@ -257,9 +269,6 @@ export function ContactForm() {
       <div className="col-full">
         {shouldShowRelatedSections && isGuest && (
           <div className="related-section">
-            {console.log(
-              `[ContactForm] Rendering Stays RelatedItems for ${contactsContext.selectedItem._id}`
-            )}
             <RelatedItems
               key={`stays-${contactsContext.selectedItem._id}`}
               id={contactsContext.selectedItem._id}
