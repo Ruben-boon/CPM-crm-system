@@ -9,6 +9,9 @@ import {
   Mail,
   Phone,
   User,
+  Building,
+  CreditCard,
+  UserRound,
 } from "lucide-react";
 
 interface SearchResultProps {
@@ -213,7 +216,9 @@ export default function SearchResults({
               <div className="search-results__header">
                 <div className="search-results__header-name">
                   {type === "contacts"
-                    ? `${item.general?.title} ${item.general?.firstName} ${item.general?.lastName}`
+                    ? `${item.general?.title || ""} ${
+                        item.general?.firstName || ""
+                      } ${item.general?.lastName || ""}`
                     : type === "companies"
                     ? `${item.name}`
                     : type === "hotels"
@@ -221,9 +226,7 @@ export default function SearchResults({
                     : type === "stays"
                     ? `${item.hotelName}`
                     : type === "bookings"
-                    ? `${item.confirmationNo || "Booking"} - ${formatDate(
-                        item.confirmationDate
-                      )}`
+                    ? `${item.confirmationNo || "Booking"}`
                     : `Unknown item type`}
                 </div>
                 {onCopy && (
@@ -241,11 +244,6 @@ export default function SearchResults({
               <dl className="search-results__details">
                 {type === "contacts" ? (
                   <>
-                    {item.general?.role && (
-                      <div className="search-results__details-section">
-                        <dd>{getRoleLabel(item.general.role)}</dd>
-                      </div>
-                    )}
                     {item.general?.email && (
                       <div className="search-results__details-section">
                         <dd>
@@ -254,11 +252,19 @@ export default function SearchResults({
                         </dd>
                       </div>
                     )}
-                    {item.general?.phone && (
+                    {item.general?.companyName && (
                       <div className="search-results__details-section">
                         <dd>
-                          <Phone size={14}></Phone>
-                          {item.general.phone}
+                          <Building size={14}></Building>
+                          {item.general.companyName}
+                        </dd>
+                      </div>
+                    )}
+                      {item.general?.role && (
+                      <div className="search-results__details-section">
+                        <dd>
+                          <UserRound size={14}></UserRound>
+                          {item.general.role}
                         </dd>
                       </div>
                     )}
@@ -277,6 +283,7 @@ export default function SearchResults({
                       <div className="search-results__details-section">
                         <dd>
                           {item.city}
+                          {item.postal_code ? `, ${item.postal_code}` : ""}
                           {item.country ? `, ${item.country}` : ""}
                         </dd>
                       </div>
@@ -297,7 +304,16 @@ export default function SearchResults({
                       <div className="search-results__details-section">
                         <dd>
                           {item.city}
+                          {item.postal_code ? `, ${item.postal_code}` : ""}
                           {item.country ? `, ${item.country}` : ""}
+                        </dd>
+                      </div>
+                    )}
+                    {item.email && (
+                      <div className="search-results__details-section">
+                        <dd>
+                          <Mail size={14}></Mail>
+                          {item.email}
                         </dd>
                       </div>
                     )}
@@ -319,12 +335,6 @@ export default function SearchResults({
                         {formatDate(item.checkOutDate)}
                       </dd>
                     </div>
-                    <div className="search-results__details-section">
-                      <dd>
-                        <User size={14} />
-                        {getGuestCountText(item.guestIds)}
-                      </dd>
-                    </div>
                   </>
                 ) : type === "bookings" ? (
                   <>
@@ -339,6 +349,20 @@ export default function SearchResults({
                       <div className="search-results__details-section">
                         <dd>
                           <Briefcase size={14} /> {item.companyName}
+                        </dd>
+                      </div>
+                    )}
+                    {item.bookerName && (
+                      <div className="search-results__details-section">
+                        <dd>
+                          <User size={14} /> {item.bookerName}
+                        </dd>
+                      </div>
+                    )}
+                    {item.costCentre && (
+                      <div className="search-results__details-section">
+                        <dd>
+                          <CreditCard size={14} /> {item.costCentre}
                         </dd>
                       </div>
                     )}
