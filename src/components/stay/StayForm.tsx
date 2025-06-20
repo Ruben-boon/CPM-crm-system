@@ -115,7 +115,7 @@ const DEFAULT_ROOM_TYPE_OPTIONS = [
   { value: "deluxe", label: "Deluxe" },
 ];
 
-export function StayForm({ key }: { key?: string }) {
+export function StayForm() {
   const staysContext = useStaysData();
   const router = useRouter();
   const [roomTypeOptions, setRoomTypeOptions] = useState(

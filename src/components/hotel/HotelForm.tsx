@@ -8,7 +8,7 @@ import { MultiTextField } from "../fields/MultiTextFields";
 import { useState } from "react";
 import { SkeletonLoader } from "../SkeletonLoader";
 
-export function HotelForm({ key }: { key?: string }) {
+export function HotelForm() {
   const hotelsContext = useHotelsData();
   const router = useRouter();
   const [isFieldLoading, setIsFieldLoading] = useState(false);

@@ -5,10 +5,10 @@ import { TextField } from "../fields/TextField";
 import { RefField } from "../fields/RefField";
 import { RelatedItems } from "../fields/RelatedItems";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SkeletonLoader } from "../SkeletonLoader";
 
-export function CompanyForm({ key }: { key?: string }) {
+export function CompanyForm() {
   const companiesContext = useCompaniesData();
   const router = useRouter();
   const [isFieldLoading, setIsFieldLoading] = useState(false);
@@ -96,6 +96,86 @@ export function CompanyForm({ key }: { key?: string }) {
               isEditing={companiesContext.isEditing}
               isChanged={isFieldChanged("country")}
             />
+
+            {/* Legal/Invoicing Fields */}
+            <br/>
+            <br/>
+
+            <TextField
+              label="Legal/Invoicing Name"
+              fieldPath="legal.nameInvoicing"
+              value={companiesContext.selectedItem?.legal?.nameInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.nameInvoicing")}
+            />
+            <TextField
+              label="Invoicing Contact"
+              fieldPath="legal.contactInvoicing"
+              value={
+                companiesContext.selectedItem?.legal?.contactInvoicing || ""
+              }
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.contactInvoicing")}
+            />
+            <TextField
+              label="Invoicing Address"
+              fieldPath="legal.addressInvoicing"
+              value={
+                companiesContext.selectedItem?.legal?.addressInvoicing || ""
+              }
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.addressInvoicing")}
+            />
+            <TextField
+              label="Invoicing Postal Code"
+              fieldPath="legal.postalCodeInvoicing"
+              value={
+                companiesContext.selectedItem?.legal?.postalCodeInvoicing || ""
+              }
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.postalCodeInvoicing")}
+            />
+            <TextField
+              label="Invoicing City"
+              fieldPath="legal.cityInvoicing"
+              value={companiesContext.selectedItem?.legal?.cityInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.cityInvoicing")}
+            />
+            <TextField
+              label="Invoicing Country"
+              fieldPath="legal.countryInvoicing"
+              value={
+                companiesContext.selectedItem?.legal?.countryInvoicing || ""
+              }
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.countryInvoicing")}
+            />
+            <TextField
+              label="Invoicing Email"
+              fieldPath="legal.emailInvoicing"
+              value={companiesContext.selectedItem?.legal?.emailInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.emailInvoicing")}
+            />
+            <TextField
+              label="Invoicing Phone"
+              fieldPath="legal.phoneInvoicing"
+              value={companiesContext.selectedItem?.legal?.phoneInvoicing || ""}
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("legal.phoneInvoicing")}
+            />
+          </div>
+
+          <div className="col-half">
             <RefField
               label="Parent Company"
               fieldPath="parentCompanyId"
@@ -106,11 +186,7 @@ export function CompanyForm({ key }: { key?: string }) {
               displayFields={["name"]}
               isChanged={isFieldChanged("parentCompanyId")}
               setFieldLoading={setIsFieldLoading}
-              required={true}
             />
-          </div>
-
-          <div className="col-half">
             {companiesContext.selectedItem?._id &&
               !companiesContext.isEditing && (
                 <div className="related-section">
@@ -176,6 +252,9 @@ export function CompanyForm({ key }: { key?: string }) {
         .loading-skeleton {
           width: 100%;
           padding: 1rem;
+        }
+        .start-invoice {
+          margin-top: 4rem;
         }
       `}</style>
     </CommonForm>
