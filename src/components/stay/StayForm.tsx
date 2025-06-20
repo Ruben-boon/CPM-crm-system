@@ -54,6 +54,11 @@ const CANCELLATION_OPTIONS = [
       "Cancellations made up to 72 hours prior to arrival will incur no charge. Cancellations made within this timeframe will be charged at 100% of the total cost.",
     label: "72h",
   },
+  {
+    value:
+      "Non-Refundable Reservation – This booking cannot be canceled or modified without incurring charges.",
+    label: "Non-ref",
+  },
 ];
 
 const PAYMENT_INSTRUCTION_OPTIONS = [
@@ -89,6 +94,10 @@ const PAYMENT_INSTRUCTION_OPTIONS = [
   {
     value: "All charges will be settled by the guest upon check-out.",
     label: "Own Account",
+  },
+  {
+    value: "custom",
+    label: "Custom payment ..",
   },
 ];
 
@@ -144,7 +153,7 @@ export function StayForm() {
         result.length > 0 &&
         result[0].roomTypes?.length > 0
       ) {
-        const hotelRoomTypes = result[0].roomTypes.map((type) => ({
+        const hotelRoomTypes = result[0].roomTypes.map((type: any) => ({
           value: type,
           label: type,
         }));
@@ -180,6 +189,17 @@ export function StayForm() {
     staysContext.updateField(fieldPath, value);
   };
 
+  const handlePaymentInstructionChange = (
+    fieldPath: string,
+    value: string
+  ) => {
+    if (value === "custom") {
+      staysContext.updateField(fieldPath, "");
+    } else {
+      staysContext.updateField(fieldPath, value);
+    }
+  };
+
   const isFieldChanged = (fieldPath: string) => {
     return !!staysContext.pendingChanges[fieldPath];
   };
@@ -192,6 +212,19 @@ export function StayForm() {
   const handleRelatedItemsLoading = (isLoading: boolean) => {
     setRelatedItemsLoading(isLoading);
   };
+
+  const isStandardPaymentInstruction =
+    staysContext.selectedItem?.paymentInstructions &&
+    PAYMENT_INSTRUCTION_OPTIONS.some(
+      (option) =>
+        option.value === staysContext.selectedItem.paymentInstructions
+    );
+
+  const showCustomPaymentField = !isStandardPaymentInstruction;
+
+  const paymentInstructionDropdownValue = isStandardPaymentInstruction
+    ? staysContext.selectedItem.paymentInstructions
+    : "custom";
 
   return (
     <>
@@ -242,7 +275,7 @@ export function StayForm() {
                   options={roomTypeOptions}
                   isChanged={isFieldChanged("roomType")}
                   placeholder="Select a room type"
-                  isLoading={loadingRoomTypes} 
+                  isLoading={loadingRoomTypes}
                   disabled={
                     loadingRoomTypes || !staysContext.selectedItem?.hotelId
                   }
@@ -278,12 +311,30 @@ export function StayForm() {
                 <DropdownField
                   label="Payment Instructions"
                   fieldPath="paymentInstructions"
-                  value={staysContext.selectedItem?.paymentInstructions || ""}
-                  onChange={handleFieldChange}
+                  value={paymentInstructionDropdownValue || ""}
+                  onChange={handlePaymentInstructionChange}
                   isEditing={staysContext.isEditing}
                   options={PAYMENT_INSTRUCTION_OPTIONS}
                   isChanged={isFieldChanged("paymentInstructions")}
                 />
+
+                {showCustomPaymentField && (
+                  <TextField
+                    fieldPath="paymentInstructions"
+                    label=""
+                    value={
+                      isStandardPaymentInstruction
+                        ? ""
+                        : staysContext.selectedItem?.paymentInstructions || ""
+                    }
+                    onChange={handleFieldChange}
+                    isEditing={staysContext.isEditing}
+                    multiline={true}
+                    rows={4}
+                    placeholder="Enter custom payment instructions"
+                    isChanged={isFieldChanged("paymentInstructions")}
+                  />
+                )}
 
                 <DropdownField
                   label="Cancellations"
@@ -427,6 +478,16 @@ export function StayForm() {
                   multiline={true}
                   rows={4}
                   isChanged={isFieldChanged("remarks")}
+                />
+                <TextField
+                  label="Admin remarks (does NOT appear on confirmation)"
+                  fieldPath="adminRemarks"
+                  value={staysContext.selectedItem?.adminRemarks || ""}
+                  onChange={handleFieldChange}
+                  isEditing={staysContext.isEditing}
+                  multiline={true}
+                  rows={4}
+                  isChanged={isFieldChanged("adminRemarks")}
                 />
               </div>
 

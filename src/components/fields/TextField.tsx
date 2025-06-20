@@ -44,6 +44,15 @@ export function TextField({
     }
   };
 
+  // Get today's date in YYYY-MM-DD format for the min attribute
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // Read-only view
   if (!isEditing) {
     return (
@@ -102,6 +111,7 @@ export function TextField({
           required={required}
           disabled={disabled}
           placeholder={placeholder}
+          min={type === "date" && !value ? getTodayString() : undefined}
         />
       )}
     </div>
