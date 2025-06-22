@@ -167,7 +167,7 @@ export function ContactForm() {
         <TextField
           label="Phone"
           fieldPath="general.phone"
-          value={getNestedValue(contactsContext.selecteditem, "general.phone")}
+          value={getNestedValue(contactsContext.selectedItem, "general.phone")}
           onChange={handleFieldChange}
           isEditing={contactsContext.isEditing}
           type="tel"

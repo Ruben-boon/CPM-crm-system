@@ -31,8 +31,9 @@ export function StayCard({
     prepaid: stay?.prepaid || "no",
     prepaidDetails: stay?.prepaidDetails || "",
     purchaseInvoice: stay?.purchaseInvoice || "",
+    hotelConfirmationNo: stay?.hotelConfirmationNo || "",
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const [savingFields, setSavingFields] = useState({});
 
   // If stay is loading or missing, show the skeleton
   if (isLoading || !stay) {
@@ -50,30 +51,36 @@ export function StayCard({
   // Auto-save when field loses focus or Enter is pressed
   const handleAutoSave = async (fieldPath, value) => {
     // Only save if the value has changed
-    if (value !== stay.purchaseInvoice) {
-      setIsSaving(true);
+    if (value !== stay[fieldPath]) {
+      setSavingFields((prev) => ({ ...prev, [fieldPath]: true }));
 
       try {
         // Create updated stay with the changed field
         const updatedStay = {
           ...stay,
-          purchaseInvoice: value
+          [fieldPath]: value,
         };
 
         const result = await updateDocument("stays", stay._id, updatedStay);
+        const fieldLabel = fieldPath
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (str) => str.toUpperCase());
 
         if (result.success) {
-          toast.success("Purchase invoice updated");
+          toast.success(`${fieldLabel} updated`);
         } else {
           toast.error(
-            `Failed to update purchase invoice: ${result.error || "Unknown error"}`
+            `Failed to update ${fieldLabel.toLowerCase()}: ${
+              result.error || "Unknown error"
+            }`
           );
         }
       } catch (error) {
-        console.error("Error updating stay:", error);
-        toast.error("Failed to update purchase invoice");
+        console.error(`Error updating stay field ${fieldPath}:`, error);
+        const fieldLabel = fieldPath.replace(/([A-Z])/g, " $1").toLowerCase();
+        toast.error(`Failed to update ${fieldLabel}`);
       } finally {
-        setIsSaving(false);
+        setSavingFields((prev) => ({ ...prev, [fieldPath]: false }));
       }
     }
   };
@@ -138,25 +145,75 @@ export function StayCard({
         {/* Add quick fields when in edit mode */}
         {isEditing && (
           <div className="stay-quick-edit">
+            {/* Hotel Confirmation No field */}
+            <div
+              className={`form-field ${
+                savingFields.hotelConfirmationNo ? "field-saving" : ""
+              }`}
+            >
+              <label className="field-label">Hotel Confirmation No.</label>
+              <input
+                type="text"
+                value={stayUpdate.hotelConfirmationNo}
+                onChange={(e) =>
+                  handleStayFieldChange("hotelConfirmationNo", e.target.value)
+                }
+                onBlur={() =>
+                  handleAutoSave(
+                    "hotelConfirmationNo",
+                    stayUpdate.hotelConfirmationNo
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAutoSave(
+                      "hotelConfirmationNo",
+                      stayUpdate.hotelConfirmationNo
+                    );
+                  }
+                }}
+                className="input-base"
+                disabled={savingFields.hotelConfirmationNo}
+                placeholder="Enter hotel confirmation..."
+              />
+              {savingFields.hotelConfirmationNo && (
+                <div className="save-indicator">Saving...</div>
+              )}
+            </div>
+
             {/* Purchase Invoice field with auto-save functionality */}
-            <div className={`form-field ${isSaving ? 'field-saving' : ''}`}>
+            <div
+              className={`form-field ${
+                savingFields.purchaseInvoice ? "field-saving" : ""
+              }`}
+            >
               <label className="field-label">Purchase Invoice</label>
               <input
                 type="text"
                 value={stayUpdate.purchaseInvoice}
-                onChange={(e) => handleStayFieldChange("purchaseInvoice", e.target.value)}
-                onBlur={() => handleAutoSave("purchaseInvoice", stayUpdate.purchaseInvoice)}
+                onChange={(e) =>
+                  handleStayFieldChange("purchaseInvoice", e.target.value)
+                }
+                onBlur={() =>
+                  handleAutoSave("purchaseInvoice", stayUpdate.purchaseInvoice)
+                }
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     e.preventDefault();
-                    handleAutoSave("purchaseInvoice", stayUpdate.purchaseInvoice);
+                    handleAutoSave(
+                      "purchaseInvoice",
+                      stayUpdate.purchaseInvoice
+                    );
                   }
                 }}
                 className="input-base"
-                disabled={isSaving}
+                disabled={savingFields.purchaseInvoice}
                 placeholder="Enter invoice number..."
               />
-              {isSaving && <div className="save-indicator">Saving...</div>}
+              {savingFields.purchaseInvoice && (
+                <div className="save-indicator">Saving...</div>
+              )}
             </div>
           </div>
         )}

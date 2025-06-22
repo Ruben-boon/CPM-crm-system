@@ -60,7 +60,7 @@ export default function CompanyDetailPage() {
 
   return (
     <>
-      {isLoaded && <CompanyForm key={companyId} />}
+      {isLoaded && <CompanyForm />}
     </>
   );
 }

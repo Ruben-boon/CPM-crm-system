@@ -9,7 +9,7 @@ import { useState } from "react";
 import { SkeletonLoader } from "../SkeletonLoader";
 import { RefField } from "../fields/RefField";
 
-export function HotelForm() {
+export function HotelForm(key) {
   const hotelsContext = useHotelsData();
   const router = useRouter();
   const [isFieldLoading, setIsFieldLoading] = useState(false);
@@ -136,7 +136,7 @@ export function HotelForm() {
             
             <br />
             <br />
-            <TextField
+            {/* <TextField
               label="Legal/Invoicing Name"
               fieldPath="legal.nameInvoicing"
               value={hotelsContext.selectedItem?.legal?.nameInvoicing || ""}
@@ -201,7 +201,7 @@ export function HotelForm() {
               onChange={handleFieldChange}
               isEditing={hotelsContext.isEditing}
               isChanged={isFieldChanged("legal.phoneInvoicing")}
-            />
+            /> */}
           </div>
 
           <div className="col-half">

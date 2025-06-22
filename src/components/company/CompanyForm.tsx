@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SkeletonLoader } from "../SkeletonLoader";
 
-export function CompanyForm() {
+export function CompanyForm({key}) {
   const companiesContext = useCompaniesData();
   const router = useRouter();
   const [isFieldLoading, setIsFieldLoading] = useState(false);
@@ -89,6 +89,14 @@ export function CompanyForm() {
               isChanged={isFieldChanged("city")}
             />
             <TextField
+              label="Phone"
+              fieldPath="phone"
+              value={companiesContext.selectedItem?.phone || ""}
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("phone")}
+            />
+            <TextField
               label="Country"
               fieldPath="country"
               value={companiesContext.selectedItem?.country || ""}
@@ -96,12 +104,20 @@ export function CompanyForm() {
               isEditing={companiesContext.isEditing}
               isChanged={isFieldChanged("country")}
             />
+            <TextField
+              label="Remarks"
+              fieldPath="remarks"
+              value={companiesContext.selectedItem?.remarks || ""}
+              onChange={handleFieldChange}
+              isEditing={companiesContext.isEditing}
+              isChanged={isFieldChanged("remarks")}
+            />
 
             {/* Legal/Invoicing Fields */}
-            <br/>
-            <br/>
+            <br />
+            <br />
 
-            <TextField
+            {/* <TextField
               label="Legal/Invoicing Name"
               fieldPath="legal.nameInvoicing"
               value={companiesContext.selectedItem?.legal?.nameInvoicing || ""}
@@ -157,6 +173,7 @@ export function CompanyForm() {
               isEditing={companiesContext.isEditing}
               isChanged={isFieldChanged("legal.countryInvoicing")}
             />
+
             <TextField
               label="Invoicing Email"
               fieldPath="legal.emailInvoicing"
@@ -172,7 +189,7 @@ export function CompanyForm() {
               onChange={handleFieldChange}
               isEditing={companiesContext.isEditing}
               isChanged={isFieldChanged("legal.phoneInvoicing")}
-            />
+            /> */}
           </div>
 
           <div className="col-half">

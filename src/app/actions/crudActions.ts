@@ -43,7 +43,11 @@ export async function searchDocuments<T>(
   }
 
   try {
-    const results = await db.collection(collectionName).find(query).toArray();
+    const results = await db
+      .collection(collectionName)
+      .find(query)
+      .limit(20) // Limit the results to 20
+      .toArray();
 
     // Convert to plain objects and ensure all fields are serializable
     return results.map((doc) => {

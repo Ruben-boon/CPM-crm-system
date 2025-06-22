@@ -154,6 +154,7 @@ export function StayModal({
     guestNames: [],
     hotelId: "",
     hotelName: "",
+    hotelConfirmationNo: "",
     roomNumber: "",
     roomType: "",
     roomPrice: "",
@@ -455,7 +456,7 @@ const handleSave = async () => {
 
             <div className="form-container">
               <div className="col-half">
-                {isLinkedToBooking ? (
+                {/* {isLinkedToBooking ? (
                   <TextField
                     label="Booking Confirmation No."
                     fieldPath="confirmationNo"
@@ -474,11 +475,11 @@ const handleSave = async () => {
                     type="stay"
                     allowRefresh={true}
                   />
-                )}
+                )} */}
 
                 {stayData.bookingId && bookingInfo && (
                   <div className="booking-link-note">
-                    <p>This stay is linked to booking {formatConfirmationNumber(bookingInfo.confirmationNo)}</p>
+                    <p>This stay is part of booking {formatConfirmationNumber(bookingInfo.confirmationNo)}</p>
                   </div>
                 )}
 
@@ -493,6 +494,14 @@ const handleSave = async () => {
                   displayFields={["name", "address"]}
                   setFieldLoading={setFieldLoading}
                   required={true}
+                />
+
+                <TextField
+                  label="Hotel Confirmation No."
+                  fieldPath="hotelConfirmationNo"
+                  value={stayData.hotelConfirmationNo || ""}
+                  onChange={handleFieldChange}
+                  isEditing={true}
                 />
 
                 <DropdownField
