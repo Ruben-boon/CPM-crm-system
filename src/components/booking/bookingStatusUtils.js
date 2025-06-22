@@ -1,4 +1,5 @@
 // Function to determine booking status based on booking data and stays
+// Function to determine booking status based on booking data and stays
 export function determineBookingStatus(booking, stays) {
   // Default status for new bookings
   if (!booking) return "upcoming_no_action";
@@ -30,7 +31,9 @@ export function determineBookingStatus(booking, stays) {
     // If we get here, all purchase invoices are present
     // Only now do we check sales invoice and commission
     const hasSalesInvoice = booking.salesInvoice && booking.salesInvoice.trim() !== "";
-    const hasCommission = booking.commissionInvoiceNo && booking.commissionInvoiceNo.trim() !== "";
+    // UPDATED: Check all stays for a commission invoice number
+    const hasCommission = stays.length > 0 && 
+      stays.every(stay => stay.commissionInvoice && stay.commissionInvoice.trim() !== "");
 
     // Both sales invoice and commission are missing
     if (!hasSalesInvoice && !hasCommission) {

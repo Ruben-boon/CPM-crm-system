@@ -184,14 +184,14 @@ export function BookingDetails({ bookingsContext, stays }) {
           key={`company-${bookingId}`}
         />
 
-        <TextField
+        {/* <TextField
           label="Commission invoice no."
           fieldPath="commissionInvoiceNo"
           value={bookingsContext.selectedItem?.commissionInvoiceNo || ""}
           onChange={handleFieldChange}
           isEditing={bookingsContext.isEditing}
           isChanged={isFieldChanged("commissionInvoiceNo")}
-        />
+        /> */}
         <TextField
           label="Sales invoice"
           fieldPath="salesInvoice"

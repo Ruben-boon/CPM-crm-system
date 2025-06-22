@@ -1,6 +1,8 @@
 "use server";
 import clientPromise from "@/lib/mongoDB";
 import { ObjectId } from "mongodb";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 interface DatabaseResult<T> {
   success: boolean;
@@ -8,24 +10,60 @@ interface DatabaseResult<T> {
   error?: string;
 }
 
+/**
+ * Logs an activity to the 'activity_logs' collection.
+ * @param action - The action performed (e.g., 'create', 'update', 'delete').
+ * @param collectionName - The name of the collection where the action occurred.
+ * @param documentId - The ID of the document that was affected.
+ * @param userId - The ID of the user who performed the action.
+ */
+async function logActivity(
+  action: string,
+  collectionName: string,
+  documentId: string,
+  userId: string | undefined
+) {
+  if (!userId) {
+    console.warn("No user ID found, skipping activity log.");
+    return;
+  }
+
+  try {
+    const client = await clientPromise;
+    const db = client.db("CRM");
+    const logCollection = db.collection("activity_logs");
+    await logCollection.insertOne({
+      userId,
+      action,
+      collectionName,
+      documentId,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    console.error("Error logging activity:", error);
+  }
+}
+
 export async function searchDocuments<T>(
   collectionName: string,
   searchTerm = "",
-  searchField = "name",
-  userId?: string // Keep this parameter for auditing or future use
+  searchField = "name"
 ): Promise<T[]> {
   const client = await clientPromise;
   const db = client.db("CRM");
 
   let query: any = {};
-  console.log("searchDocuments collectionName;",collectionName,"searchTerm",searchTerm,"searchField",searchField);
-
-  // We don't filter by userId since all authenticated users should see all data
-  // We keep the parameter for future use if requirements change
+  console.log(
+    "searchDocuments collectionName;",
+    collectionName,
+    "searchTerm",
+    searchTerm,
+    "searchField",
+    searchField
+  );
 
   if (searchTerm && searchField) {
     if (searchField === "_id") {
-      // Only attempt to create ObjectId if the searchTerm matches MongoDB ObjectId format
       if (/^[0-9a-fA-F]{24}$/.test(searchTerm)) {
         try {
           query = { _id: new ObjectId(searchTerm) };
@@ -34,7 +72,6 @@ export async function searchDocuments<T>(
           return [];
         }
       } else {
-        // Return empty array if ID format is invalid
         return [];
       }
     } else {
@@ -46,10 +83,9 @@ export async function searchDocuments<T>(
     const results = await db
       .collection(collectionName)
       .find(query)
-      .limit(20) // Limit the results to 20
+      .limit(20)
       .toArray();
 
-    // Convert to plain objects and ensure all fields are serializable
     return results.map((doc) => {
       const plainDoc = JSON.parse(
         JSON.stringify(doc, (key, value) =>
@@ -66,9 +102,11 @@ export async function searchDocuments<T>(
 
 export async function createDocument<T extends { _id?: string }>(
   collectionName: string,
-  document: T,
-  userId?: string // Keep track of who created the document
+  document: T
 ): Promise<DatabaseResult<T>> {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   console.log("createDocument document:", document);
   try {
     const client = await clientPromise;
@@ -76,22 +114,28 @@ export async function createDocument<T extends { _id?: string }>(
 
     const { _id, ...documentData } = document;
 
-    // Store the creator's userId with the document for auditing purposes
-    // but don't use it to restrict access
     const documentWithUserId = userId
       ? { ...documentData, createdBy: userId, updatedBy: userId }
       : documentData;
 
     const result = await collection.insertOne(documentWithUserId);
 
+    if (result.acknowledged) {
+      const newId = result.insertedId.toString();
+      await logActivity("create", collectionName, newId, userId);
+      return {
+        success: true,
+        data: {
+          ...document,
+          _id: newId,
+          ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
+        } as T,
+      };
+    }
     return {
-      success: result.acknowledged,
-      data: {
-        ...document,
-        _id: result.insertedId.toString(),
-        ...(userId ? { createdBy: userId, updatedBy: userId } : {}),
-      } as T,
-    };
+        success: false,
+        error: "Creation failed",
+      };
   } catch (error) {
     console.error(`Create error in ${collectionName}:`, error);
     return {
@@ -106,9 +150,11 @@ export async function updateDocument<
 >(
   collectionName: string,
   id: string,
-  document: T,
-  userId?: string // Track who updated the document
+  document: T
 ): Promise<DatabaseResult<T>> {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   console.log("updateDocument document:", document, "id:", id);
   try {
     const client = await clientPromise;
@@ -116,7 +162,6 @@ export async function updateDocument<
 
     const { _id, version, ...updateData } = document;
 
-    // Validate ObjectId format before attempting update
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
       return {
         success: false,
@@ -125,22 +170,17 @@ export async function updateDocument<
     }
 
     try {
-      // We don't filter by userId when updating - any authenticated user can update
       const query: any = { _id: new ObjectId(id) };
 
-      // Add who's updating the document for audit trail
       const dataWithAudit = {
         ...updateData,
         ...(userId ? { updatedBy: userId, updatedAt: new Date() } : {}),
       };
 
-      // If document versioning is being used
       if (version !== undefined) {
-        // Get current document version
         const currentDoc = await collection.findOne(query);
         const currentVersion = currentDoc?.version || 0;
 
-        // Check for version conflicts
         if (version !== currentVersion) {
           return {
             success: false,
@@ -148,14 +188,13 @@ export async function updateDocument<
               "Document has been modified by another user. Please refresh and try again.",
           };
         }
-
-        // Increment version on update
         dataWithAudit.version = currentVersion + 1;
       }
 
       const result = await collection.updateOne(query, { $set: dataWithAudit });
 
       if (result.modifiedCount === 1) {
+        await logActivity("update", collectionName, id, userId);
         return {
           success: true,
           data: {
@@ -186,14 +225,14 @@ export async function updateDocument<
 
 export async function deleteDocument(
   collectionName: string,
-  id: string,
-  userId?: string // Track who deleted the document
+  id: string
 ): Promise<DatabaseResult<{ id: string }>> {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
   try {
     const client = await clientPromise;
     const collection = client.db("CRM").collection(collectionName);
 
-    // Validate ObjectId format
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
       return {
         success: false,
@@ -202,25 +241,11 @@ export async function deleteDocument(
     }
 
     try {
-      // We don't filter by userId - any authenticated user can delete
       const query = { _id: new ObjectId(id) };
-
-      // Consider soft delete instead of hard delete
-      // const result = await collection.updateOne(
-      //   query,
-      //   {
-      //     $set: {
-      //       deleted: true,
-      //       deletedBy: userId,
-      //       deletedAt: new Date()
-      //     }
-      //   }
-      // );
-
-      // For now, perform a hard delete
       const result = await collection.deleteOne(query);
 
       if (result.deletedCount === 1) {
+        await logActivity("delete", collectionName, id, userId);
         return { success: true, data: { id } };
       }
 

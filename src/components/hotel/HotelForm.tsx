@@ -133,7 +133,40 @@ export function HotelForm(key) {
                 />
               </div>
             )}
-            
+
+            {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
+              <div className="related-section">
+                <RelatedItems
+                  id={hotelsContext.selectedItem._id}
+                  referenceField="parentHotelId"
+                  collectionName="hotels"
+                  displayFields={[{ path: "name" }, { path: "city" }]}
+                  title="Child Hotels"
+                  emptyMessage="No child hotels found"
+                  onItemClick={handleRelationClick}
+                  onLoadingChange={handleRelatedItemsLoading}
+                />
+              </div>
+            )}
+
+            {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
+              <div className="related-section">
+                <RelatedItems
+                  id={hotelsContext.selectedItem._id}
+                  referenceField="hotelId"
+                  collectionName="stays"
+                  displayFields={[
+                    { path: "reference" },
+                    { path: "roomNumber" },
+                  ]}
+                  title="Stays in this hotel"
+                  emptyMessage="No stays found"
+                  onItemClick={handleRelationClick}
+                  isFormEditing={hotelsContext.isEditing}
+                  onLoadingChange={handleRelatedItemsLoading}
+                />
+              </div>
+            )}
             <br />
             <br />
             {/* <TextField
@@ -205,6 +238,17 @@ export function HotelForm(key) {
           </div>
 
           <div className="col-half">
+            <RefField
+              label="Parent Hotel"
+              fieldPath="parentHotelId"
+              value={hotelsContext.selectedItem?.parentHotelId || ""}
+              onChange={handleFieldChange}
+              isEditing={hotelsContext.isEditing}
+              collectionName="hotels"
+              displayFields={["name"]}
+              isChanged={isFieldChanged("parentHotelId")}
+              setFieldLoading={setIsFieldLoading}
+            />
             <MultiTextField
               label="Room Types"
               fieldPath="roomTypes"
@@ -245,52 +289,6 @@ export function HotelForm(key) {
               rows={4}
               isChanged={isFieldChanged("notes")}
             />
-            <RefField
-              label="Parent Hotel"
-              fieldPath="parentHotelId"
-              value={hotelsContext.selectedItem?.parentHotelId || ""}
-              onChange={handleFieldChange}
-              isEditing={hotelsContext.isEditing}
-              collectionName="hotels"
-              displayFields={["name"]}
-              isChanged={isFieldChanged("parentHotelId")}
-              setFieldLoading={setIsFieldLoading}
-            />
-
-            {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
-              <div className="related-section">
-                <RelatedItems
-                  id={hotelsContext.selectedItem._id}
-                  referenceField="parentHotelId"
-                  collectionName="hotels"
-                  displayFields={[{ path: "name" }, { path: "city" }]}
-                  title="Child Hotels"
-                  emptyMessage="No child hotels found"
-                  onItemClick={handleRelationClick}
-                  onLoadingChange={handleRelatedItemsLoading}
-                />
-              </div>
-            )}
-          </div>
-          <div className="col-full">
-            {hotelsContext.selectedItem?._id && !hotelsContext.isEditing && (
-              <div className="related-section">
-                <RelatedItems
-                  id={hotelsContext.selectedItem._id}
-                  referenceField="hotelId"
-                  collectionName="stays"
-                  displayFields={[
-                    { path: "reference" },
-                    { path: "roomNumber" },
-                  ]}
-                  title="Stays in this hotel"
-                  emptyMessage="No stays found"
-                  onItemClick={handleRelationClick}
-                  isFormEditing={hotelsContext.isEditing}
-                  onLoadingChange={handleRelatedItemsLoading}
-                />
-              </div>
-            )}
           </div>
         </>
       )}

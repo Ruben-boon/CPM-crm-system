@@ -118,7 +118,7 @@ export function ContactForm() {
       displayName={getDisplayName}
     >
       <div className="col-half">
-        <DropdownField
+        {/* <DropdownField
           label="Title"
           fieldPath="general.title"
           value={getNestedValue(contactsContext.selectedItem, "general.title")}
@@ -126,7 +126,7 @@ export function ContactForm() {
           isEditing={contactsContext.isEditing}
           options={TITLE_OPTIONS}
           isChanged={isFieldChanged("general.title")}
-        />
+        /> */}
 
         <TextField
           label="First Name"
@@ -172,6 +172,51 @@ export function ContactForm() {
           isEditing={contactsContext.isEditing}
           type="tel"
           isChanged={isFieldChanged("general.phone")}
+        />
+
+        <TextField
+          label="Address"
+          fieldPath="general.address"
+          value={getNestedValue(
+            contactsContext.selectedItem,
+            "general.address"
+          )}
+          onChange={handleFieldChange}
+          isEditing={contactsContext.isEditing}
+          isChanged={isFieldChanged("general.address")}
+        />
+
+        <TextField
+          label="Postal Code"
+          fieldPath="general.postalCode"
+          value={getNestedValue(
+            contactsContext.selectedItem,
+            "general.postalCode"
+          )}
+          onChange={handleFieldChange}
+          isEditing={contactsContext.isEditing}
+          isChanged={isFieldChanged("general.postalCode")}
+        />
+
+        <TextField
+          label="City"
+          fieldPath="general.city"
+          value={getNestedValue(contactsContext.selectedItem, "general.city")}
+          onChange={handleFieldChange}
+          isEditing={contactsContext.isEditing}
+          isChanged={isFieldChanged("general.city")}
+        />
+
+        <TextField
+          label="Country"
+          fieldPath="general.country"
+          value={getNestedValue(
+            contactsContext.selectedItem,
+            "general.country"
+          )}
+          onChange={handleFieldChange}
+          isEditing={contactsContext.isEditing}
+          isChanged={isFieldChanged("general.country")}
         />
 
         <DropdownField
@@ -223,12 +268,6 @@ export function ContactForm() {
           displayFields={["name"]}
           isChanged={isFieldChanged("general.companyId")}
           setFieldLoading={contactsContext.setFieldLoading}
-          additionalData={[
-            {
-              fieldPath: "general.companyName", // Where to store the company name
-              sourcePath: "name", // Which field from the company to store
-            },
-          ]}
           required={true}
         />
 
@@ -265,8 +304,6 @@ export function ContactForm() {
             />
           </div>
         )}
-      </div>
-      <div className="col-full">
         {shouldShowRelatedSections && isGuest && (
           <div className="related-section">
             <RelatedItems
@@ -287,6 +324,7 @@ export function ContactForm() {
           </div>
         )}
       </div>
+
       <style jsx>{`
         .related-section {
           margin-top: 24px;

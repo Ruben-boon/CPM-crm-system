@@ -1,4 +1,4 @@
-// StayCard.jsx
+// src/components/booking/StayCard.jsx
 "use client";
 import { useState } from "react";
 import { Edit, ExternalLink, Copy, X } from "lucide-react";
@@ -31,6 +31,7 @@ export function StayCard({
     prepaid: stay?.prepaid || "no",
     prepaidDetails: stay?.prepaidDetails || "",
     purchaseInvoice: stay?.purchaseInvoice || "",
+    commissionInvoice: stay?.commissionInvoice || "", // <-- ADDED
     hotelConfirmationNo: stay?.hotelConfirmationNo || "",
   });
   const [savingFields, setSavingFields] = useState({});
@@ -215,6 +216,44 @@ export function StayCard({
                 <div className="save-indicator">Saving...</div>
               )}
             </div>
+            
+            {/* --- ADDED START --- */}
+            <div
+              className={`form-field ${
+                savingFields.commissionInvoice ? "field-saving" : ""
+              }`}
+            >
+              <label className="field-label">Commission Invoice</label>
+              <input
+                type="text"
+                value={stayUpdate.commissionInvoice}
+                onChange={(e) =>
+                  handleStayFieldChange("commissionInvoice", e.target.value)
+                }
+                onBlur={() =>
+                  handleAutoSave(
+                    "commissionInvoice",
+                    stayUpdate.commissionInvoice
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAutoSave(
+                      "commissionInvoice",
+                      stayUpdate.commissionInvoice
+                    );
+                  }
+                }}
+                className="input-base"
+                disabled={savingFields.commissionInvoice}
+                placeholder="Enter invoice number..."
+              />
+              {savingFields.commissionInvoice && (
+                <div className="save-indicator">Saving...</div>
+              )}
+            </div>
+            {/* --- ADDED END --- */}
           </div>
         )}
       </div>
