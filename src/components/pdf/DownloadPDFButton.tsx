@@ -22,6 +22,7 @@ interface Stay {
   remarks?: string;
   paymentInstructions?: string;
   cancellations?: string;
+  confirmationNo?: string;
 }
 
 interface BookingData {
@@ -41,14 +42,17 @@ interface DownloadPDFButtonProps {
   bookingData: BookingData;
   stays: Stay[];
   disabled?: boolean;
+  onSendConfirmation: (bookerData: any, preparedStays: Stay[]) => void;
 }
 
 export function DownloadPDFButton({
   bookingData,
   stays,
   disabled = false,
+  onSendConfirmation,
 }: DownloadPDFButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
   const [bookerData, setBookerData] = useState<any>(null);
 
@@ -106,16 +110,6 @@ export function DownloadPDFButton({
     fetchBookerData();
   }, [bookingData?.bookerId]);
 
-  const handleSendConfirmation = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const mailtoUrl = "mailto:ruben95bo@gmail.com?subject=Order Confirmed – We've Got Your Order!&body=Hi%20%5BCustomer%20Name%5D%2C%0A%0AThanks%20for%20your%20purchase!%20We%E2%80%99re%20excited%20to%20let%20you%20know%20that%20your%20order%20has%20been%20successfully%20received%20and%20is%20now%20being%20processed.%0A%0AOnce%20your%20items%20are%20on%20the%20way%2C%20we%E2%80%99ll%20send%20you%20a%20shipping%20confirmation%20with%20tracking%20info%20so%20you%20can%20follow%20your%20delivery%20right%20to%20your%20doorstep.%0A%0AIf%20you%20have%20any%20questions%20in%20the%20meantime%2C%20feel%20free%20to%20reply%20to%20this%20email%20or%20reach%20out%20to%20our%20support%20team%20at%20support%40spacegoodies.com%20%E2%80%94%20we%E2%80%99re%20here%20to%20help!%0A%0AThanks%20again%20for%20choosing%20Space%20Goodies.%20We%20can%E2%80%99t%20wait%20for%20you%20to%20enjoy%20your%20new%20gear!%20%F0%9F%9A%80%0A%0AAll%20the%20best%2C%0AThe%20Space%20Goodies%20Team%0Aspacegoodies.com";
-    
-    // Use window.open instead of window.location to avoid form interference
-    window.open(mailtoUrl, '_blank');
-  };
-
   const prepareStaysWithGuestNames = async (
     staysData: Stay[]
   ): Promise<Stay[]> => {
@@ -155,6 +149,24 @@ export function DownloadPDFButton({
     }
 
     return staysWithNames;
+  };
+
+  const handleSendConfirmation = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsSending(true);
+
+    try {
+      const preparedStays = await prepareStaysWithGuestNames(stays);
+      onSendConfirmation(bookerData, preparedStays);
+    } catch (error) {
+      console.error("Error preparing confirmation data:", error);
+      alert("Failed to prepare confirmation data. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Helper function to format date
@@ -207,14 +219,12 @@ export function DownloadPDFButton({
     return bookingData.bookerId || "-";
   };
 
-  // Helper function to format guest names
+  // Simplified helper for guest names with prepared data
   const formatGuestNames = (stay: Stay): string => {
-    // If there are no guests, return a dash
     if (!stay.guestIds || stay.guestIds.length === 0) {
       return "-";
     }
 
-    // If we have guestNames array (which contains the display names)
     if (
       stay.guestNames &&
       Array.isArray(stay.guestNames) &&
@@ -223,7 +233,6 @@ export function DownloadPDFButton({
       return stay.guestNames.join(", ");
     }
 
-    // Fallback to IDs if names aren't available (shouldn't happen normally)
     return stay.guestIds.join(", ");
   };
 
@@ -401,13 +410,13 @@ export function DownloadPDFButton({
       const confirmationTextWidth = pdf.getTextWidth("Confirmation ");
 
       // Add the confirmation number in normal font
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont("helvetica", "bold");
       pdf.text(confirmationNumber, pageMargins.left + confirmationTextWidth, y);
 
       // Add room count on the right of the same line
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.text(`Rooms (${roomCount})`, 190, y, { align: "right" });
+      // pdf.text(`Rooms (${roomCount})`, 190, y, { align: "right" });
 
       y += 8; // Move y down after the confirmation header
 
@@ -494,10 +503,10 @@ export function DownloadPDFButton({
       };
 
       // Add booking details
-      y += addRow(
-        "Confirmation Date:",
-        formatDate(bookingData.confirmationDate)
-      );
+      // y += addRow(
+      //   "Confirmation Date:",
+      //   formatDate(bookingData.confirmationDate)
+      // );
       y += addRow("By order of:", getBookerName());
       y += addRow("Cost centre:", getCostCenterLabel(bookingData.costCentre));
       y += addRow(
@@ -519,23 +528,6 @@ export function DownloadPDFButton({
       );
 
       y += 5; // Add some extra space
-
-      // Simplified helper for guest names with prepared data
-      const formatGuestNames = (stay: Stay): string => {
-        if (!stay.guestIds || stay.guestIds.length === 0) {
-          return "-";
-        }
-
-        if (
-          stay.guestNames &&
-          Array.isArray(stay.guestNames) &&
-          stay.guestNames.length > 0
-        ) {
-          return stay.guestNames.join(", ");
-        }
-
-        return stay.guestIds.join(", ");
-      };
 
       // If no stays, show message
       if (!preparedStays || preparedStays.length === 0) {
@@ -578,7 +570,8 @@ export function DownloadPDFButton({
           // Check if we need a new page for this stay
           checkNewPage(stayHeight);
           const nights = calculateNights(stay.checkInDate, stay.checkOutDate);
-
+          const nightsText =
+            parseInt(nights) === 1 ? ` ${nights} Night ` : ` ${nights} Nights `;
           // Stay header
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
@@ -586,12 +579,9 @@ export function DownloadPDFButton({
           // Create a more informative stay header with confirmation number, guest names, and room type
           const guestNamesForTitle = formatGuestNames(stay);
           const roomTypeForTitle = stay.roomType || "Room";
-          const confirmationForTitle = stay.confirmationNo
-            ? ` ${stay.confirmationNo}: `
-            : ": ";
 
           // Combine all parts into a full title
-          const fullTitle = `Stay${confirmationForTitle}${guestNamesForTitle} - ${roomTypeForTitle}`;
+          const fullTitle = `Stay: ${guestNamesForTitle} - ${roomTypeForTitle} - ${nightsText}`;
 
           // Calculate maximum width for the title
           const maxTitleWidth = 130; // Adjust based on your layout
@@ -612,9 +602,7 @@ export function DownloadPDFButton({
 
           // y += addRow("Number of Nights:", nights);
 
-          const nightsText =
-            parseInt(nights) === 1 ? `${nights} Night ` : `${nights} Nights `;
-          pdf.text(nightsText, 190, y, { align: "right" });
+          // pdf.text(nightsText, 190, y, { align: "right" });
           // pdf.text(getStatusLabel(stay.status), 190, y, { align: "right" });
           y += 3;
           // Draw a line above the check-in/check-out section
@@ -710,7 +698,7 @@ export function DownloadPDFButton({
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "italic");
         pdf.text(
-          "We thank you for your reservation and we wish you a pleasant stay!",
+          "Thank you for booking with us, we hope you and/or your guest(s) have a pleasant stay!",
           pageMargins.left,
           y
         );
@@ -719,7 +707,6 @@ export function DownloadPDFButton({
         pdf.text("With best regards,", pageMargins.left, y);
 
         y += 8; // Move down for the name
-        pdf.setFont("helvetica", "normal"); // Normal font for the name
         pdf.text("Ruben Boon", pageMargins.left, y);
 
         // Add additional space after the signature
@@ -752,7 +739,7 @@ export function DownloadPDFButton({
           onClick={handleDownloadPDF}
           size="md"
           intent="primary"
-          disabled={isGenerating || disabled}
+          disabled={isGenerating || isSending || disabled}
           type="button"
         >
           {isGenerating ? "Generating PDF..." : "Generate Confirmation PDF"}
@@ -762,8 +749,9 @@ export function DownloadPDFButton({
           intent="secondary"
           onClick={handleSendConfirmation}
           type="button"
+          disabled={isGenerating || isSending || disabled}
         >
-          Send confirmation
+          {isSending ? "Preparing..." : "Send confirmation"}
         </Button>
       </div>
       {disabled && (

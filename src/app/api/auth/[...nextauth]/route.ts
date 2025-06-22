@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { Adapter } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
@@ -22,7 +22,7 @@ export const authOptions = {
       tenantId: process.env.AZURE_AD_TENANT_ID,
     }),
   ],
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise) as Adapter,
   session: {
     strategy: "jwt",
   },
@@ -33,18 +33,32 @@ export const authOptions = {
       }
       return session;
     },
-    // Add this callback to allow email linking between providers
-    async signIn({ user, account, profile, email, credentials }) {
-      console.log("Sign in callback running");
+    // This is the corrected signIn callback
+    async signIn({ user, account }) {
+      // This callback allows you to link accounts with the same email address.
+      if (account?.provider && user.email) {
+        const adapter = authOptions.adapter;
+        const existingUser = await adapter.getUserByEmail(user.email);
 
-      // If email is verified on the provider, allow sign-in
-      if (account?.provider === "google" || account?.provider === "azure-ad") {
-        return true;
+        if (existingUser) {
+          // A user with this email already exists.
+          // Now, check if the new sign-in is from a provider that's already linked to this user.
+          const userByAccount = await adapter.getUserByAccount({
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+          });
+
+          // If the provider is not linked yet, link it.
+          if (!userByAccount) {
+            await adapter.linkAccount({
+              ...account,
+              userId: existingUser.id,
+            });
+          }
+        }
       }
-
-      return true; // Allow all sign-ins by default
+      return true; // Continue with the sign-in process
     },
-    // Add this callback to link accounts
     async jwt({ token, user, account }) {
       // Initial sign in
       if (account && user) {
@@ -60,6 +74,10 @@ export const authOptions = {
   },
   pages: {
     signIn: "/auth/signin",
+    // Note: You have a custom error page defined here.
+    // The logs show a 404 for this page.
+    // Make sure you have a page at /src/app/auth/error/page.tsx
+    // or remove this line to use the default NextAuth error page.
     error: "/auth/error",
   },
 };

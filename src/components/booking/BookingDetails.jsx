@@ -33,7 +33,6 @@ export function BookingDetails({ bookingsContext, stays }) {
   // Regular status update based on data changes and page load
   useEffect(() => {
     if (bookingsContext.selectedItem) {
-      console.log("Checking booking status (page load or data change)");
       const newStatus = determineBookingStatus(
         bookingsContext.selectedItem,
         stays
@@ -42,12 +41,6 @@ export function BookingDetails({ bookingsContext, stays }) {
 
       // Update the status in the context if it's different
       if (bookingsContext.selectedItem.status !== newStatus) {
-        console.log(
-          "Status updated from",
-          bookingsContext.selectedItem.status,
-          "to",
-          newStatus
-        );
         bookingsContext.updateField("status", newStatus);
       }
     }
@@ -62,37 +55,35 @@ export function BookingDetails({ bookingsContext, stays }) {
 
   // Track PDF downloads and email clicks
   useEffect(() => {
-    // Get the download and email buttons
+    // This effect now only tracks clicks, it doesn't create the mailto link
     const downloadButton = document.querySelector(
       ".download-button-container button:first-child"
     );
-    const emailButton = document.querySelector(".download-button-container a");
+    // The selector for the email button might need adjustment if it's not an `a` tag anymore
+    const emailButton = document.querySelector(
+      ".download-button-container button:nth-child(2)"
+    );
 
-    if (downloadButton && emailButton) {
-      // Create event handlers for each button
+    if (downloadButton) {
       const handleDownloadClick = () => {
         trackerRef.current.downloadClicked = true;
         checkBothActions();
       };
+      downloadButton.addEventListener("click", handleDownloadClick);
+      return () =>
+        downloadButton.removeEventListener("click", handleDownloadClick);
+    }
 
+    if (emailButton) {
       const handleEmailClick = () => {
         trackerRef.current.emailClicked = true;
         checkBothActions();
       };
-
-      // Add event listeners
-      downloadButton.addEventListener("click", handleDownloadClick);
       emailButton.addEventListener("click", handleEmailClick);
-
-      // Clean up event listeners when component unmounts
-      return () => {
-        downloadButton.removeEventListener("click", handleDownloadClick);
-        emailButton.removeEventListener("click", handleEmailClick);
-      };
+      return () => emailButton.removeEventListener("click", handleEmailClick);
     }
   }, [bookingId, stays]);
 
-  // Check if both actions were completed
   const checkBothActions = () => {
     if (trackerRef.current.downloadClicked && trackerRef.current.emailClicked) {
       if (!bookingsContext.selectedItem?.confirmationSent) {
@@ -100,6 +91,81 @@ export function BookingDetails({ bookingsContext, stays }) {
         toast.success("Confirmation marked as sent");
       }
     }
+  };
+
+  // Helper function to format date, needed for the email body
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      return new Date(dateString).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  const handleSendConfirmation = (bookerData, preparedStays) => {
+    const bookerFirstName = bookerData?.general?.firstName || "";
+    const bookerLastName = bookerData?.general?.lastName || "";
+    const bookerFullName = `${bookerFirstName} ${bookerLastName}`.trim();
+
+    let subject;
+    if (preparedStays && preparedStays.length > 0) {
+      const firstStay = preparedStays[0];
+      const hotelName = firstStay.hotelName || "the hotel";
+      const guestName =
+        firstStay.guestNames && firstStay.guestNames.length > 0
+          ? firstStay.guestNames[0]
+          : "your guest";
+      const checkInDate = formatDate(firstStay.checkInDate);
+      subject = `Your reservation confirmation at ${hotelName} for ${guestName} on ${checkInDate}`;
+    } else {
+      subject = `Booking Confirmation: ${
+        bookingsContext.selectedItem?.confirmationNo || ""
+      }`;
+    }
+
+    let stayDetailsText = "";
+    if (preparedStays && preparedStays.length > 0) {
+      stayDetailsText = preparedStays
+        .map((stay) => {
+          const guestNames =
+            stay.guestNames && stay.guestNames.length > 0
+              ? stay.guestNames.join(", ")
+              : "N/A";
+          const hotelName = stay.hotelName || "N/A";
+          const checkIn = formatDate(stay.checkInDate);
+          const checkOut = formatDate(stay.checkOutDate);
+          return `Hotel: ${hotelName}, Guest: ${guestNames}, Check-in date: ${checkIn}, Check-out date: ${checkOut}`;
+        })
+        .join("\n"); // Each stay on a new line
+    }
+
+    const body = `Dear ${bookerFullName},
+
+Thank you for making your reservation with us. Please find attached your booking confirmation for the following details:
+
+${stayDetailsText}
+
+Should you have any questions or need to make any changes, please do not hesitate to contact us directly.
+
+We hope you and/or your guest(s) have a pleasant stay.`;
+
+    const bccEmail = "reservations@corporatemeetingpartner.com";
+    const mailtoUrl = `mailto:${
+      bookerData?.general?.email || ""
+    }?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+      body
+    )}&bcc=${bccEmail}`;
+
+    window.open(mailtoUrl, "_blank");
+
+    // Also track the email click for status updates
+    trackerRef.current.emailClicked = true;
+    checkBothActions();
   };
 
   return (
@@ -136,7 +202,6 @@ export function BookingDetails({ bookingsContext, stays }) {
           displayFields={["general.firstName", "general.lastName"]}
           isChanged={isFieldChanged("bookerId")}
           setFieldLoading={bookingsContext.setFieldLoading}
-          // Add key prop to force a fresh instance when booking changes
           key={`booker-${bookingId}`}
         />
         <TextField
@@ -176,22 +241,12 @@ export function BookingDetails({ bookingsContext, stays }) {
           onChange={handleFieldChange}
           isEditing={bookingsContext.isEditing}
           collectionName="companies"
-          displayFields={["name",]}
+          displayFields={["name"]}
           isChanged={isFieldChanged("companyId")}
           setFieldLoading={bookingsContext.setFieldLoading}
           displaySeparator="<br>"
-          // Add key prop to force a fresh instance when booking changes
           key={`company-${bookingId}`}
         />
-
-        {/* <TextField
-          label="Commission invoice no."
-          fieldPath="commissionInvoiceNo"
-          value={bookingsContext.selectedItem?.commissionInvoiceNo || ""}
-          onChange={handleFieldChange}
-          isEditing={bookingsContext.isEditing}
-          isChanged={isFieldChanged("commissionInvoiceNo")}
-        /> */}
         <TextField
           label="Sales invoice"
           fieldPath="salesInvoice"
@@ -214,6 +269,7 @@ export function BookingDetails({ bookingsContext, stays }) {
           bookingData={bookingsContext.selectedItem}
           stays={stays}
           disabled={bookingsContext.isEditing}
+          onSendConfirmation={handleSendConfirmation}
         />
         <div className="checkbox-field">
           <input
@@ -236,52 +292,3 @@ export function BookingDetails({ bookingsContext, stays }) {
     </>
   );
 }
-
-<style jsx>{`
-  .status-field {
-    margin-bottom: 16px;
-    position: relative;
-  }
-  .field-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 6px;
-    color: #374151;
-  }
-  .status-value {
-    padding: 8px 12px;
-    border-radius: 6px;
-    background-color: #f3f4f6;
-    font-size: 14px;
-    line-height: 1.5;
-    border: 1px solid #e5e7eb;
-  }
-  .field-changed-indicator {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 8px;
-    width: 8px;
-    border-radius: 50%;
-    background-color: #3b82f6;
-  }
-
-  .checkbox-field {
-    margin-top: 16px;
-    margin-bottom: 16px;
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .checkbox-label {
-    margin-left: 8px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  input[type="checkbox"] {
-    cursor: pointer;
-  }
-`}</style>;

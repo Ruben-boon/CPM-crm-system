@@ -47,8 +47,7 @@ export default function SignIn() {
           </button>
           <button 
             onClick={() => handleSignIn('azure-ad')} 
-            // disabled={isLoading}
-            disabled={true}
+            disabled={isLoading}
             className="microsoft-signin-btn"
           >
             <svg width="20" height="20" viewBox="0 0 23 23" className="provider-icon">
@@ -60,7 +59,7 @@ export default function SignIn() {
             </svg>
             Sign in with Microsoft
           </button>
-          <p>Microsoft login unavaible at this time.</p>
+  
 
         </div>
         
