@@ -18,7 +18,6 @@ export default function SearchBar({
     { value: "general.lastName", label: "Last Name" },
     { value: "general.email", label: "Email" },
     { value: "general.companyName", label: "Company" },
-
   ] as const;
 
   const companyFields = [
@@ -31,8 +30,8 @@ export default function SearchBar({
 
   const bookingFields = [
     { value: "confirmationNo", label: "Confirmation No." },
-    { value: "travelPeriodStart", label: "Travel Start" },
-    { value: "travelPeriodEnd", label: "Travel End" },
+    { value: "travelPeriodStart", label: "Arrival date" },
+    { value: "travelPeriodEnd", label: "Departure date" },
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
     { value: "status", label: "Status" },
@@ -70,43 +69,16 @@ export default function SearchBar({
 
   const [searchField, setSearchField] = useState(searchableFields[0].value);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusOptions, setStatusOptions] = useState<JSX.Element | null>(null);
 
   useEffect(() => {
+    // Perform an initial search when the component mounts
     onSearch("", searchField);
   }, []);
 
-  // Reset search field when type changes
+  // Reset search field when the entity type changes
   useEffect(() => {
     setSearchField(getSearchableFields()[0].value);
   }, [type]);
-
-  // Show status dropdown when status is selected
-  useEffect(() => {
-    if (searchField === "status" && type === "bookings") {
-      setStatusOptions(
-        <select 
-          className="status-dropdown"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            onSearch(e.target.value, searchField);
-          }}
-        >
-          <option value="">All Statuses</option>
-          <option value="upcoming_no_action">Upcoming - No action taken</option>
-          <option value="upcoming_confirmation_sent">Upcoming - Confirmation send</option>
-          <option value="stayed_missing_invoice">Stayed - Missing Purchase Invoice(s)</option>
-          <option value="invoicing_missing_both">Invoicing - Missing sales invoice and commision</option>
-          <option value="invoicing_missing_sales">Invoicing - Missing sales invoice</option>
-          <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
-          <option value="completed">Completed</option>
-        </select>
-      );
-    } else {
-      setStatusOptions(null);
-    }
-  }, [searchField, type]);
 
   const handleSearch = () => {
     onSearch(searchTerm.trim(), searchField);
@@ -118,11 +90,51 @@ export default function SearchBar({
     }
   };
 
+  // Determine which input type to render based on the selected field
+  const isDateField =
+    type === "bookings" &&
+    (searchField === "travelPeriodStart" || searchField === "travelPeriodEnd");
+
+  const isStatusField = type === "bookings" && searchField === "status";
+
   return (
     <div className="search-group">
       <div className="search-bar">
         <Search className="search-bar__icon" size={20} strokeWidth={1.5} />
-        {!statusOptions ? (
+        
+        {isStatusField ? (
+          <select 
+            className="status-dropdown"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              // Search immediately on status change
+              onSearch(e.target.value, searchField);
+            }}
+          >
+            <option value="">All Statuses</option>
+            <option value="upcoming_no_action">Upcoming - No action taken</option>
+            <option value="upcoming_confirmation_sent">Upcoming - Confirmation send</option>
+            <option value="stayed_missing_invoice">Stayed - Missing Purchase Invoice(s)</option>
+            <option value="invoicing_missing_both">Invoicing - Missing sales invoice and commision</option>
+            <option value="invoicing_missing_sales">Invoicing - Missing sales invoice</option>
+            <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
+            <option value="completed">Completed</option>
+          </select>
+        ) : isDateField ? (
+          <input
+            type="date"
+            className="search-bar__input"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              // Search immediately on date change
+              onSearch(e.target.value, searchField);
+            }}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+          />
+        ) : (
           <input
             type="text"
             className="search-bar__input"
@@ -132,8 +144,6 @@ export default function SearchBar({
             onKeyDown={handleKeyDown}
             disabled={isLoading}
           />
-        ) : (
-          statusOptions
         )}
       </div>
       <select
@@ -141,7 +151,7 @@ export default function SearchBar({
         value={searchField}
         onChange={(e) => {
           setSearchField(e.target.value);
-          // Clear search term when changing fields
+          // Clear search term and results when changing fields
           setSearchTerm("");
           onSearch("", e.target.value);
         }}
@@ -154,15 +164,21 @@ export default function SearchBar({
         ))}
       </select>
 
-      {/* Add some styling for the status dropdown */}
       <style jsx>{`
-        .status-dropdown {
+        .status-dropdown,
+        .search-bar__input[type="date"] {
           flex: 1;
           padding: 8px 12px;
           border: none;
           background: transparent;
           font-size: 14px;
           outline: none;
+          color: inherit; /* Inherit text color from parent */
+        }
+        
+        /* Style for the date picker icon */
+        .search-bar__input[type="date"]::-webkit-calendar-picker-indicator {
+          cursor: pointer;
         }
       `}</style>
     </div>

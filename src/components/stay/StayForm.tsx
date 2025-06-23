@@ -189,10 +189,7 @@ export function StayForm() {
     staysContext.updateField(fieldPath, value);
   };
 
-  const handlePaymentInstructionChange = (
-    fieldPath: string,
-    value: string
-  ) => {
+  const handlePaymentInstructionChange = (fieldPath: string, value: string) => {
     if (value === "custom") {
       staysContext.updateField(fieldPath, "");
     } else {
@@ -216,8 +213,7 @@ export function StayForm() {
   const isStandardPaymentInstruction =
     staysContext.selectedItem?.paymentInstructions &&
     PAYMENT_INSTRUCTION_OPTIONS.some(
-      (option) =>
-        option.value === staysContext.selectedItem.paymentInstructions
+      (option) => option.value === staysContext.selectedItem.paymentInstructions
     );
 
   const showCustomPaymentField = !isStandardPaymentInstruction;
@@ -265,6 +261,14 @@ export function StayForm() {
                   displayFields={["name", "address"]}
                   isChanged={isFieldChanged("hotelId")}
                   setFieldLoading={setIsFieldLoading}
+                />
+                <TextField
+                  label="Hotel Confirmation No."
+                  fieldPath="hotelConfirmationNo"
+                  value={staysContext.selectedItem?.hotelConfirmationNo || ""}
+                  onChange={handleFieldChange}
+                  isEditing={staysContext.isEditing}
+                  isChanged={isFieldChanged("hotelConfirmationNo")}
                 />
                 <DropdownField
                   label="Room Type"
@@ -457,6 +461,15 @@ export function StayForm() {
                   onChange={handleFieldChange}
                   isEditing={staysContext.isEditing}
                   isChanged={isFieldChanged("purchaseInvoice")}
+                />
+
+                <TextField
+                  label="Commission Invoice"
+                  fieldPath="commissionInvoice"
+                  value={staysContext.selectedItem?.commissionInvoice || ""}
+                  onChange={handleFieldChange}
+                  isEditing={staysContext.isEditing}
+                  isChanged={isFieldChanged("commissionInvoice")}
                 />
 
                 <TextField
