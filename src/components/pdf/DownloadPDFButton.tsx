@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { FileDown, Mail } from "lucide-react";
 import Button from "@/components/common/Button";
 import { jsPDF } from "jspdf";
@@ -36,6 +37,7 @@ interface BookingData {
   companyId?: string;
   bookerId?: string;
   stayIds?: string[];
+  confirmationEntity?: string;
 }
 
 interface DownloadPDFButtonProps {
@@ -51,6 +53,7 @@ export function DownloadPDFButton({
   disabled = false,
   onSendConfirmation,
 }: DownloadPDFButtonProps) {
+  const { data: session } = useSession();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
@@ -279,6 +282,31 @@ export function DownloadPDFButton({
 
       // Function to add footer to current page
       const addFooter = (page: number, totalPages: number) => {
+        const selectedEntity =
+          bookingData.confirmationEntity || "Corporate Meeting Partner B.V.";
+
+        let entityDetails;
+
+        if (selectedEntity === "Corporate Meeting Partner (UK) Ltd.") {
+          entityDetails = {
+            name: "Corporate Meeting Partner (UK) Ltd.",
+            addressLine1: "59 St. Martin's Lane",
+            addressLine2: "London, WC2N 4JS (UK)",
+            phone: "Tel. +44 (0)20 4579 0714",
+            line1: "VAT: 472 8350 76  -  Companies House: 15675410",
+          };
+        } else {
+          // Default to Dutch entity
+          entityDetails = {
+            name: "Corporate Meeting Partner B.V.",
+            addressLine1: "Dorpsstraat 20",
+            addressLine2: "2361 BB Warmond (NL)",
+            phone: "Tel. +31 (0)85 0030 395",
+            line1:
+              "BTW: NL860948535B01  -  ICC: 77251563  -  TIDS by lATA: 96075464",
+          };
+        }
+
         pdf.setPage(page);
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "normal");
@@ -287,36 +315,32 @@ export function DownloadPDFButton({
         pdf.setDrawColor(200, 200, 200);
         pdf.line(16, 255, 190, 255);
 
-        // Add the booking reference
-        pdf.text(
-          `VAT: NL860948535B01  -  Rabobank: NL91RABO0353212180  -  CoC: 77251563`,
-          16,
-          260,
-          { align: "left" }
-        );
+        // Add the entity specific info line
+        pdf.text(entityDetails.line1, 16, 260, { align: "left" });
 
         // Add page numbers
-        pdf.text(`Page ${page} of ${totalPages}`, 190, 260, { align: "right" });
+        pdf.text(`Page ${page} of ${totalPages}`, 190, 260, {
+          align: "right",
+        });
 
         // Add corporate information in the footer
         // Company name - bold
         pdf.setFont("helvetica", "bold");
-        pdf.text("Corporate Meeting Partner B.V", 16, 268);
-        // pdf.text("CoC: 77251563", 16, 268);
+        pdf.text(entityDetails.name, 16, 268);
 
         // Rest of the information - normal
         pdf.setFont("helvetica", "normal");
         const lineSpacing = 4;
 
-        // Left column
-        pdf.text("Dorpsstraat 20", 16, 268 + lineSpacing);
-        pdf.text("2361 BB WARMOND, The Netherlands", 16, 268 + lineSpacing * 2);
+        // Left column for address
+        pdf.text(entityDetails.addressLine1, 16, 268 + lineSpacing);
+        pdf.text(entityDetails.addressLine2, 16, 268 + lineSpacing * 2);
 
-        // Middle column
-        pdf.text("Tel. +31 (0)85 0030 395", 80, 268);
+        // Middle column for contact
+        pdf.text(entityDetails.phone, 80, 268);
         pdf.text("www.corporatemeetingpartner.com", 80, 268 + lineSpacing);
         pdf.text(
-          "reservations@corporatemeetingpartner.com",
+          "invoice@corporatemeetingpartner.com",
           80,
           268 + lineSpacing * 2
         );
@@ -503,10 +527,6 @@ export function DownloadPDFButton({
       };
 
       // Add booking details
-      // y += addRow(
-      //   "Confirmation Date:",
-      //   formatDate(bookingData.confirmationDate)
-      // );
       y += addRow("By order of:", getBookerName());
       y += addRow("Cost centre:", getCostCenterLabel(bookingData.costCentre));
       y += addRow(
@@ -600,10 +620,6 @@ export function DownloadPDFButton({
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "normal");
 
-          // y += addRow("Number of Nights:", nights);
-
-          // pdf.text(nightsText, 190, y, { align: "right" });
-          // pdf.text(getStatusLabel(stay.status), 190, y, { align: "right" });
           y += 3;
           // Draw a line above the check-in/check-out section
           pdf.setDrawColor(220, 220, 220);
@@ -649,12 +665,7 @@ export function DownloadPDFButton({
           pdf.setFont("helvetica", "normal");
 
           y += addRow("Hotel:", stay.hotelName || "Unknown hotel");
-          // y += addRow("Hotel ID:", stay.hotelId || "-");
           y += addRow("Room Type:", stay.roomType || "-");
-
-          // Add number of nights row
-          // const nights = calculateNights(stay.checkInDate, stay.checkOutDate);
-          // y += addRow("Number of Nights:", nights);
 
           y += addRow(
             "Room Price:",
@@ -662,7 +673,32 @@ export function DownloadPDFButton({
               ? `${stay.roomPrice} ${stay.roomCurrency || ""}`
               : "-"
           );
-          // y += addRow("Reference:", stay.reference || "-");
+
+          // Add disclaimer for the rate
+          if (stay.roomPrice) {
+            const disclaimerText =
+              "Quoted rates reflect average nightly prices and may vary with changes in stay duration or room type";
+            const disclaimerLines = pdf.splitTextToSize(
+              disclaimerText,
+              190 - 75 // max width for value column
+            );
+
+            checkNewPage(disclaimerLines.length * 4); // Check space
+
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "italic");
+
+            // Start the text where the values start (75)
+            pdf.text(disclaimerLines, 75, y);
+            y += disclaimerLines.length * 3.5; // Update y position
+
+            // Reset font
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(10);
+            pdf.setTextColor(0, 0, 0);
+            y += 5;
+          }
+
           y += addRow("Guests:", formatGuestNames(stay));
 
           if (stay.specialRequests) {
@@ -674,12 +710,10 @@ export function DownloadPDFButton({
           }
 
           if (stay.paymentInstructions) {
-            // For long text fields like payment instructions, ensure proper wrapping
             y += addRow("Payment Instructions:", stay.paymentInstructions);
           }
 
           if (stay.cancellations) {
-            // For long text fields like cancellation policy, ensure proper wrapping
             y += addRow("Cancellation Policy:", stay.cancellations);
           }
 
@@ -688,7 +722,6 @@ export function DownloadPDFButton({
         }
 
         // Add closing message after all stays
-        // Check if we need a new page for the closing message
         checkNewPage(25); // Estimate 25mm for the message
 
         // Add some space before the closing message
@@ -696,7 +729,7 @@ export function DownloadPDFButton({
 
         // Add the closing message in italic
         pdf.setFontSize(10);
-        pdf.setFont("helvetica", "italic");
+        pdf.setFont("helvetica", "normal");
         pdf.text(
           "Thank you for booking with us, we hope you and/or your guest(s) have a pleasant stay!",
           pageMargins.left,
@@ -707,7 +740,8 @@ export function DownloadPDFButton({
         pdf.text("With best regards,", pageMargins.left, y);
 
         y += 8; // Move down for the name
-        pdf.text("Ruben Boon", pageMargins.left, y);
+        const userName = session?.user?.name || "CMP Team";
+        pdf.text(userName, pageMargins.left, y);
 
         // Add additional space after the signature
         y += 10;

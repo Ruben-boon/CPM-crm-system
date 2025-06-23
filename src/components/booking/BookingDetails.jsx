@@ -30,6 +30,17 @@ export function BookingDetails({ bookingsContext, stays }) {
     return !!bookingsContext.pendingChanges[fieldPath];
   };
 
+  const confirmationEntityOptions = [
+    {
+      value: "Corporate Meeting Partner B.V.",
+      label: "Corporate Meeting Partner B.V.",
+    },
+    {
+      value: "Corporate Meeting Partner (UK) Ltd.",
+      label: "Corporate Meeting Partner (UK) Ltd.",
+    },
+  ];
+
   // Regular status update based on data changes and page load
   useEffect(() => {
     if (bookingsContext.selectedItem) {
@@ -247,6 +258,7 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           displaySeparator="<br>"
           key={`company-${bookingId}`}
         />
+
         <TextField
           label="Sales invoice"
           fieldPath="salesInvoice"
@@ -264,6 +276,18 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           multiline={true}
           rows={4}
           isChanged={isFieldChanged("notes")}
+        />
+        <DropdownField
+          label="Confirmation entity"
+          fieldPath="confirmationEntity"
+          value={
+            bookingsContext.selectedItem?.confirmationEntity ||
+            "Corporate Meeting Partner B.V."
+          }
+          onChange={handleFieldChange}
+          options={confirmationEntityOptions}
+          isEditing={bookingsContext.isEditing}
+          isChanged={isFieldChanged("confirmationEntity")}
         />
         <DownloadPDFButton
           bookingData={bookingsContext.selectedItem}
