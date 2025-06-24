@@ -31,6 +31,7 @@ interface RefFieldProps {
   onLoadComplete?: (loaded: boolean, error?: string) => void;
   setFieldLoading?: (isLoading: boolean) => void;
   searchDebounceMs?: number;
+  nameFieldPath?: string;
 }
 
 export function RefField({
@@ -51,6 +52,7 @@ export function RefField({
   onLoadComplete,
   setFieldLoading,
   searchDebounceMs = 300,
+  nameFieldPath,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -240,6 +242,14 @@ export function RefField({
     setDisplayValue(display);
     handleUpdate(fieldPath, result._id, { displayValue: display });
 
+    if (nameFieldPath) {
+      const primaryDisplayField = normalizedDisplayFields[0];
+      if (primaryDisplayField) {
+        const nameValue = getNestedValue(result, primaryDisplayField.path);
+        handleUpdate(nameFieldPath, nameValue);
+      }
+    }
+
     setSearchTerm("");
     setResults([]);
     setIsSearching(false);
@@ -255,6 +265,9 @@ export function RefField({
     setShowSearchInput(true);
 
     handleUpdate(fieldPath, "");
+    if (nameFieldPath) {
+      handleUpdate(nameFieldPath, "");
+    }
 
     if (onLoadComplete) {
       onLoadComplete(true);
