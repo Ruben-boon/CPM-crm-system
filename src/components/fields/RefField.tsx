@@ -32,6 +32,7 @@ interface RefFieldProps {
   setFieldLoading?: (isLoading: boolean) => void;
   searchDebounceMs?: number;
   nameFieldPath?: string;
+  nameFields?: string[]; // <-- ADDED PROP
 }
 
 export function RefField({
@@ -53,6 +54,7 @@ export function RefField({
   setFieldLoading,
   searchDebounceMs = 300,
   nameFieldPath,
+  nameFields, // <-- ADDED PROP
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -242,13 +244,27 @@ export function RefField({
     setDisplayValue(display);
     handleUpdate(fieldPath, result._id, { displayValue: display });
 
+    // --- MODIFICATION START ---
     if (nameFieldPath) {
-      const primaryDisplayField = normalizedDisplayFields[0];
-      if (primaryDisplayField) {
-        const nameValue = getNestedValue(result, primaryDisplayField.path);
+      let nameValue;
+      if (nameFields && nameFields.length > 0) {
+        // Use nameFields to construct the name
+        nameValue = nameFields
+          .map((field) => getNestedValue(result, field))
+          .filter(Boolean)
+          .join(" ");
+      } else {
+        // Fallback to original behavior: use the first displayField
+        const primaryDisplayField = normalizedDisplayFields[0];
+        if (primaryDisplayField) {
+          nameValue = getNestedValue(result, primaryDisplayField.path);
+        }
+      }
+      if (nameValue !== undefined) {
         handleUpdate(nameFieldPath, nameValue);
       }
     }
+    // --- MODIFICATION END ---
 
     setSearchTerm("");
     setResults([]);

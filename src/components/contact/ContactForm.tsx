@@ -258,6 +258,7 @@ export function ContactForm() {
         <RefField
           label="Company"
           fieldPath="general.companyId"
+          nameFieldPath="general.companyName" // <-- ADD THIS LINE
           value={getNestedValue(
             contactsContext.selectedItem,
             "general.companyId"
@@ -270,7 +271,6 @@ export function ContactForm() {
           setFieldLoading={contactsContext.setFieldLoading}
           required={true}
         />
-
         <TextField
           label="Remarks"
           fieldPath="general.remarks"

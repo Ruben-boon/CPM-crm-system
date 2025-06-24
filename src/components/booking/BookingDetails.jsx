@@ -172,7 +172,9 @@ We hope you and/or your guest(s) have a pleasant stay.`;
     navigator.clipboard.writeText(bodyContent).then(
       () => {
         // Success! Inform the user.
-        toast.success("Email content copied to clipboard. Please paste it into your new email.");
+        toast.success(
+          "Email content copied to clipboard. Please paste it into your new email."
+        );
       },
       (err) => {
         // Error. The user will have to copy manually.
@@ -182,7 +184,7 @@ We hope you and/or your guest(s) have a pleasant stay.`;
     );
 
     const bccEmail = "reservations@corporatemeetingpartner.com";
-    
+
     // 3. Create the mailtoUrl WITHOUT the body parameter.
     const mailtoUrl = `mailto:${
       bookerData?.general?.email || ""
@@ -196,7 +198,6 @@ We hope you and/or your guest(s) have a pleasant stay.`;
     trackerRef.current.emailClicked = true;
     checkBothActions();
   };
-
 
   return (
     <>
@@ -234,6 +235,8 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           isChanged={isFieldChanged("bookerId")}
           setFieldLoading={bookingsContext.setFieldLoading}
           key={`booker-${bookingId}`}
+          nameFieldPath="bookerName" // <-- ADD THIS
+          nameFields={["general.firstName", "general.lastName"]} // <-- AND THIS
         />
         <TextField
           label="Cost Centre"
@@ -277,8 +280,8 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           setFieldLoading={bookingsContext.setFieldLoading}
           displaySeparator="<br>"
           key={`company-${bookingId}`}
+          nameFieldPath="companyName" // <-- ADD THIS
         />
-
         <TextField
           label="Sales invoice"
           fieldPath="salesInvoice"
