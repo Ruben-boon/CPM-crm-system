@@ -32,9 +32,9 @@ export default function SearchBar({
     { value: "confirmationNo", label: "Confirmation No." },
     { value: "travelPeriodStart", label: "Arrival date" },
     { value: "travelPeriodEnd", label: "Departure date" },
-    { value: "companyName", label: "Company" },
-    { value: "bookerName", label: "Booker" },
-    { value: "status", label: "Status" },
+    // { value: "companyName", label: "Company" },
+    // { value: "bookerName", label: "Booker" },
+    // { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
 
