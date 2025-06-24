@@ -63,22 +63,23 @@ export function RefField({
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(!value);
 
+  // --- MODIFICATION START: Update queue ---
+  const [updateQueue, setUpdateQueue] = useState<{ path: string; value: any; metadata?: any }[]>([]);
+  // --- MODIFICATION END: Update queue ---
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousValueRef = useRef<string>("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout>();
 
-  // Normalize display fields to always use the object format
   const normalizedDisplayFields = displayFields.map((field) =>
     typeof field === "string" ? { path: field } : field
   );
 
-  // Helper function to extract field value from an object using dot notation
   const getNestedValue = (obj: any, path: string): any => {
     return path.split(".").reduce((o, p) => (o ? o[p] : undefined), obj);
   };
 
-  // Format a document into a display string or JSX element
   const formatDisplayString = (doc: any): React.ReactNode => {
     if (displayTemplate) {
       let result = displayTemplate;
@@ -116,7 +117,6 @@ export function RefField({
     }
   };
 
-  // Use the appropriate update function
   const handleUpdate = (path: string, val: any, metadata?: any) => {
     if (onChange) {
       onChange(path, val, metadata);
@@ -126,8 +126,17 @@ export function RefField({
       console.error("No update function provided to RefField");
     }
   };
+  
+  // --- MODIFICATION START: Process update queue ---
+  useEffect(() => {
+    if (updateQueue.length > 0) {
+      const [firstUpdate, ...restOfQueue] = updateQueue;
+      handleUpdate(firstUpdate.path, firstUpdate.value, firstUpdate.metadata);
+      setUpdateQueue(restOfQueue);
+    }
+  }, [updateQueue, handleUpdate]);
+  // --- MODIFICATION END: Process update queue ---
 
-  // Debounced search function
   const performSearch = useCallback(
     async (term: string) => {
       if (!term.trim()) {
@@ -157,7 +166,6 @@ export function RefField({
     [collectionName, normalizedDisplayFields]
   );
 
-  // Handle search input with debounce
   const handleSearch = (term: string) => {
     setSearchTerm(term);
 
@@ -170,7 +178,6 @@ export function RefField({
     }, searchDebounceMs);
   };
 
-  // Cleanup debounce timer on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
@@ -179,7 +186,6 @@ export function RefField({
     };
   }, []);
 
-  // Load display value effect
   useEffect(() => {
     if (previousValueRef.current === value) {
       return;
@@ -233,46 +239,44 @@ export function RefField({
     normalizedDisplayFields,
   ]);
 
-  // Update showSearchInput when value changes
   useEffect(() => {
     setShowSearchInput(!value);
   }, [value]);
 
-  // Handle selecting a search result
+  // --- MODIFICATION START: Use update queue on select ---
   const handleSelect = (result: any) => {
     const display = formatDisplayString(result);
     setDisplayValue(display);
-    handleUpdate(fieldPath, result._id, { displayValue: display });
 
-    // --- MODIFICATION START ---
+    const updates = [{ path: fieldPath, value: result._id, metadata: { displayValue: display } }];
+
     if (nameFieldPath) {
       let nameValue;
       if (nameFields && nameFields.length > 0) {
-        // Use nameFields to construct the name
         nameValue = nameFields
           .map((field) => getNestedValue(result, field))
           .filter(Boolean)
           .join(" ");
       } else {
-        // Fallback to original behavior: use the first displayField
         const primaryDisplayField = normalizedDisplayFields[0];
         if (primaryDisplayField) {
           nameValue = getNestedValue(result, primaryDisplayField.path);
         }
       }
       if (nameValue !== undefined) {
-        handleUpdate(nameFieldPath, nameValue);
+        updates.push({ path: nameFieldPath, value: nameValue });
       }
     }
-    // --- MODIFICATION END ---
-
+    setUpdateQueue(updates);
+    
     setSearchTerm("");
     setResults([]);
     setIsSearching(false);
     setShowSearchInput(false);
   };
+  // --- MODIFICATION END: Use update queue on select ---
 
-  // Clear the selection
+  // --- MODIFICATION START: Use update queue on clear ---
   const handleClear = () => {
     setDisplayValue("");
     setSearchTerm("");
@@ -280,19 +284,20 @@ export function RefField({
     setIsSearching(false);
     setShowSearchInput(true);
 
-    handleUpdate(fieldPath, "");
+    const updates = [{ path: fieldPath, value: "" }];
     if (nameFieldPath) {
-      handleUpdate(nameFieldPath, "");
+      updates.push({ path: nameFieldPath, value: "" });
     }
-
+    setUpdateQueue(updates);
+    
     if (onLoadComplete) {
       onLoadComplete(true);
     }
 
     setTimeout(() => searchInputRef.current?.focus(), 0);
   };
+  // --- MODIFICATION END: Use update queue on clear ---
 
-  // Read-only view
   if (!isEditing) {
     return (
       <div className="form-field">
@@ -310,7 +315,6 @@ export function RefField({
     );
   }
 
-  // Editable view
   return (
     <div className="form-field ref-field" ref={dropdownRef}>
       <label className="field-label">
