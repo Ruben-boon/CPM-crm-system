@@ -366,7 +366,7 @@ export default function SearchResults({
                         </dd>
                       </div>
                     )}
-                    {/* {item.status && (
+                    {item.status && (
                       <div className="search-results__details-section">
                         <dd className="status-container">
                           <span
@@ -378,7 +378,7 @@ export default function SearchResults({
                           </span>
                         </dd>
                       </div>
-                    )} */}
+                    )}
                   </>
                 ) : null}
               </dl>
