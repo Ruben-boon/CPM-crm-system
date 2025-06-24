@@ -4,22 +4,12 @@ import { searchDocuments } from "@/app/actions/crudActions";
 
 export function SkeletonLoader() {
   console.log("skeleton loader triggered nice!");
-  return (
-    <div className="skeleton-item-ref-field">
-    </div>
-  );
+  return <div className="skeleton-item-ref-field"></div>;
 }
 
 interface DisplayFieldConfig {
   path: string;
   label?: string;
-  format?: (value: any) => string;
-}
-
-interface AdditionalDataConfig {
-  fieldPath: string;
-  sourcePath?: string; // Make optional
-  useDisplayValue?: boolean; // Add this
   format?: (value: any) => string;
 }
 
@@ -39,10 +29,8 @@ interface RefFieldProps {
   displayTemplate?: string;
   displaySeparator?: string;
   onLoadComplete?: (loaded: boolean, error?: string) => void;
-  additionalData?: AdditionalDataConfig[];
-  nameFieldPath?: string;
   setFieldLoading?: (isLoading: boolean) => void;
-  searchDebounceMs?: number; // New prop for customizable debounce delay
+  searchDebounceMs?: number;
 }
 
 export function RefField({
@@ -61,10 +49,8 @@ export function RefField({
   displayTemplate,
   displaySeparator = " ",
   onLoadComplete,
-  additionalData = [],
-  nameFieldPath,
   setFieldLoading,
-  searchDebounceMs = 300, // Default 300ms debounce
+  searchDebounceMs = 300,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -72,25 +58,11 @@ export function RefField({
   const [displayValue, setDisplayValue] = useState<React.ReactNode>("");
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(!value);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousValueRef = useRef<string>("");
-  const searchInputRef = useRef<HTMLInputElement>(null); // Ref for search input
-  const debounceTimerRef = useRef<NodeJS.Timeout>(); // Ref for debounce timer
-
-  // Backward compatibility handling
-  const finalAdditionalData = React.useMemo(() => {
-    const data = [...additionalData];
-    
-    if (nameFieldPath && !data.some(item => item.fieldPath === nameFieldPath)) {
-      data.push({
-        fieldPath: nameFieldPath,
-        sourcePath: "name",
-      });
-    }
-    
-    return data;
-  }, [additionalData, nameFieldPath]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout>();
 
   // Normalize display fields to always use the object format
   const normalizedDisplayFields = displayFields.map((field) =>
@@ -99,13 +71,7 @@ export function RefField({
 
   // Helper function to extract field value from an object using dot notation
   const getNestedValue = (obj: any, path: string): any => {
-    const parts = path.split(".");
-    let result = obj;
-    for (const part of parts) {
-      if (result === undefined || result === null) return undefined;
-      result = result[part];
-    }
-    return result;
+    return path.split(".").reduce((o, p) => (o ? o[p] : undefined), obj);
   };
 
   // Format a document into a display string or JSX element
@@ -157,68 +123,44 @@ export function RefField({
     }
   };
 
-  // Store additional data fields
-  const storeAdditionalData = (doc: any, displayValue?: React.ReactNode) => {
-    finalAdditionalData.forEach((config) => {
-      let valueToStore: any;
-
-      if (config.useDisplayValue) {
-        valueToStore = displayValue;
-      } else if (config.sourcePath) {
-        const sourceValue = getNestedValue(doc, config.sourcePath);
-        valueToStore = config.format ? config.format(sourceValue) : sourceValue;
-      }
-      
-      console.log(`[RefField] Storing additional data: ${config.fieldPath} = ${valueToStore}`);
-      handleUpdate(config.fieldPath, valueToStore || "");
-    });
-  };
-
-  // Clear additional data fields
-  const clearAdditionalData = () => {
-    finalAdditionalData.forEach((config) => {
-      console.log(`[RefField] Clearing additional data: ${config.fieldPath}`);
-      handleUpdate(config.fieldPath, "");
-    });
-  };
-
   // Debounced search function
-  const performSearch = useCallback(async (term: string) => {
-    if (!term.trim()) {
-      setResults([]);
-      setIsSearching(false);
-      return;
-    }
+  const performSearch = useCallback(
+    async (term: string) => {
+      if (!term.trim()) {
+        setResults([]);
+        setIsSearching(false);
+        return;
+      }
 
-    try {
-      const searchPromises = normalizedDisplayFields.map((field) =>
-        searchDocuments(collectionName, term, field.path)
-      );
+      try {
+        const searchPromises = normalizedDisplayFields.map((field) =>
+          searchDocuments(collectionName, term, field.path)
+        );
 
-      const resultsArrays = await Promise.all(searchPromises);
-      const combinedResults = Array.from(
-        new Map(resultsArrays.flat().map((item) => [item._id, item])).values()
-      );
+        const resultsArrays = await Promise.all(searchPromises);
+        const combinedResults = Array.from(
+          new Map(resultsArrays.flat().map((item) => [item._id, item])).values()
+        );
 
-      setResults(combinedResults);
-      setIsSearching(combinedResults.length > 0);
-    } catch (error) {
-      console.error("Search failed:", error);
-      setResults([]);
-      setIsSearching(false);
-    }
-  }, [collectionName, normalizedDisplayFields]);
+        setResults(combinedResults);
+        setIsSearching(combinedResults.length > 0);
+      } catch (error) {
+        console.error("Search failed:", error);
+        setResults([]);
+        setIsSearching(false);
+      }
+    },
+    [collectionName, normalizedDisplayFields]
+  );
 
   // Handle search input with debounce
   const handleSearch = (term: string) => {
     setSearchTerm(term);
 
-    // Clear existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new timer
     debounceTimerRef.current = setTimeout(() => {
       performSearch(term);
     }, searchDebounceMs);
@@ -233,55 +175,37 @@ export function RefField({
     };
   }, []);
 
-  // Load display value effect (unchanged)
+  // Load display value effect
   useEffect(() => {
     if (previousValueRef.current === value) {
       return;
     }
-
     previousValueRef.current = value;
 
     async function fetchDisplayName() {
       if (!value) {
         setDisplayValue("");
-        clearAdditionalData();
-        if (onLoadComplete) {
-          onLoadComplete(true);
-        }
+        if (onLoadComplete) onLoadComplete(true);
         return;
       }
 
       try {
-        console.log(`[RefField] Loading started for ${collectionName} with ID: ${value}`);
-
         setIsLocalLoading(true);
-        if (setFieldLoading) {
-          setFieldLoading(true);
-        }
+        if (setFieldLoading) setFieldLoading(true);
 
         const response = await searchDocuments(collectionName, value, "_id");
 
         if (response && response.length > 0) {
           const display = formatDisplayString(response[0]);
           setDisplayValue(display);
-          storeAdditionalData(response[0], display);
-
-          if (onLoadComplete) {
-            onLoadComplete(true);
-          }
+          if (onLoadComplete) onLoadComplete(true);
         } else {
           setDisplayValue("");
-          clearAdditionalData();
-
-          if (onLoadComplete) {
-            onLoadComplete(true, "Referenced item not found");
-          }
+          if (onLoadComplete) onLoadComplete(true, "Referenced item not found");
         }
       } catch (error) {
         console.error(`Failed to load ${collectionName} details:`, error);
         setDisplayValue(`[Unable to load ${collectionName}]`);
-        clearAdditionalData();
-
         if (onLoadComplete) {
           onLoadComplete(
             false,
@@ -289,12 +213,8 @@ export function RefField({
           );
         }
       } finally {
-        console.log(`[RefField] Loading finished for ${collectionName} with ID: ${value}`);
-
         setIsLocalLoading(false);
-        if (setFieldLoading) {
-          setFieldLoading(false);
-        }
+        if (setFieldLoading) setFieldLoading(false);
       }
     }
 
@@ -302,13 +222,11 @@ export function RefField({
   }, [
     value,
     collectionName,
-    normalizedDisplayFields,
     displayTemplate,
     displaySeparator,
-    fieldPath,
-    finalAdditionalData,
     onLoadComplete,
     setFieldLoading,
+    normalizedDisplayFields,
   ]);
 
   // Update showSearchInput when value changes
@@ -319,10 +237,8 @@ export function RefField({
   // Handle selecting a search result
   const handleSelect = (result: any) => {
     const display = formatDisplayString(result);
-
     setDisplayValue(display);
     handleUpdate(fieldPath, result._id, { displayValue: display });
-    storeAdditionalData(result, display);
 
     setSearchTerm("");
     setResults([]);
@@ -339,16 +255,12 @@ export function RefField({
     setShowSearchInput(true);
 
     handleUpdate(fieldPath, "");
-    clearAdditionalData();
 
     if (onLoadComplete) {
       onLoadComplete(true);
     }
 
-    // Focus the search input after clearing
-    setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 0);
+    setTimeout(() => searchInputRef.current?.focus(), 0);
   };
 
   // Read-only view

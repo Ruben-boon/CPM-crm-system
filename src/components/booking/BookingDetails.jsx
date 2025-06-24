@@ -41,10 +41,6 @@ export function BookingDetails({ bookingsContext, stays }) {
     },
   ];
 
-  const bookerNameConfig = [
-    { fieldPath: 'bookerName', useDisplayValue: true }
-  ];
-
   // Regular status update based on data changes and page load
   useEffect(() => {
     if (bookingsContext.selectedItem) {
@@ -159,7 +155,10 @@ export function BookingDetails({ bookingsContext, stays }) {
         .join("\n"); // Each stay on a new line
     }
 
-    const body = `Dear ${bookerFullName},
+    // --- MODIFICATION START ---
+
+    // 1. Define the body content separately.
+    const bodyContent = `Dear ${bookerFullName},
 
 Thank you for making your reservation with us. Please find attached your booking confirmation for the following details:
 
@@ -169,12 +168,27 @@ Should you have any questions or need to make any changes, please do not hesitat
 
 We hope you and/or your guest(s) have a pleasant stay.`;
 
+    // 2. Copy the body content to the clipboard.
+    navigator.clipboard.writeText(bodyContent).then(
+      () => {
+        // Success! Inform the user.
+        toast.success("Email content copied to clipboard. Please paste it into your new email.");
+      },
+      (err) => {
+        // Error. The user will have to copy manually.
+        toast.error("Could not copy email content to clipboard.");
+        console.error("Could not copy text: ", err);
+      }
+    );
+
     const bccEmail = "reservations@corporatemeetingpartner.com";
+    
+    // 3. Create the mailtoUrl WITHOUT the body parameter.
     const mailtoUrl = `mailto:${
       bookerData?.general?.email || ""
-    }?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-      body
-    )}&bcc=${bccEmail}`;
+    }?subject=${encodeURIComponent(subject)}&bcc=${bccEmail}`;
+
+    // --- MODIFICATION END ---
 
     window.open(mailtoUrl, "_blank");
 
@@ -182,6 +196,7 @@ We hope you and/or your guest(s) have a pleasant stay.`;
     trackerRef.current.emailClicked = true;
     checkBothActions();
   };
+
 
   return (
     <>
@@ -218,7 +233,6 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           displaySeparator=" "
           isChanged={isFieldChanged("bookerId")}
           setFieldLoading={bookingsContext.setFieldLoading}
-          additionalData={bookerNameConfig}
           key={`booker-${bookingId}`}
         />
         <TextField
@@ -254,7 +268,6 @@ We hope you and/or your guest(s) have a pleasant stay.`;
         <RefField
           label="Company"
           fieldPath="companyId"
-          nameFieldPath="companyName"
           value={bookingsContext.selectedItem?.companyId || ""}
           onChange={handleFieldChange}
           isEditing={bookingsContext.isEditing}
