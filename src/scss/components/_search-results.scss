@@ -1,74 +1,102 @@
+// Define a map of status names to their base colors
+$status-colors: (
+  "upcoming_no_action": #f6f6f8,
+  "upcoming_confirmation_sent": #10b981,
+  "stayed_missing_invoice": #ef4444,
+  "invoicing_missing_both": #f59f0b,
+  "invoicing_missing_sales": #f59f0b,
+  "invoicing_missing_commission": #f97416,
+  "completed": #10b981
+);
+
 .search-results {
-    display: grid;
-    gap: 4px;
-    margin-top: 24px;
-    &__no-results {
-      text-align: center;
-      color: hsl(240 5.9% 65%);
-      padding: 2rem;
-    }
-    &__item {
-      background-color: hsl(0 0% 100%);
-      border: 1px solid #f1f1f1;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 2px #0000000d;
-      width:100%;
+  display: grid;
+  gap: 4px;
+  margin-top: 24px;
+  &__no-results {
+    text-align: center;
+    color: hsl(240 5.9% 65%);
+    padding: 2rem;
+  }
+  &__item {
+    background-color: hsl(0 0% 100%);
+    border: 1px solid #f1f1f1;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px #0000000d;
+    width: 100%;
 
-      transition: all 0.2s ease-in-out;
-      overflow: hidden;
-      &:hover {
-        border: 1px solid rgb(170, 170, 170)
-      }
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+    &:hover {
+      border: 1px solid rgb(170, 170, 170);
     }
-    &__content {
-      cursor: pointer;
-      padding: 0.5rem 1rem;
-      display: flex;
-      flex-direction: column;
-    }
-    &__copy-btn {
-      background-color: transparent;
-      border: 1px solid hsl(240 5.9% 90%);
-      color: hsl(240 5.9% 65%);
-      padding: 0.15rem 0.35rem;
-      border-radius: 0.25rem;
-      transition: all 0.2s ease-in-out;
-      cursor: pointer;
-      &:hover {
-        background-color: hsl(240 5.9% 95%);
-        border-color: hsl(240 5.9% 80%);
-      }
-    }
-    &__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-      text-transform: capitalize;
-      &-name {
-        font-weight: 600;
-        color: hsl(240 10% 3.9%);
-      }
 
-   
-    }
-    &__details {
-      display: grid;
-      dt {
-        color: hsl(240 5.9% 65%);
-        text-transform: uppercase;
-        margin-bottom: 0.25rem;
-      }
+    // Use the :has() pseudo-class to style the item based on the presence of a status class
+    @each $status, $color in $status-colors {
+      &:has(.status-#{$status}) {
+        @if $status == "upcoming_no_action" {
+          background-color: darken($color, 2%);
+          border-color: darken($color, 10%);
+        } @else {
+          background-color: mix(white, $color, 92%);
+          border-color: darken(desaturate($color, 20%), 5%);
+        }
 
-      dd {
-        color: hsl(240 10% 3.9%);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap:7px;
-      }
-
-      &-section {
+        &:hover {
+          border-color: darken(desaturate($color, 10%), 10%);
+        }
       }
     }
   }
+  &__content {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  &__copy-btn {
+    background-color: transparent;
+    border: 1px solid hsl(240 5.9% 90%);
+    color: hsl(240 5.9% 65%);
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    &:hover {
+      background-color: hsl(240 5.9% 95%);
+      border-color: hsl(240 5.9% 80%);
+    }
+  }
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    text-transform: capitalize;
+    &-name {
+      font-weight: 600;
+      color: hsl(240 10% 3.9%);
+    }
+  }
+  &__details {
+    display: grid;
+    dt {
+      color: hsl(240 5.9% 65%);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    dd {
+      color: hsl(240 10% 3.9%);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .status-badge-small {
+      width:100%;
+    }
+    &-section {
+    }
+  }
+}
