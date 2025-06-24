@@ -1,5 +1,4 @@
-// Function to determine booking status based on booking data and stays
-// Function to determine booking status based on booking data and stays
+
 export function determineBookingStatus(booking, stays) {
   // Default status for new bookings
   if (!booking) return "upcoming_no_action";
