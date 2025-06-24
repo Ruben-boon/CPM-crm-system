@@ -649,7 +649,11 @@ export function StayModal({
                   multiline={true}
                   rows={4}
                 />
-
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
                 <RadioField
                   label="Prepaid"
                   fieldPath="prepaid"
