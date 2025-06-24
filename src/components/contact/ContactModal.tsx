@@ -166,7 +166,7 @@ export function ContactModal({
     <div className="modal-overlay contact-modal">
       <div className="modal-container">
         <div className="modal-header">
-          <h2>Add Contact</h2>
+          <h2>New Guest</h2>
           <button className="close-button" onClick={onClose}>
             <X size={24} />
           </button>
@@ -176,14 +176,14 @@ export function ContactModal({
           <LoadingSpinner isLoading={isFormLoading} />
 
           <div className="contact-fields-container">
-            <DropdownField
+            {/* <DropdownField
               label="Title"
               fieldPath="general.title"
               value={getNestedValue(contact, "general.title")}
               onChange={handleFieldChange}
               isEditing={true}
               options={TITLE_OPTIONS}
-            />
+            /> */}
 
             <TextField
               label="First Name"
@@ -268,7 +268,7 @@ export function ContactModal({
               disabled={isSubmitting || isFormLoading}
               isLoading={isSubmitting}
             >
-              Create Contact
+              Add Guest
             </Button>
           </div>
         </div>

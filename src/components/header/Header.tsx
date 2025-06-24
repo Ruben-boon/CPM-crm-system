@@ -22,11 +22,12 @@ export default function Header() {
       {isAuthenticated ? (
         <>
           <MenuLink title="Bookings" url="/bookings" icon={Calendar} />
-          <MenuLink title="Contacts" url="/contacts" icon={Users} />
-
+          <MenuLink title="Stays" url="/stays" icon={Bed} />
           <MenuLink title="Hotels" url="/hotels" icon={Hotel} />
           <MenuLink title="Companies" url="/companies" icon={Briefcase} />
-          <MenuLink title="Stays" url="/stays" icon={Bed} />
+
+          <MenuLink title="Contacts" url="/contacts" icon={Users} />
+
 
           <div className="user-section">
             <div className="user-info">

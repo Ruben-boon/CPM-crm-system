@@ -18,7 +18,8 @@ interface DisplayFieldConfig {
 
 interface AdditionalDataConfig {
   fieldPath: string;
-  sourcePath: string;
+  sourcePath?: string; // Make optional
+  useDisplayValue?: boolean; // Add this
   format?: (value: any) => string;
 }
 
@@ -157,13 +158,19 @@ export function RefField({
   };
 
   // Store additional data fields
-  const storeAdditionalData = (doc: any) => {
+  const storeAdditionalData = (doc: any, displayValue?: React.ReactNode) => {
     finalAdditionalData.forEach((config) => {
-      const sourceValue = getNestedValue(doc, config.sourcePath);
-      const formattedValue = config.format ? config.format(sourceValue) : sourceValue;
+      let valueToStore: any;
+
+      if (config.useDisplayValue) {
+        valueToStore = displayValue;
+      } else if (config.sourcePath) {
+        const sourceValue = getNestedValue(doc, config.sourcePath);
+        valueToStore = config.format ? config.format(sourceValue) : sourceValue;
+      }
       
-      console.log(`[RefField] Storing additional data: ${config.fieldPath} = ${formattedValue}`);
-      handleUpdate(config.fieldPath, formattedValue || "");
+      console.log(`[RefField] Storing additional data: ${config.fieldPath} = ${valueToStore}`);
+      handleUpdate(config.fieldPath, valueToStore || "");
     });
   };
 
@@ -257,7 +264,7 @@ export function RefField({
         if (response && response.length > 0) {
           const display = formatDisplayString(response[0]);
           setDisplayValue(display);
-          storeAdditionalData(response[0]);
+          storeAdditionalData(response[0], display);
 
           if (onLoadComplete) {
             onLoadComplete(true);
@@ -315,7 +322,7 @@ export function RefField({
 
     setDisplayValue(display);
     handleUpdate(fieldPath, result._id, { displayValue: display });
-    storeAdditionalData(result);
+    storeAdditionalData(result, display);
 
     setSearchTerm("");
     setResults([]);

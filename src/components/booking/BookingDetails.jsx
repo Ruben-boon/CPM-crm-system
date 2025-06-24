@@ -33,12 +33,16 @@ export function BookingDetails({ bookingsContext, stays }) {
   const confirmationEntityOptions = [
     {
       value: "Corporate Meeting Partner B.V.",
-      label: "Corporate Meeting Partner B.V.",
+      label: "CMP BV",
     },
     {
       value: "Corporate Meeting Partner (UK) Ltd.",
-      label: "Corporate Meeting Partner (UK) Ltd.",
+      label: "CMP Ltd",
     },
+  ];
+
+  const bookerNameConfig = [
+    { fieldPath: 'bookerName', useDisplayValue: true }
   ];
 
   // Regular status update based on data changes and page load
@@ -211,8 +215,10 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           isEditing={bookingsContext.isEditing}
           collectionName="contacts"
           displayFields={["general.firstName", "general.lastName"]}
+          displaySeparator=" "
           isChanged={isFieldChanged("bookerId")}
           setFieldLoading={bookingsContext.setFieldLoading}
+          additionalData={bookerNameConfig}
           key={`booker-${bookingId}`}
         />
         <TextField
@@ -248,6 +254,7 @@ We hope you and/or your guest(s) have a pleasant stay.`;
         <RefField
           label="Company"
           fieldPath="companyId"
+          nameFieldPath="companyName"
           value={bookingsContext.selectedItem?.companyId || ""}
           onChange={handleFieldChange}
           isEditing={bookingsContext.isEditing}

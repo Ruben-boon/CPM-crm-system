@@ -1,4 +1,3 @@
-
 "use client";
 import { useState } from "react";
 import { Edit, ExternalLink, Copy, X } from "lucide-react";
@@ -30,7 +29,7 @@ export function StayCard({
     prepaid: stay?.prepaid || "no",
     prepaidDetails: stay?.prepaidDetails || "",
     purchaseInvoice: stay?.purchaseInvoice || "",
-    commissionInvoice: stay?.commissionInvoice || "", // <-- ADDED
+    commissionInvoice: stay?.commissionInvoice || "",
     hotelConfirmationNo: stay?.hotelConfirmationNo || "",
   });
   const [savingFields, setSavingFields] = useState({});
@@ -55,10 +54,10 @@ export function StayCard({
       setSavingFields((prev) => ({ ...prev, [fieldPath]: true }));
 
       try {
-        // Create updated stay with the changed field
+        // Create updated stay with all the current changes from the form
         const updatedStay = {
           ...stay,
-          [fieldPath]: value,
+          ...stayUpdate,
         };
 
         const result = await updateDocument("stays", stay._id, updatedStay);

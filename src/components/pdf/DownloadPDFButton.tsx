@@ -293,7 +293,7 @@ export function DownloadPDFButton({
             addressLine1: "59 St. Martin's Lane",
             addressLine2: "London, WC2N 4JS (UK)",
             phone: "Tel. +44 (0)20 4579 0714",
-            line1: "VAT: 472 8350 76  -  Companies House: 15675410",
+            line1: "VAT: 472 8350 76  -  Companies House: 15675410 - TIDS by lATA: 96172016",
           };
         } else {
           // Default to Dutch entity
@@ -670,8 +670,8 @@ export function DownloadPDFButton({
           y += addRow(
             "Room Price:",
             stay.roomPrice
-              ? `${stay.roomPrice} ${stay.roomCurrency || ""}`
-              : "-"
+              ? `${stay.roomPrice} ${stay.roomCurrency || ""} per night`
+              : "-",
           );
 
           // Add disclaimer for the rate
