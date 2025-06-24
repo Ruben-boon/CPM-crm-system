@@ -60,7 +60,7 @@ export function TextField({
         <label className="field-label">{label}</label>
         {multiline ? (
           <div className={`read-only-text ${className}`}>
-            {value || <span className="empty-reference">-</span>}
+            {value || <span className="empty-reference"></span>}
           </div>
         ) : (
           <input
