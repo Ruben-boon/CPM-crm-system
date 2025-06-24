@@ -15,8 +15,8 @@ import { toast } from "sonner";
 export function BookingDetails({ bookingsContext, stays }) {
   const [statusValue, setStatusValue] = useState("upcoming_no_action");
   const trackerRef = useRef({ downloadClicked: false, emailClicked: false });
+  const isSavingStatus = useRef(false); // Ref to prevent concurrent auto-saves
 
-  // Memoize the booking ID to make component more stable and prevent unnecessary re-renders
   const bookingId = useMemo(
     () => bookingsContext.selectedItem?._id,
     [bookingsContext.selectedItem?._id]
@@ -41,58 +41,93 @@ export function BookingDetails({ bookingsContext, stays }) {
     },
   ];
 
-  // Regular status update based on data changes and page load
+  // MODIFICATION START: This useEffect now handles auto-saving the status correctly.
   useEffect(() => {
-    if (bookingsContext.selectedItem) {
-      const newStatus = determineBookingStatus(
-        bookingsContext.selectedItem,
-        stays
-      );
-      setStatusValue(newStatus);
+    if (!bookingsContext.selectedItem?._id || isSavingStatus.current) {
+      return;
+    }
 
-      // Update the status in the context if it's different
-      if (bookingsContext.selectedItem.status !== newStatus) {
-        bookingsContext.updateField("status", newStatus);
-      }
+    const newStatus = determineBookingStatus(
+      bookingsContext.selectedItem,
+      stays
+    );
+    setStatusValue(newStatus);
+
+    if (bookingsContext.selectedItem.status !== newStatus) {
+      const updateAndSaveStatus = async () => {
+        isSavingStatus.current = true;
+
+        try {
+          bookingsContext.updateField("status", newStatus);
+
+          // FIX: Construct the object for saving. `selectedItem` already contains
+          // the latest UI values. We just ensure the new status is included.
+          // We no longer spread `pendingChanges` here, which was the cause of the crash.
+          const updatedBooking = {
+            ...bookingsContext.selectedItem,
+            status: newStatus,
+          };
+
+          const saveSuccess = await bookingsContext.updateItem(updatedBooking);
+
+          if (saveSuccess) {
+            toast.success("Booking status automatically updated and saved.");
+          } else {
+            toast.warning(
+              "Could not auto-save status. Please save your changes manually."
+            );
+          }
+        } catch (error) {
+          console.error("Error during automatic status save:", error);
+          toast.error("An error occurred while auto-saving the status.");
+        } finally {
+          isSavingStatus.current = false;
+        }
+      };
+
+      updateAndSaveStatus();
     }
   }, [
-    bookingsContext.selectedItem, // Check on any booking change including load
-    bookingsContext.selectedItem?.confirmationSent,
-    bookingsContext.selectedItem?.travelPeriodEnd,
-    bookingsContext.selectedItem?.salesInvoice,
-    bookingsContext.selectedItem?.commissionInvoiceNo,
+    bookingsContext.selectedItem,
     stays,
+    bookingsContext.updateField,
+    bookingsContext.updateItem,
+    bookingsContext.pendingChanges,
   ]);
+  // MODIFICATION END
 
-  // Track PDF downloads and email clicks
   useEffect(() => {
-    // This effect now only tracks clicks, it doesn't create the mailto link
     const downloadButton = document.querySelector(
       ".download-button-container button:first-child"
     );
-    // The selector for the email button might need adjustment if it's not an `a` tag anymore
     const emailButton = document.querySelector(
       ".download-button-container button:nth-child(2)"
     );
 
+    const handleDownloadClick = () => {
+      trackerRef.current.downloadClicked = true;
+      checkBothActions();
+    };
     if (downloadButton) {
-      const handleDownloadClick = () => {
-        trackerRef.current.downloadClicked = true;
-        checkBothActions();
-      };
       downloadButton.addEventListener("click", handleDownloadClick);
-      return () =>
-        downloadButton.removeEventListener("click", handleDownloadClick);
     }
 
+    const handleEmailClick = () => {
+      trackerRef.current.emailClicked = true;
+      checkBothActions();
+    };
     if (emailButton) {
-      const handleEmailClick = () => {
-        trackerRef.current.emailClicked = true;
-        checkBothActions();
-      };
       emailButton.addEventListener("click", handleEmailClick);
-      return () => emailButton.removeEventListener("click", handleEmailClick);
     }
+
+    return () => {
+      if (downloadButton) {
+        downloadButton.removeEventListener("click", handleDownloadClick);
+      }
+      if (emailButton) {
+        emailButton.removeEventListener("click", handleEmailClick);
+      }
+    };
   }, [bookingId, stays]);
 
   const checkBothActions = () => {
@@ -104,7 +139,6 @@ export function BookingDetails({ bookingsContext, stays }) {
     }
   };
 
-  // Helper function to format date, needed for the email body
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     try {
@@ -152,49 +186,29 @@ export function BookingDetails({ bookingsContext, stays }) {
           const checkOut = formatDate(stay.checkOutDate);
           return `Hotel: ${hotelName}, Guest: ${guestNames}, Check-in date: ${checkIn}, Check-out date: ${checkOut}`;
         })
-        .join("\n"); // Each stay on a new line
+        .join("\n");
     }
 
-    // --- MODIFICATION START ---
+    const bodyContent = `Dear ${bookerFullName},\n\nThank you for making your reservation with us. Please find attached your booking confirmation for the following details:\n\n${stayDetailsText}\n\nShould you have any questions or need to make any changes, please do not hesitate to contact us directly.\n\nWe hope you and/or your guest(s) have a pleasant stay.`;
 
-    // 1. Define the body content separately.
-    const bodyContent = `Dear ${bookerFullName},
-
-Thank you for making your reservation with us. Please find attached your booking confirmation for the following details:
-
-${stayDetailsText}
-
-Should you have any questions or need to make any changes, please do not hesitate to contact us directly.
-
-We hope you and/or your guest(s) have a pleasant stay.`;
-
-    // 2. Copy the body content to the clipboard.
     navigator.clipboard.writeText(bodyContent).then(
       () => {
-        // Success! Inform the user.
         toast.success(
           "Email content copied to clipboard. Please paste it into your new email."
         );
       },
       (err) => {
-        // Error. The user will have to copy manually.
         toast.error("Could not copy email content to clipboard.");
         console.error("Could not copy text: ", err);
       }
     );
 
     const bccEmail = "reservations@corporatemeetingpartner.com";
-
-    // 3. Create the mailtoUrl WITHOUT the body parameter.
     const mailtoUrl = `mailto:${
       bookerData?.general?.email || ""
     }?subject=${encodeURIComponent(subject)}&bcc=${bccEmail}`;
 
-    // --- MODIFICATION END ---
-
     window.open(mailtoUrl, "_blank");
-
-    // Also track the email click for status updates
     trackerRef.current.emailClicked = true;
     checkBothActions();
   };
@@ -235,8 +249,8 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           isChanged={isFieldChanged("bookerId")}
           setFieldLoading={bookingsContext.setFieldLoading}
           key={`booker-${bookingId}`}
-          nameFieldPath="bookerName" // <-- ADD THIS
-          nameFields={["general.firstName", "general.lastName"]} // <-- AND THIS
+          nameFieldPath="bookerName"
+          nameFields={["general.firstName", "general.lastName"]}
         />
         <TextField
           label="Cost Centre"
@@ -280,7 +294,7 @@ We hope you and/or your guest(s) have a pleasant stay.`;
           setFieldLoading={bookingsContext.setFieldLoading}
           displaySeparator="<br>"
           key={`company-${bookingId}`}
-          nameFieldPath="companyName" // <-- ADD THIS
+          nameFieldPath="companyName"
         />
         <TextField
           label="Sales invoice"

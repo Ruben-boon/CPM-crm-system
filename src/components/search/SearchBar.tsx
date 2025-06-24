@@ -34,7 +34,7 @@ export default function SearchBar({
     { value: "travelPeriodEnd", label: "Departure date" },
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
-    // { value: "status", label: "Status" },
+    { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
 
