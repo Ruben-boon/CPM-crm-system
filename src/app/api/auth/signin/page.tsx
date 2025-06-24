@@ -20,7 +20,7 @@ export default function SignIn() {
         <p>Please sign in to Miceflow</p>
         
         <div className="auth-buttons">
-          <button
+          {/* <button
             onClick={() => handleSignIn("google")}
             disabled={isLoading}
             className="google-signin-btn"
@@ -44,7 +44,7 @@ export default function SignIn() {
               />
             </svg>
             Sign in with Google
-          </button>
+          </button> */}
           <button 
             onClick={() => handleSignIn('azure-ad')} 
             disabled={isLoading}
