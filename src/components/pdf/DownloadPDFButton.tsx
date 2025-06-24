@@ -293,7 +293,7 @@ export function DownloadPDFButton({
             addressLine1: "59 St. Martin's Lane",
             addressLine2: "London, WC2N 4JS (UK)",
             phone: "Tel. +44 (0)20 4579 0714",
-            line1: "VAT: 472 8350 76  -  Companies House: 15675410 - TIDS by lATA: 96172016",
+            line1: "Companies House: 15675410",
           };
         } else {
           // Default to Dutch entity
@@ -303,7 +303,7 @@ export function DownloadPDFButton({
             addressLine2: "2361 BB Warmond (NL)",
             phone: "Tel. +31 (0)85 0030 395",
             line1:
-              "BTW: NL860948535B01  -  ICC: 77251563  -  TIDS by lATA: 96075464",
+              "ICC: 77251563",
           };
         }
 
@@ -315,9 +315,6 @@ export function DownloadPDFButton({
         pdf.setDrawColor(200, 200, 200);
         pdf.line(16, 255, 190, 255);
 
-        // Add the entity specific info line
-        pdf.text(entityDetails.line1, 16, 260, { align: "left" });
-
         // Add page numbers
         pdf.text(`Page ${page} of ${totalPages}`, 190, 260, {
           align: "right",
@@ -326,21 +323,22 @@ export function DownloadPDFButton({
         // Add corporate information in the footer
         // Company name - bold
         pdf.setFont("helvetica", "bold");
-        pdf.text(entityDetails.name, 16, 268);
+        pdf.text(entityDetails.name, 16, 264);
 
         // Rest of the information - normal
         pdf.setFont("helvetica", "normal");
         const lineSpacing = 4;
 
         // Left column for address
-        pdf.text(entityDetails.addressLine1, 16, 268 + lineSpacing);
-        pdf.text(entityDetails.addressLine2, 16, 268 + lineSpacing * 2);
+        pdf.text(entityDetails.addressLine1, 16, 264 + lineSpacing);
+        pdf.text(entityDetails.addressLine2, 16, 264 + lineSpacing * 2);
+        pdf.text(entityDetails.line1, 16, 264 + lineSpacing * 3);
 
         // Middle column for contact
         pdf.text(entityDetails.phone, 80, 268);
         pdf.text("www.corporatemeetingpartner.com", 80, 268 + lineSpacing);
         pdf.text(
-          "invoice@corporatemeetingpartner.com",
+          "reservations@corporatemeetingpartner.com",
           80,
           268 + lineSpacing * 2
         );
