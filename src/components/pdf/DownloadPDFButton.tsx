@@ -24,6 +24,7 @@ interface Stay {
   paymentInstructions?: string;
   cancellations?: string;
   confirmationNo?: string;
+  hotelConfirmationNo?: string;
 }
 
 interface BookingData {
@@ -663,6 +664,9 @@ export function DownloadPDFButton({
           pdf.setFont("helvetica", "normal");
 
           y += addRow("Hotel:", stay.hotelName || "Unknown hotel");
+          if (stay.hotelConfirmationNo) {
+            y += addRow("Hotel Confirmation No.:", stay.hotelConfirmationNo);
+          }
           y += addRow("Room Type:", stay.roomType || "-");
 
           y += addRow(
@@ -706,6 +710,8 @@ export function DownloadPDFButton({
           if (stay.remarks) {
             y += addRow("Remarks:", stay.remarks);
           }
+
+
 
           if (stay.paymentInstructions) {
             y += addRow("Payment Instructions:", stay.paymentInstructions);
