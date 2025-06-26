@@ -5,17 +5,22 @@ import Button from "@/components/common/Button";
 import { jsPDF } from "jspdf";
 import { searchDocuments } from "@/app/actions/crudActions";
 
-// Define types for the booking and stay data
+// MODIFIED: Added paymentType to the Stay interface
 interface Stay {
   _id: string;
   checkInDate?: string;
   checkOutDate?: string;
   hotelName?: string;
   hotelId?: string;
+  hotelAddress?: string;
+  hotelPostcode?: string;
+  hotelCity?: string;
+  hotelCountry?: string;
   roomType?: string;
   roomNumber?: string;
   roomPrice?: string;
   roomCurrency?: string;
+  paymentType?: string;
   reference?: string;
   guestIds?: string[];
   guestNames?: string[];
@@ -155,6 +160,50 @@ export function DownloadPDFButton({
     return staysWithNames;
   };
 
+  const fetchAndAttachHotelDetails = async (
+    staysToPrepare: Stay[]
+  ): Promise<Stay[]> => {
+    if (!staysToPrepare || staysToPrepare.length === 0) return [];
+
+    const hotelIds = [
+      ...new Set(staysToPrepare.map((stay) => stay.hotelId).filter((id) => id)),
+    ];
+    if (hotelIds.length === 0) return staysToPrepare;
+
+    try {
+      const hotelPromises = hotelIds.map((id) =>
+        searchDocuments("hotels", id, "_id")
+      );
+      const hotelResults = await Promise.all(hotelPromises);
+
+      const hotelsMap = new Map<string, any>();
+      hotelResults.forEach((result) => {
+        if (Array.isArray(result) && result.length > 0) {
+          const hotel = result[0];
+          hotelsMap.set(hotel._id, hotel);
+        }
+      });
+
+      return staysToPrepare.map((stay) => {
+        if (stay.hotelId && hotelsMap.has(stay.hotelId)) {
+          const hotelData = hotelsMap.get(stay.hotelId);
+          return {
+            ...stay,
+            hotelAddress: hotelData.address,
+            hotelPostcode: hotelData.postal_code,
+            hotelCity: hotelData.city,
+            hotelCountry: hotelData.country,
+          };
+        }
+        return stay;
+      });
+    } catch (error) {
+      console.error("Error fetching hotel details:", error);
+      // toast.error("Could not fetch hotel details.");
+      return staysToPrepare; // Return original stays if fetching fails
+    }
+  };
+
   const handleSendConfirmation = async (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -163,7 +212,8 @@ export function DownloadPDFButton({
     setIsSending(true);
 
     try {
-      const preparedStays = await prepareStaysWithGuestNames(stays);
+      let preparedStays = await prepareStaysWithGuestNames(stays);
+      preparedStays = await fetchAndAttachHotelDetails(preparedStays); // Also fetch hotel details
       onSendConfirmation(bookerData, preparedStays);
     } catch (error) {
       console.error("Error preparing confirmation data:", error);
@@ -254,8 +304,8 @@ export function DownloadPDFButton({
     setIsGenerating(true);
 
     try {
-      // First, prepare stays with guest names
-      const preparedStays = await prepareStaysWithGuestNames(stays);
+      let preparedStays = await prepareStaysWithGuestNames(stays);
+      preparedStays = await fetchAndAttachHotelDetails(preparedStays);
 
       // Create a new PDF document
       const pdf = new jsPDF({
@@ -392,7 +442,7 @@ export function DownloadPDFButton({
       // Calculate appropriate vertical spacing based on logo height
       y = Math.max(y + calculatedHeight + 15, 55);
 
-      // Add company info to the top right if available
+      // MODIFICATION START: Add full company address to the top right
       if (companyData) {
         pdf.setFontSize(10);
         let companyY = 28; // Starting Y position at top margin
@@ -413,12 +463,21 @@ export function DownloadPDFButton({
           companyY += 4;
         }
 
-        if (companyData.postal_code) {
-          pdf.text(companyData.postal_code, rightMargin, companyY, {
+        const cityLine = [companyData.postal_code, companyData.city]
+          .filter(Boolean)
+          .join(" ");
+        if (cityLine) {
+          pdf.text(cityLine, rightMargin, companyY, { align: "right" });
+          companyY += 4;
+        }
+
+        if (companyData.country) {
+          pdf.text(companyData.country, rightMargin, companyY, {
             align: "right",
           });
         }
       }
+      // MODIFICATION END
 
       // Confirmation section with room count on the same line
       const confirmationNumber = bookingData.confirmationNo || bookingData._id;
@@ -664,6 +723,24 @@ export function DownloadPDFButton({
           pdf.setFont("helvetica", "normal");
 
           y += addRow("Hotel:", stay.hotelName || "Unknown hotel");
+
+          const addressParts = [
+            stay.hotelAddress,
+            stay.hotelPostcode,
+            stay.hotelCity,
+            stay.hotelCountry,
+          ].filter(Boolean); // Filter out any empty/null parts
+
+          if (addressParts.length > 0) {
+            const cityLine = [stay.hotelPostcode, stay.hotelCity]
+              .filter(Boolean)
+              .join(" ");
+            const fullAddress = [stay.hotelAddress, cityLine, stay.hotelCountry]
+              .filter(Boolean)
+              .join(", ");
+            y += addRow("Hotel address:", fullAddress);
+          }
+
           if (stay.hotelConfirmationNo) {
             y += addRow("Hotel Confirmation No.:", stay.hotelConfirmationNo);
           }
@@ -675,6 +752,10 @@ export function DownloadPDFButton({
               ? `${stay.roomPrice} ${stay.roomCurrency || ""} per night`
               : "-",
           );
+          
+          if (stay.paymentType) {
+            y += addRow("", stay.paymentType);
+          }
 
           // Add disclaimer for the rate
           if (stay.roomPrice) {
@@ -710,8 +791,6 @@ export function DownloadPDFButton({
           if (stay.remarks) {
             y += addRow("Remarks:", stay.remarks);
           }
-
-
 
           if (stay.paymentInstructions) {
             y += addRow("Payment Instructions:", stay.paymentInstructions);

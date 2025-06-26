@@ -65,6 +65,10 @@ const CANCELLATION_OPTIONS = [
       "Non-Refundable Reservation – This booking cannot be canceled or modified without incurring charges.",
     label: "Non-ref",
   },
+  {
+    value: "custom",
+    label: "Custom cancellation ..",
+  },
 ];
 
 const PAYMENT_INSTRUCTION_OPTIONS = [
@@ -104,6 +108,25 @@ const PAYMENT_INSTRUCTION_OPTIONS = [
   {
     value: "custom",
     label: "Custom payment ..",
+  },
+];
+
+const PAYMENT_TYPE_OPTIONS = [
+  {
+    value: "Above rate is including breakfast and excluding Citytax",
+    label: "Incl. BK, Exc. Citytax",
+  },
+  {
+    value: "Above rate is including breakfast and including Citytax",
+    label: "Incl. BK & Citytax",
+  },
+  {
+    value: "Above rate is excluding breakfast and including Citytax",
+    label: "Exc. BK, Incl. Citytax",
+  },
+  {
+    value: "Above rate is excluding breakfast and excluding Citytax",
+    label: "Exc. BK & Citytax",
   },
 ];
 
@@ -167,14 +190,16 @@ export function StayModal({
     prepaid: "no",
     prepaidDetails: "",
     purchaseInvoice: "",
-    commissionInvoice: "", // <-- ADDED: Initialize new field
+    commissionInvoice: "",
     remarks: "",
-    adminRemarks: "", // Added field
-    paymentInstructions: "",
-    cancellations: "",
+    adminRemarks: "",
     specialRequests: "",
     confirmationNo: "",
     bookingId: bookingId || stay.bookingId || "",
+    // MODIFIED: Set default values for these fields to the first option
+    paymentType: PAYMENT_TYPE_OPTIONS[0].value,
+    paymentInstructions: PAYMENT_INSTRUCTION_OPTIONS[0].value,
+    cancellations: CANCELLATION_OPTIONS[0].value,
     ...stay,
   });
 
@@ -328,6 +353,14 @@ export function StayModal({
     }
   };
 
+  const handleCancellationChange = (fieldPath: string, value: string) => {
+    if (value === "custom") {
+      handleFieldChange(fieldPath, "");
+    } else {
+      handleFieldChange(fieldPath, value);
+    }
+  };
+
   const handleAddContact = useCallback(() => {
     setIsContactModalOpen(true);
   }, []);
@@ -423,6 +456,18 @@ export function StayModal({
 
   const paymentInstructionDropdownValue = isStandardPaymentInstruction
     ? stayData.paymentInstructions
+    : "custom";
+
+  const isStandardCancellation =
+    stayData?.cancellations &&
+    CANCELLATION_OPTIONS.some(
+      (option) => option.value === stayData.cancellations
+    );
+
+  const showCustomCancellationField = !isStandardCancellation;
+
+  const cancellationDropdownValue = isStandardCancellation
+    ? stayData.cancellations
     : "custom";
 
   return (
@@ -526,6 +571,16 @@ export function StayModal({
                 </div>
 
                 <DropdownField
+                  label="Payment Type"
+                  fieldPath="paymentType"
+                  value={stayData.paymentType || ""}
+                  onChange={handleFieldChange}
+                  isEditing={true}
+                  options={PAYMENT_TYPE_OPTIONS}
+                  placeholder="Select a payment type"
+                />
+
+                <DropdownField
                   label="Payment Instructions"
                   fieldPath="paymentInstructions"
                   value={paymentInstructionDropdownValue || ""}
@@ -554,11 +609,28 @@ export function StayModal({
                 <DropdownField
                   label="Cancellations"
                   fieldPath="cancellations"
-                  value={stayData.cancellations || ""}
-                  onChange={handleFieldChange}
+                  value={cancellationDropdownValue || ""}
+                  onChange={handleCancellationChange}
                   isEditing={true}
                   options={CANCELLATION_OPTIONS}
                 />
+
+                {showCustomCancellationField && (
+                  <TextField
+                    fieldPath="cancellations"
+                    label=""
+                    value={
+                      isStandardCancellation
+                        ? ""
+                        : stayData?.cancellations || ""
+                    }
+                    onChange={handleFieldChange}
+                    isEditing={true}
+                    multiline={true}
+                    rows={4}
+                    placeholder="Enter custom cancellation policy"
+                  />
+                )}
 
                 <div className="currency-group">
                   <label className="field-label">Tax</label>
@@ -649,11 +721,11 @@ export function StayModal({
                   multiline={true}
                   rows={4}
                 />
-      <br/>
-      <br/>
-      <br/>
-      <br/>
-      <br/>
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
                 <RadioField
                   label="Prepaid"
                   fieldPath="prepaid"

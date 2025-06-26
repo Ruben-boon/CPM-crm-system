@@ -203,7 +203,7 @@ export function BookingDetails({ bookingsContext, stays }) {
       }
     );
 
-    const bccEmail = "reservations@corporatemeetingpartner.com";
+    const bccEmail = "donotreply@corporatemeetingpartner.com";
     const mailtoUrl = `mailto:${
       bookerData?.general?.email || ""
     }?subject=${encodeURIComponent(subject)}&bcc=${bccEmail}`;

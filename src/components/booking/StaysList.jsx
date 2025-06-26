@@ -90,9 +90,9 @@ export function StaysList({
             </Button>
           </div>
           {bookingsContext.isEditing && (
-            <Button 
-              icon={Plus} 
-              onClick={onAddStay} 
+            <Button
+              icon={Plus}
+              onClick={onAddStay}
               size="sm"
               type="button"
             >
@@ -109,11 +109,10 @@ export function StaysList({
           </div>
         ) : (
           <div className="stays-list">
-            {sortedStays.map((stay, index) => (
+            {sortedStays.map((stay) => (
               <StayCard
-                key={stay._id || index}
+                key={stay._id}
                 stay={stay}
-                index={index}
                 isEditing={bookingsContext.isEditing}
                 onEditStay={onEditStay}
                 onCopyStay={onCopyStay}

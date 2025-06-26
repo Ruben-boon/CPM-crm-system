@@ -191,30 +191,38 @@ export function BookingForm() {
     }
   };
 
-  const handleRemoveStay = (stay, index) => {
-    // Ask for confirmation before removing
+  // --- THIS IS THE FIX ---
+  const handleRemoveStay = (stayIdToRemove) => {
     if (
       confirm(
         `Are you sure you want to remove this stay from the booking? This will not delete the stay itself.`
       )
     ) {
-      // Create new arrays without the removed stay
-      const newStayIds = [...bookingsContext.selectedItem.stayIds];
-      newStayIds.splice(index, 1);
+      // Use filter to correctly remove the stay by its unique ID
+      const newStayIds = (bookingsContext.selectedItem.stayIds || []).filter(
+        (id) => id !== stayIdToRemove
+      );
+      const newStays = stays.filter((stay) => stay._id !== stayIdToRemove);
 
-      const newStays = [...stays];
-      newStays.splice(index, 1);
-
-      // Update the form data
+      // Update the form context with the new array of IDs
       bookingsContext.updateField("stayIds", newStayIds);
 
-      // Update the stays list locally for immediate UI feedback
+      // Update the local stays state for immediate UI feedback
       setStays(newStays);
+      
+      // Also update the main booking to trigger the autosave
+      const updatedBooking = {
+        ...bookingsContext.selectedItem,
+        stayIds: newStayIds,
+      };
+      bookingsContext.updateItem(updatedBooking);
 
-      // Show success message
-      toast.success("Stay removed from booking");
+
+      toast.success("Stay removed and booking saved.");
     }
   };
+  // --- END OF FIX ---
+
 
   const handleStaySaved = async (savedStay) => {
     if (!savedStay || !savedStay._id) {
