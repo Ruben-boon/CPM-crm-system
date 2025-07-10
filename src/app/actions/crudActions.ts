@@ -75,7 +75,30 @@ export async function searchDocuments<T>(
         return [];
       }
     } else {
-      query[searchField] = { $regex: searchTerm, $options: "i" };
+      // --- MODIFICATION START ---
+      // Determine the correct field path, handling nested fields for specific cases.
+      const effectiveSearchField =
+        collectionName === "bookings" && searchField === "hotelName"
+          ? "staySummaries.hotelName"
+          : searchField;
+
+      // Split the search term into individual words.
+      const searchWords = searchTerm.trim().split(/\s+/).filter(Boolean);
+
+      if (searchWords.length > 1) {
+        // For multiple words, use $and to ensure all words are present in the field.
+        query.$and = searchWords.map((word) => ({
+          [effectiveSearchField]: { $regex: word, $options: "i" },
+        }));
+      } else if (searchWords.length === 1) {
+        // For a single word, use the simple regex query.
+        query[effectiveSearchField] = {
+          $regex: searchWords[0],
+          $options: "i",
+        };
+      }
+      // If searchTerm is empty or only spaces, the query remains empty, matching all documents.
+      // --- MODIFICATION END ---
     }
   }
 

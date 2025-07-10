@@ -29,6 +29,7 @@ export default function SearchBar({
   ] as const;
 
   const bookingFields = [
+    { value: "hotelName", label: "Hotel" },
     { value: "confirmationNo", label: "Confirmation No." },
     { value: "travelPeriodStart", label: "Arrival date" },
     { value: "travelPeriodEnd", label: "Departure date" },

@@ -260,7 +260,7 @@ export default function SearchResults({
                         </dd>
                       </div>
                     )}
-                      {item.general?.role && (
+                    {item.general?.role && (
                       <div className="search-results__details-section">
                         <dd>
                           <UserRound size={14}></UserRound>
@@ -363,6 +363,20 @@ export default function SearchResults({
                       <div className="search-results__details-section">
                         <dd>
                           <CreditCard size={14} /> {item.costCentre}
+                        </dd>
+                      </div>
+                    )}
+                    {item.staySummaries && item.staySummaries.length > 0 && (
+                      <div className="search-results__details-section">
+                        <dd>
+                          <Hotel size={14} />{" "}
+                          {[
+                            ...new Set(
+                              item.staySummaries.map((s) => s.hotelName)
+                            ),
+                          ]
+                            .filter(Boolean) // Remove any null/undefined names
+                            .join(", ")}
                         </dd>
                       </div>
                     )}
