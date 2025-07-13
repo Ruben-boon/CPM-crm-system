@@ -31,10 +31,9 @@ export default function SearchBar({
   const bookingFields = [
     { value: "hotelName", label: "Hotel" },
     { value: "confirmationNo", label: "Confirmation No." },
-    { value: "travelPeriodStart", label: "Arrival date" },
-    { value: "travelPeriodEnd", label: "Departure date" },
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
+    { value: "dateInRange", label: "Date in Range" }, 
     { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
@@ -91,12 +90,9 @@ export default function SearchBar({
     }
   };
 
-  // Determine which input type to render based on the selected field
-  const isDateField =
-    type === "bookings" &&
-    (searchField === "travelPeriodStart" || searchField === "travelPeriodEnd");
-
   const isStatusField = type === "bookings" && searchField === "status";
+  // --- ADDED: Condition for the new date range field ---
+  const isDateInRangeField = type === "bookings" && searchField === "dateInRange";
 
   return (
     <div className="search-group">
@@ -109,7 +105,6 @@ export default function SearchBar({
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              // Search immediately on status change
               onSearch(e.target.value, searchField);
             }}
           >
@@ -122,7 +117,8 @@ export default function SearchBar({
             <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
             <option value="completed">Completed</option>
           </select>
-        ) : isDateField ? (
+        // --- ADDED: Render a date picker for the new field ---
+        ) : isDateInRangeField ? (
           <input
             type="date"
             className="search-bar__input"
@@ -152,7 +148,6 @@ export default function SearchBar({
         value={searchField}
         onChange={(e) => {
           setSearchField(e.target.value);
-          // Clear search term and results when changing fields
           setSearchTerm("");
           onSearch("", e.target.value);
         }}
@@ -174,10 +169,9 @@ export default function SearchBar({
           background: transparent;
           font-size: 14px;
           outline: none;
-          color: inherit; /* Inherit text color from parent */
+          color: inherit;
         }
         
-        /* Style for the date picker icon */
         .search-bar__input[type="date"]::-webkit-calendar-picker-indicator {
           cursor: pointer;
         }

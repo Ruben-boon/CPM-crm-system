@@ -1,17 +1,22 @@
-
 export function determineBookingStatus(booking, stays) {
   // Default status for new bookings
   if (!booking) return "upcoming_no_action";
 
-  // Check if departure date has passed
-  const currentDate = new Date();
-  const departureDate = booking.travelPeriodEnd ? new Date(booking.travelPeriodEnd) : null;
+  // --- MODIFICATION START ---
+  // Calculate the latest departure date from the associated stays.
+  const checkOutDates = (stays || [])
+      .map(stay => stay.checkOutDate)
+      .filter(d => d && !isNaN(new Date(d).getTime())) // Filter out invalid dates
+      .map(d => new Date(d));
+
+  const latestDepartureDate = checkOutDates.length > 0
+      ? new Date(Math.max(...checkOutDates.map(d => d.getTime())))
+      : null;
+  // --- MODIFICATION END ---
   
-  // Log for debugging
-  console.log('Current date:', currentDate);
-  console.log('Departure date string:', booking.travelPeriodEnd);
-  console.log('Parsed departure date:', departureDate);
-  console.log('Has departure date passed?', departureDate && departureDate < currentDate);
+  const currentDate = new Date();
+  // Use the dynamically calculated latest departure date.
+  const departureDate = latestDepartureDate;
   
   const hasDepatureDatePassed = departureDate && departureDate < currentDate;
 
@@ -30,7 +35,6 @@ export function determineBookingStatus(booking, stays) {
     // If we get here, all purchase invoices are present
     // Only now do we check sales invoice and commission
     const hasSalesInvoice = booking.salesInvoice && booking.salesInvoice.trim() !== "";
-    // UPDATED: Check all stays for a commission invoice number
     const hasCommission = stays.length > 0 && 
       stays.every(stay => stay.commissionInvoice && stay.commissionInvoice.trim() !== "");
 

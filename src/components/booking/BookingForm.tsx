@@ -79,42 +79,31 @@ export function BookingForm() {
 
   const loadRelatedStays = async (bookingId) => {
     if (!bookingId || loadingRef.current) return;
-
+  
     try {
       loadingRef.current = true;
       setLoadingStays(true);
-
-      // Get stayIds directly from the current booking context
-      const stayIds = bookingsContext.selectedItem?.stayIds || []; //
-
-      if (stayIds.length === 0) {
+  
+      const booking = bookingsContext.selectedItem;
+      const staySummaries = booking?.staySummaries || [];
+  
+      if (staySummaries.length === 0) {
         setStays([]);
         return;
       }
-
-      // Load all stays at once with a single batch of promises
-      const stayPromises = stayIds.map((stayId) =>
-        searchDocuments("stays", stayId, "_id") //
+  
+      const stayIdsToLoad = staySummaries.map(summary => summary.stayId);
+  
+      const stayPromises = stayIdsToLoad.map((stayId) =>
+        searchDocuments("stays", stayId, "_id")
       );
-
-      const stayResults = await Promise.all(stayPromises); //
-
-      const loadedStays = stayResults
-        .filter((result) => Array.isArray(result) && result.length > 0)
-        .map((result) => result[0]);
-
+  
+      const stayResults = await Promise.all(stayPromises);
+  
+      const loadedStays = stayResults.flat().filter(Boolean);
+  
       setStays(loadedStays);
-
-      // --- MODIFIED START ---
-      // Create the summary array from the loaded stays
-      const staySummaries = loadedStays.map((stay) => ({
-        stayId: stay._id,
-        hotelName: stay.hotelName || "Unknown Hotel",
-        checkInDate: stay.checkInDate,
-        checkOutDate: stay.checkOutDate,
-      }));
-      bookingsContext.updateField("staySummaries", staySummaries);
-      // --- MODIFIED END ---
+  
     } catch (err) {
       console.error("Error loading related stays:", err);
       toast.error("Failed to load stays");
@@ -130,10 +119,10 @@ export function BookingForm() {
       e.stopPropagation();
     }
     const newStay = {
-      checkInDate: bookingsContext.selectedItem?.travelPeriodStart || "", //
-      checkOutDate: bookingsContext.selectedItem?.travelPeriodEnd || "", //
-      status: "unconfirmed", //
-      prepaid: "no", //
+      checkInDate: bookingsContext.selectedItem?.travelPeriodStart || "",
+      checkOutDate: bookingsContext.selectedItem?.travelPeriodEnd || "",
+      status: "unconfirmed",
+      prepaid: "no",
     };
 
     setSelectedStay(newStay);
@@ -148,37 +137,43 @@ export function BookingForm() {
   };
 
   const handleCopyStay = (stay) => {
-    // Create a deep copy of the stay
+    // Deep clone the original stay object to avoid modifying the original
     const stayCopy = JSON.parse(JSON.stringify(stay));
-
-    // Remove the _id to ensure it creates a new stay
+  
+    // Remove the database ID to ensure it's saved as a new document
     delete stayCopy._id;
-
-    // Modify the reference to indicate it's a copy
+  
+    // Update the reference field to indicate it's a copy
     if (stayCopy.reference) {
       stayCopy.reference = `${stayCopy.reference} (Copy)`;
+    } else {
+      stayCopy.reference = `${stay.hotelName} (Copy)`;
     }
-
+  
+    // Clear fields that are unique to a specific stay instance
+    stayCopy.hotelConfirmationNo = "";
+    stayCopy.purchaseInvoice = "";
+    stayCopy.commissionInvoice = "";
+  
+    // Reset the status to 'unconfirmed' for the new copied stay
+    stayCopy.status = "unconfirmed";
+  
+    // Set the prepared copy as the selected stay and open the modal
     setSelectedStay(stayCopy);
-    setIsCopyMode(true);
+    setIsCopyMode(true); // Indicate that this is a copy operation
     setIsModalOpen(true);
   };
 
   const handleViewStay = (stayId) => {
-    // Find the stay in our current stays array
     const stayToView = stays.find((stay) => stay._id === stayId);
-
     if (stayToView) {
-      // Set the stay data for the modal
       setSelectedStay(stayToView);
       setIsCopyMode(false);
       setIsModalOpen(true);
     } else {
-      // If for some reason we can't find the stay in our current data,
-      // fetch it from the database
       const fetchStay = async () => {
         try {
-          const result = await searchDocuments("stays", stayId, "_id"); //
+          const result = await searchDocuments("stays", stayId, "_id");
           if (Array.isArray(result) && result.length > 0) {
             setSelectedStay(result[0]);
             setIsCopyMode(false);
@@ -191,7 +186,6 @@ export function BookingForm() {
           toast.error("Error loading stay details");
         }
       };
-
       fetchStay();
     }
   };
@@ -202,36 +196,24 @@ export function BookingForm() {
         `Are you sure you want to remove this stay from the booking? This will not delete the stay itself.`
       )
     ) {
-      // Use filter to correctly remove the stay by its unique ID
-      const newStayIds = (bookingsContext.selectedItem.stayIds || []).filter( //
-        (id) => id !== stayIdToRemove
-      );
-      const newStays = stays.filter((stay) => stay._id !== stayIdToRemove); //
+      const newStays = stays.filter((stay) => stay._id !== stayIdToRemove);
 
-      // --- MODIFIED START ---
-      // Re-create the summary array from the updated list of stays
       const newSummaries = newStays.map((stay) => ({
         stayId: stay._id,
         hotelName: stay.hotelName || "Unknown Hotel",
         checkInDate: stay.checkInDate,
         checkOutDate: stay.checkOutDate,
       }));
-      // --- MODIFIED END ---
 
-      // Update the form context with the new array of IDs
-      bookingsContext.updateField("stayIds", newStayIds); //
       bookingsContext.updateField("staySummaries", newSummaries);
-      // Update the local stays state for immediate UI feedback
       setStays(newStays);
       
-      // Also update the main booking to trigger the autosave
+      const { stayIds, ...bookingData } = bookingsContext.selectedItem;
       const updatedBooking = {
-        ...bookingsContext.selectedItem,
-        stayIds: newStayIds,
+        ...bookingData,
         staySummaries: newSummaries,
       };
-      bookingsContext.updateItem(updatedBooking); //
-
+      bookingsContext.updateItem(updatedBooking);
 
       toast.success("Stay removed and booking saved.");
     }
@@ -242,48 +224,32 @@ export function BookingForm() {
       return; 
     }
 
-    // Create an updated list of stays to work from
     const existingStayIndex = stays.findIndex(
       (stay) => stay._id === savedStay._id
     );
     const newStaysList = [...stays];
-
-    // Check if this is a new stay or an update
-    const isNewStay =
-      (bookingsContext.selectedItem.stayIds?.indexOf(savedStay._id) ?? -1) === -1; //
-    let newStayIds;
+    const isNewStay = existingStayIndex === -1;
 
     if (isNewStay) {
-      // This is a new stay - add it to our arrays
-      newStayIds = [
-        ...(bookingsContext.selectedItem.stayIds || []), //
-        savedStay._id,
-      ];
-
-      bookingsContext.updateField("stayIds", newStayIds); //
       newStaysList.push(savedStay);
       setStays(newStaysList);
 
-      // --- MODIFIED START ---
-      // Create the new summary array
       const newSummaries = newStaysList.map((stay) => ({
         stayId: stay._id,
         hotelName: stay.hotelName || "Unknown Hotel",
         checkInDate: stay.checkInDate,
         checkOutDate: stay.checkOutDate,
       }));
-      // --- MODIFIED END ---
       bookingsContext.updateField("staySummaries", newSummaries);
 
-      // Auto-save the booking to database with the new stay ID
       if (bookingsContext.selectedItem._id) {
+        const { stayIds, ...bookingData } = bookingsContext.selectedItem;
         const updatedBooking = {
-          ...bookingsContext.selectedItem,
-          stayIds: newStayIds,
+          ...bookingData,
           staySummaries: newSummaries,
         };
 
-        const saveSuccess = await bookingsContext.updateItem(updatedBooking); //
+        const saveSuccess = await bookingsContext.updateItem(updatedBooking);
 
         if (saveSuccess) {
           toast.success("Stay added and booking updated", {
@@ -296,26 +262,19 @@ export function BookingForm() {
         }
       }
     } else {
-      // This is an existing stay that's been updated
-      newStayIds = [...bookingsContext.selectedItem.stayIds]; //
-
       newStaysList[existingStayIndex] = savedStay;
       setStays(newStaysList);
 
-      // --- MODIFIED START ---
-      // Re-create the summary array to catch potential hotel name or date changes
       const updatedSummaries = newStaysList.map((stay) => ({
         stayId: stay._id,
         hotelName: stay.hotelName || "Unknown Hotel",
         checkInDate: stay.checkInDate,
         checkOutDate: stay.checkOutDate,
       }));
-      // --- MODIFIED END ---
       bookingsContext.updateField("staySummaries", updatedSummaries);
       toast.success("Stay updated successfully");
     }
 
-    // Close the modal
     setIsModalOpen(false);
   };
 
@@ -353,7 +312,6 @@ export function BookingForm() {
         </div>
       </CommonForm>
 
-      {/* Include CSS for status badge styling */}
       <style jsx global>{`
         /* Custom style to modify the top bar title */
         .top-bar__title {

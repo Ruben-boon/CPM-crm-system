@@ -5,7 +5,7 @@ import Button from "@/components/common/Button";
 import { jsPDF } from "jspdf";
 import { searchDocuments } from "@/app/actions/crudActions";
 
-// MODIFIED: Added paymentType to the Stay interface
+// MODIFIED: Updated Stay interface to match the correct data structure
 interface Stay {
   _id: string;
   checkInDate?: string;
@@ -21,6 +21,8 @@ interface Stay {
   roomPrice?: string;
   roomCurrency?: string;
   paymentType?: string;
+  taxAmount?: string; // Correct field for tax amount
+  taxCurrency?: string; // Correct field for tax currency
   reference?: string;
   guestIds?: string[];
   guestNames?: string[];
@@ -318,12 +320,12 @@ export function DownloadPDFButton({
       const pageMargins = {
         top: 16,
         right: 16,
-        bottom: 16, // Increased bottom margin to accommodate larger footer
+        bottom: 16, // This margin is for the physical edge of the paper
         left: 16,
       };
 
-      // Available content area height
-      const contentHeight = 297 - pageMargins.top - pageMargins.bottom - 10; // A4 height minus margins and footer space
+      // MODIFIED: Increased footer space from 10 to 40 to prevent overlap
+      const contentHeight = 297 - pageMargins.top - pageMargins.bottom - 40; // A4 height minus margins and footer space
 
       // Current y position on the page
       let y = pageMargins.top;
@@ -338,6 +340,7 @@ export function DownloadPDFButton({
 
         let entityDetails;
 
+        // MODIFIED: Added TIDS number to entity details
         if (selectedEntity === "Corporate Meeting Partner (UK) Ltd.") {
           entityDetails = {
             name: "Corporate Meeting Partner (UK) Ltd.",
@@ -345,6 +348,7 @@ export function DownloadPDFButton({
             addressLine2: "London, WC2N 4JS (UK)",
             phone: "Tel. +44 (0)20 4579 0714",
             line1: "Companies House: 15675410",
+            tids: "TIDS by IATA: 96172016",
           };
         } else {
           // Default to Dutch entity
@@ -353,8 +357,8 @@ export function DownloadPDFButton({
             addressLine1: "Dorpsstraat 20",
             addressLine2: "2361 BB Warmond (NL)",
             phone: "Tel. +31 (0)85 0030 395",
-            line1:
-              "ICC: 77251563",
+            line1: "ICC: 77251563",
+            tids: "TIDS by IATA: 96075464",
           };
         }
 
@@ -384,6 +388,9 @@ export function DownloadPDFButton({
         pdf.text(entityDetails.addressLine1, 16, 264 + lineSpacing);
         pdf.text(entityDetails.addressLine2, 16, 264 + lineSpacing * 2);
         pdf.text(entityDetails.line1, 16, 264 + lineSpacing * 3);
+        // MODIFIED: Render TIDS number
+        pdf.text(entityDetails.tids, 16, 264 + lineSpacing * 4);
+
 
         // Middle column for contact
         pdf.text(entityDetails.phone, 80, 268);
@@ -395,10 +402,9 @@ export function DownloadPDFButton({
         );
       };
 
-      // Function to check if we need a new page - FIXED to remove footer duplication
+      // Function to check if we need a new page
       const checkNewPage = (requiredHeight: number) => {
         if (y + requiredHeight > pageMargins.top + contentHeight) {
-          // No longer adding footer here to prevent duplication
           pdf.addPage();
           currentPage++;
           y = pageMargins.top;
@@ -442,7 +448,7 @@ export function DownloadPDFButton({
       // Calculate appropriate vertical spacing based on logo height
       y = Math.max(y + calculatedHeight + 15, 55);
 
-      // MODIFICATION START: Add full company address to the top right
+      // Add full company address to the top right
       if (companyData) {
         pdf.setFontSize(10);
         let companyY = 28; // Starting Y position at top margin
@@ -477,30 +483,18 @@ export function DownloadPDFButton({
           });
         }
       }
-      // MODIFICATION END
 
-      // Confirmation section with room count on the same line
+      // Confirmation section
       const confirmationNumber = bookingData.confirmationNo || bookingData._id;
-      const roomCount = preparedStays?.length || 0;
 
       // Add confirmation number on the left with "Confirmation" in bold
       pdf.setFontSize(16);
       pdf.setFont("helvetica", "bold");
       pdf.text("Confirmation ", pageMargins.left, y);
-
-      // Calculate width of the bold "Confirmation " text
       const confirmationTextWidth = pdf.getTextWidth("Confirmation ");
-
-      // Add the confirmation number in normal font
-      pdf.setFont("helvetica", "bold");
       pdf.text(confirmationNumber, pageMargins.left + confirmationTextWidth, y);
 
-      // Add room count on the right of the same line
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "bold");
-      // pdf.text(`Rooms (${roomCount})`, 190, y, { align: "right" });
-
-      y += 8; // Move y down after the confirmation header
+      y += 8;
 
       // Function to add key-value row and update y position
       const addRow = (
@@ -512,38 +506,27 @@ export function DownloadPDFButton({
       ): number => {
         pdf.setFontSize(10);
 
-        // Calculate available width for the value
         const valueStartX = 75;
-        const maxValueWidth = 190 - valueStartX; // Right margin (190) minus value start position
+        const maxValueWidth = 190 - valueStartX;
 
-        // Split text into lines if it would exceed the available width
         pdf.setFont("helvetica", "normal");
         const splitValue = pdf.splitTextToSize(value, maxValueWidth);
         const lineCount = splitValue.length;
-
-        // Calculate row height based on number of lines (6mm per line)
         const rowHeight = 6 * lineCount;
 
-        // Check if we need a new page for this row
         if (checkNewPage(rowHeight)) {
-          // We're now on a new page with reset y position
+          // New page
         }
 
-        // Add the key in bold
         pdf.setFont("helvetica", "bold");
         pdf.text(key, pageMargins.left + indent, y);
 
-        // Add the value with potential line wrapping
         pdf.setFont("helvetica", "normal");
 
         if (isLink) {
-          // Keep text color black for hyperlinks
           pdf.setTextColor(0, 0, 0);
-
           if (lineCount === 1) {
-            // Add text and link for single line
             pdf.textWithLink(value, valueStartX, y, { url: url });
-            // Add black underline
             pdf.setDrawColor(0, 0, 0);
             pdf.line(
               valueStartX,
@@ -552,11 +535,9 @@ export function DownloadPDFButton({
               y + 1
             );
           } else {
-            // For multiline links - handle each line
             splitValue.forEach((line: string, index: number) => {
               const yPos = y + index * 6;
               pdf.textWithLink(line, valueStartX, yPos, { url: url });
-              // Add black underline for each line
               const lineWidth = pdf.getTextWidth(line);
               pdf.setDrawColor(0, 0, 0);
               pdf.line(
@@ -568,19 +549,15 @@ export function DownloadPDFButton({
             });
           }
         } else {
-          // Regular text (non-link)
           if (lineCount === 1) {
-            // Single line - simple case
             pdf.text(value, valueStartX, y);
           } else {
-            // Multiple lines - render each line
             splitValue.forEach((line: string, index: number) => {
               pdf.text(line, valueStartX, y + index * 6);
             });
           }
         }
 
-        // Return height used
         return rowHeight;
       };
 
@@ -600,17 +577,15 @@ export function DownloadPDFButton({
       y += addRow(
         "Privacy Policy:",
         "Privacy Policy confirmations",
-        0, // No indent
-        true, // This is a link
+        0,
+        true,
         "https://www.corporatemeetingpartner.com/privacy-policy"
       );
 
-      y += 5; // Add some extra space
+      y += 5;
 
-      // If no stays, show message
       if (!preparedStays || preparedStays.length === 0) {
-        checkNewPage(10); // Check if we need a new page for this message
-
+        checkNewPage(10);
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "italic");
         pdf.text("No stays associated with this booking", 105, y, {
@@ -622,10 +597,7 @@ export function DownloadPDFButton({
         for (let i = 0; i < preparedStays.length; i++) {
           const stay = preparedStays[i];
 
-          // Estimate height needed for this stay
-          let stayHeight = 80; // Base height for a stay
-
-          // Function to estimate text height
+          let stayHeight = 80;
           const estimateTextHeight = (
             text?: string,
             maxWidth = 115
@@ -633,10 +605,9 @@ export function DownloadPDFButton({
             if (!text) return 0;
             pdf.setFontSize(10);
             const lines = pdf.splitTextToSize(text, maxWidth);
-            return lines.length * 6; // 6mm per line
+            return lines.length * 6;
           };
 
-          // Add more height for optional fields with potential wrapping
           if (stay.specialRequests)
             stayHeight += estimateTextHeight(stay.specialRequests);
           if (stay.remarks) stayHeight += estimateTextHeight(stay.remarks);
@@ -645,30 +616,25 @@ export function DownloadPDFButton({
           if (stay.cancellations)
             stayHeight += estimateTextHeight(stay.cancellations);
 
-          // Check if we need a new page for this stay
           checkNewPage(stayHeight);
           const nights = calculateNights(stay.checkInDate, stay.checkOutDate);
           const nightsText =
-            parseInt(nights) === 1 ? ` ${nights} Night ` : ` ${nights} Nights `;
+            parseInt(nights) === 1 ? `${nights} Night` : `${nights} Nights`;
+
           // Stay header
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
 
-          // Create a more informative stay header with confirmation number, guest names, and room type
+          // MODIFIED: Removed room type from stay header
           const guestNamesForTitle = formatGuestNames(stay);
-          const roomTypeForTitle = stay.roomType || "Room";
+          const fullTitle = `Stay: ${guestNamesForTitle} - ${nightsText}`;
 
-          // Combine all parts into a full title
-          const fullTitle = `Stay: ${guestNamesForTitle} - ${roomTypeForTitle} - ${nightsText}`;
-
-          // Calculate maximum width for the title
-          const maxTitleWidth = 130; // Adjust based on your layout
+          const maxTitleWidth = 130;
           const truncatedTitle = pdf.splitTextToSize(
             fullTitle,
             maxTitleWidth
           )[0];
 
-          // Add ellipsis if the title was truncated
           const displayTitle =
             truncatedTitle.length < fullTitle.length
               ? truncatedTitle + "..."
@@ -679,11 +645,8 @@ export function DownloadPDFButton({
           pdf.setFont("helvetica", "normal");
 
           y += 3;
-          // Draw a line above the check-in/check-out section
           pdf.setDrawColor(220, 220, 220);
           pdf.line(pageMargins.left, y, 190, y);
-
-          // Add some space after the top line
           y += 3;
 
           // Check-in
@@ -694,7 +657,6 @@ export function DownloadPDFButton({
           pdf.setFont("helvetica", "bold");
           pdf.text(formatDate(stay.checkInDate), 30 + checkInTextWidth, y + 4);
 
-          // Line separator between check-in and check-out
           pdf.setDrawColor(220, 220, 220);
           pdf.line(105, y - 2, 105, y + 8);
 
@@ -709,13 +671,9 @@ export function DownloadPDFButton({
             y + 4
           );
 
-          // Add some space before the bottom line
           y += 8;
-
-          // Draw a line below the check-in/check-out section
           pdf.setDrawColor(220, 220, 220);
           pdf.line(pageMargins.left, y, 190, y);
-
           y += 5;
 
           // Stay details
@@ -729,7 +687,7 @@ export function DownloadPDFButton({
             stay.hotelPostcode,
             stay.hotelCity,
             stay.hotelCountry,
-          ].filter(Boolean); // Filter out any empty/null parts
+          ].filter(Boolean);
 
           if (addressParts.length > 0) {
             const cityLine = [stay.hotelPostcode, stay.hotelCity]
@@ -757,25 +715,21 @@ export function DownloadPDFButton({
             y += addRow("", stay.paymentType);
           }
 
-          // Add disclaimer for the rate
           if (stay.roomPrice) {
             const disclaimerText =
               "Quoted rates reflect average nightly prices and may vary with changes in stay duration or room type";
             const disclaimerLines = pdf.splitTextToSize(
               disclaimerText,
-              190 - 75 // max width for value column
+              190 - 75
             );
 
-            checkNewPage(disclaimerLines.length * 4); // Check space
+            checkNewPage(disclaimerLines.length * 4);
 
             pdf.setFontSize(10);
             pdf.setFont("helvetica", "italic");
-
-            // Start the text where the values start (75)
             pdf.text(disclaimerLines, 75, y);
-            y += disclaimerLines.length * 3.5; // Update y position
+            y += disclaimerLines.length * 3.5;
 
-            // Reset font
             pdf.setFont("helvetica", "normal");
             pdf.setFontSize(10);
             pdf.setTextColor(0, 0, 0);
@@ -783,6 +737,12 @@ export function DownloadPDFButton({
           }
 
           y += addRow("Guests:", formatGuestNames(stay));
+          
+          // MODIFIED: Use taxAmount and taxCurrency to display the tax information
+          if (stay.taxAmount) {
+            const taxValue = `${stay.taxAmount} ${stay.taxCurrency || ""}`.trim();
+            y += addRow("Total local taxes:", taxValue);
+          }
 
           if (stay.specialRequests) {
             y += addRow("Special Requests:", stay.specialRequests);
@@ -800,17 +760,12 @@ export function DownloadPDFButton({
             y += addRow("Cancellation Policy:", stay.cancellations);
           }
 
-          // Add space between stays
           y += 10;
         }
 
-        // Add closing message after all stays
-        checkNewPage(25); // Estimate 25mm for the message
-
-        // Add some space before the closing message
+        checkNewPage(25);
         y += 5;
 
-        // Add the closing message in italic
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
         pdf.text(
@@ -819,14 +774,13 @@ export function DownloadPDFButton({
           y
         );
 
-        y += 8; // Move down for the "With best regards" line
+        y += 8;
         pdf.text("With best regards,", pageMargins.left, y);
 
-        y += 8; // Move down for the name
+        y += 8;
         const userName = session?.user?.name || "CMP Team";
         pdf.text(userName, pageMargins.left, y);
 
-        // Add additional space after the signature
         y += 10;
       }
 

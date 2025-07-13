@@ -268,14 +268,14 @@ export function StayCard({
               >
                 Remove
               </Button>
-              {/* <Button
+              <Button
                 icon={Copy}
                 onClick={handleCopyClick}
                 size="sm"
                 intent="outline"
                 title="Copy stay"
                 type="button"
-              ></Button> */}
+              ></Button>
               <Button
                 icon={Edit}
                 onClick={handleEditClick}

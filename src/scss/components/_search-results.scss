@@ -1,12 +1,49 @@
+@use 'sass:map';
+
 // Define a map of status names to their base colors
 $status-colors: (
-  "upcoming_no_action": #f6f6f8,
-  "upcoming_confirmation_sent": #10b981,
-  "stayed_missing_invoice": #ef4444,
-  "invoicing_missing_both": #f59f0b,
-  "invoicing_missing_sales": #f59f0b,
-  "invoicing_missing_commission": #f97416,
-  "completed": #10b981
+  "upcoming_no_action": (
+    base: #f6f6f8,
+    background: #f0f0f2, // Manually adjusted darker background
+    border: #e1e1e3,     // Manually adjusted darker border
+    hover-border: #d7d7d9 // Manually adjusted darker hover border
+  ),
+  "upcoming_confirmation_sent": (
+    base: #10b981,
+    background: #e7f8f2, // Light mix with white
+    border: #a1d9c7,     // Desaturated and darkened border
+    hover-border: #8dccb8 // Desaturated and darkened hover border
+  ),
+  "stayed_missing_invoice": (
+    base: #ef4444,
+    background: #fdeaea, // Light mix with white
+    border: #f4b2b2,     // Desaturated and darkened border
+    hover-border: #f1a0a0  // Desaturated and darkened hover border
+  ),
+  "invoicing_missing_both": (
+    base: #f59f0b,
+    background: #fef5e7, // Light mix with white
+    border: #f9d29b,     // Desaturated and darkened border
+    hover-border: #f8c988  // Desaturated and darkened hover border
+  ),
+  "invoicing_missing_sales": (
+    base: #f59f0b,
+    background: #fef5e7, // Light mix with white
+    border: #f9d29b,     // Desaturated and darkened border
+    hover-border: #f8c988  // Desaturated and darkened hover border
+  ),
+  "invoicing_missing_commission": (
+    base: #f97416,
+    background: #fef1e8, // Light mix with white
+    border: #fbcba4,     // Desaturated and darkened border
+    hover-border: #fabf93  // Desaturated and darkened hover border
+  ),
+  "completed": (
+    base: #10b981,
+    background: #e7f8f2, // Light mix with white
+    border: #a1d9c7,     // Desaturated and darkened border
+    hover-border: #8dccb8  // Desaturated and darkened hover border
+  )
 );
 
 .search-results {
@@ -24,26 +61,26 @@ $status-colors: (
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px #0000000d;
     width: 100%;
-
     transition: all 0.2s ease-in-out;
     overflow: hidden;
+
     &:hover {
       border: 1px solid rgb(170, 170, 170);
     }
 
     // Use the :has() pseudo-class to style the item based on the presence of a status class
-    @each $status, $color in $status-colors {
+    @each $status, $colors in $status-colors {
       &:has(.status-#{$status}) {
         @if $status == "upcoming_no_action" {
-          background-color: darken($color, 2%);
-          border-color: darken($color, 10%);
+          background-color: map.get($colors, background);
+          border-color: map.get($colors, border);
         } @else {
-          background-color: mix(white, $color, 92%);
-          border-color: darken(desaturate($color, 20%), 5%);
+          background-color: map.get($colors, background);
+          border-color: map.get($colors, border);
         }
 
         &:hover {
-          border-color: darken(desaturate($color, 10%), 10%);
+          border-color: map.get($colors, hover-border);
         }
       }
     }
@@ -95,8 +132,6 @@ $status-colors: (
     }
     .status-badge-small {
       width:100%;
-    }
-    &-section {
     }
   }
 }

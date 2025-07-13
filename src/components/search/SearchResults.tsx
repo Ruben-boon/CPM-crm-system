@@ -187,16 +187,22 @@ export default function SearchResults({
         return aPriority - bPriority;
       }
 
-      // If status is the same, sort by travel period start date (most recent first)
-      if (a.travelPeriodStart && b.travelPeriodStart) {
-        const aDate = new Date(a.travelPeriodStart);
-        const bDate = new Date(b.travelPeriodStart);
+      // If status is the same, sort by the earliest check-in date from summaries
+      const getEarliestDate = (summaries: any[] | undefined) => {
+        if (!summaries || summaries.length === 0) return null;
+        const validDates = summaries
+          .map(s => new Date(s.checkInDate))
+          .filter(d => !isNaN(d.getTime()));
+        if (validDates.length === 0) return null;
+        return new Date(Math.min.apply(null, validDates.map(d => d.getTime())));
+      };
 
-        // Check if dates are valid
-        if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
-          // Sort by descending date (most recent first)
-          return bDate.getTime() - aDate.getTime();
-        }
+      const aDate = getEarliestDate(a.staySummaries);
+      const bDate = getEarliestDate(b.staySummaries);
+
+      if (aDate && bDate) {
+        // Sort by descending date (most recent first)
+        return bDate.getTime() - aDate.getTime();
       }
 
       // If dates are missing or invalid, fallback to confirmation number
@@ -229,7 +235,7 @@ export default function SearchResults({
                     ? `${item.confirmationNo || "Booking"}`
                     : `Unknown item type`}
                 </div>
-                {onCopy && (
+                {onCopy && type !== "bookings" && (
                   <button
                     className="search-results__copy-btn"
                     onClick={(e) => handleCopyClick(e, item)}
@@ -260,7 +266,7 @@ export default function SearchResults({
                         </dd>
                       </div>
                     )}
-                    {item.general?.role && (
+                      {item.general?.role && (
                       <div className="search-results__details-section">
                         <dd>
                           <UserRound size={14}></UserRound>
@@ -338,13 +344,6 @@ export default function SearchResults({
                   </>
                 ) : type === "bookings" ? (
                   <>
-                    <div className="search-results__details-section">
-                      <dd>
-                        <Calendar size={14}></Calendar>
-                        {formatDate(item.travelPeriodStart)} -{" "}
-                        {formatDate(item.travelPeriodEnd)}
-                      </dd>
-                    </div>
                     {item.companyName && (
                       <div className="search-results__details-section">
                         <dd>

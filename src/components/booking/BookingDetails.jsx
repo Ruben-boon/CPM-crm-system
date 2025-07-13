@@ -11,15 +11,26 @@ import { BOOKING_STATUS_OPTIONS } from "./bookingConstants";
 import { determineBookingStatus, getStatusLabel } from "./bookingStatusUtils";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
+import { CalculatedDateField } from "../fields/CalculatedDateField";
 
 export function BookingDetails({ bookingsContext, stays }) {
   const [statusValue, setStatusValue] = useState("upcoming_no_action");
   const trackerRef = useRef({ downloadClicked: false, emailClicked: false });
-  const isSavingStatus = useRef(false); // Ref to prevent concurrent auto-saves
+  const isSavingStatus = useRef(false);
 
   const bookingId = useMemo(
     () => bookingsContext.selectedItem?._id,
     [bookingsContext.selectedItem?._id]
+  );
+
+  // --- ADDED: Prepare date arrays for the new component ---
+  const checkInDates = useMemo(
+    () => stays.map((stay) => stay.checkInDate),
+    [stays]
+  );
+  const checkOutDates = useMemo(
+    () => stays.map((stay) => stay.checkOutDate),
+    [stays]
   );
 
   const handleFieldChange = (fieldPath, value, displayValue) => {
@@ -41,7 +52,6 @@ export function BookingDetails({ bookingsContext, stays }) {
     },
   ];
 
-  // MODIFICATION START: This useEffect now handles auto-saving the status correctly.
   useEffect(() => {
     if (!bookingsContext.selectedItem?._id || isSavingStatus.current) {
       return;
@@ -59,10 +69,6 @@ export function BookingDetails({ bookingsContext, stays }) {
 
         try {
           bookingsContext.updateField("status", newStatus);
-
-          // FIX: Construct the object for saving. `selectedItem` already contains
-          // the latest UI values. We just ensure the new status is included.
-          // We no longer spread `pendingChanges` here, which was the cause of the crash.
           const updatedBooking = {
             ...bookingsContext.selectedItem,
             status: newStatus,
@@ -94,7 +100,6 @@ export function BookingDetails({ bookingsContext, stays }) {
     bookingsContext.updateItem,
     bookingsContext.pendingChanges,
   ]);
-  // MODIFICATION END
 
   useEffect(() => {
     const downloadButton = document.querySelector(
@@ -166,7 +171,10 @@ export function BookingDetails({ bookingsContext, stays }) {
           ? firstStay.guestNames[0]
           : "your guest";
       const checkInDate = formatDate(firstStay.checkInDate);
-      subject = `Your reservation confirmation at ${hotelName} for ${guestName} on ${checkInDate}`;
+      // subject = `Your reservation confirmation at ${hotelName} for ${guestName} on ${checkInDate}`;
+      subject = `Your hotel confirmation: ${
+        bookingsContext.selectedItem?.confirmationNo || ""
+      }`;
     } else {
       subject = `Booking Confirmation: ${
         bookingsContext.selectedItem?.confirmationNo || ""
@@ -260,25 +268,15 @@ export function BookingDetails({ bookingsContext, stays }) {
           isEditing={bookingsContext.isEditing}
           isChanged={isFieldChanged("costCentre")}
         />
-        <TextField
-          label="Arrival date"
-          fieldPath="travelPeriodStart"
-          value={bookingsContext.selectedItem?.travelPeriodStart || ""}
-          onChange={handleFieldChange}
-          isEditing={bookingsContext.isEditing}
-          type="date"
-          required={true}
-          isChanged={isFieldChanged("travelPeriodStart")}
+        <CalculatedDateField
+          label="Earliest check in"
+          dates={checkInDates}
+          mode="earliest"
         />
-        <TextField
-          label="Departure date"
-          fieldPath="travelPeriodEnd"
-          value={bookingsContext.selectedItem?.travelPeriodEnd || ""}
-          onChange={handleFieldChange}
-          isEditing={bookingsContext.isEditing}
-          type="date"
-          required={true}
-          isChanged={isFieldChanged("travelPeriodEnd")}
+        <CalculatedDateField
+          label="Latest check out"
+          dates={checkOutDates}
+          mode="latest"
         />
       </div>
       <div className="col-half">
