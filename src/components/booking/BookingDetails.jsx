@@ -18,29 +18,6 @@ export function BookingDetails({ bookingsContext, stays }) {
   const trackerRef = useRef({ downloadClicked: false, emailClicked: false });
   const isSavingStatus = useRef(false);
 
-  const bookingId = useMemo(
-    () => bookingsContext.selectedItem?._id,
-    [bookingsContext.selectedItem?._id]
-  );
-
-  // --- ADDED: Prepare date arrays for the new component ---
-  const checkInDates = useMemo(
-    () => stays.map((stay) => stay.checkInDate),
-    [stays]
-  );
-  const checkOutDates = useMemo(
-    () => stays.map((stay) => stay.checkOutDate),
-    [stays]
-  );
-
-  const handleFieldChange = (fieldPath, value, displayValue) => {
-    bookingsContext.updateField(fieldPath, value);
-  };
-
-  const isFieldChanged = (fieldPath) => {
-    return !!bookingsContext.pendingChanges[fieldPath];
-  };
-
   const confirmationEntityOptions = [
     {
       value: "Corporate Meeting Partner B.V.",
@@ -52,6 +29,27 @@ export function BookingDetails({ bookingsContext, stays }) {
     },
   ];
 
+  const bookingId = useMemo(
+    () => bookingsContext.selectedItem?._id,
+    [bookingsContext.selectedItem?._id]
+  );
+  const checkInDates = useMemo(
+    () => stays.map((stay) => stay.checkInDate),
+    [stays]
+  );
+  const checkOutDates = useMemo(
+    () => stays.map((stay) => stay.checkOutDate),
+    [stays]
+  );
+  const handleFieldChange = (fieldPath, value, displayValue) => {
+    bookingsContext.updateField(fieldPath, value);
+  };
+
+  const isFieldChanged = (fieldPath) => {
+    return !!bookingsContext.pendingChanges[fieldPath];
+  };
+
+  //autosave
   useEffect(() => {
     if (!bookingsContext.selectedItem?._id || isSavingStatus.current) {
       return;
@@ -101,6 +99,7 @@ export function BookingDetails({ bookingsContext, stays }) {
     bookingsContext.pendingChanges,
   ]);
 
+  //download/send status
   useEffect(() => {
     const downloadButton = document.querySelector(
       ".download-button-container button:first-child"
@@ -134,7 +133,6 @@ export function BookingDetails({ bookingsContext, stays }) {
       }
     };
   }, [bookingId, stays]);
-
   const checkBothActions = () => {
     if (trackerRef.current.downloadClicked && trackerRef.current.emailClicked) {
       if (!bookingsContext.selectedItem?.confirmationSent) {
@@ -171,7 +169,6 @@ export function BookingDetails({ bookingsContext, stays }) {
           ? firstStay.guestNames[0]
           : "your guest";
       const checkInDate = formatDate(firstStay.checkInDate);
-      // subject = `Your reservation confirmation at ${hotelName} for ${guestName} on ${checkInDate}`;
       subject = `Your hotel confirmation: ${
         bookingsContext.selectedItem?.confirmationNo || ""
       }`;

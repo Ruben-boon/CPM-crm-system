@@ -61,12 +61,11 @@ export function CommonForm<T extends { _id?: string }>({
     if (selectedItem) {
       const isNewItem = !selectedItem._id;
       setIsCreating(isNewItem);
-      // Auto-enable editing for new items
+
       if (isNewItem && !isEditing) {
         setIsEditing(true);
       }
       
-      // Update last saved state when item loads (but not during editing)
       if (!isEditing) {
         setLastSavedState(JSON.stringify(selectedItem));
       }
@@ -179,6 +178,8 @@ export function CommonForm<T extends { _id?: string }>({
     }
   };
 
+  console.log("commonForm:",selectedItem);
+
   const itemDisplayName = selectedItem
     ? displayName(selectedItem)
     : `this ${itemName.toLowerCase()}`;
@@ -237,7 +238,7 @@ export function CommonForm<T extends { _id?: string }>({
                   <Button
                     icon={Save}
                     type="submit"
-                    disabled={isSubmitting || !isReallyDirty}
+                    disabled={isSubmitting}
                   >
                     Save
                   </Button>

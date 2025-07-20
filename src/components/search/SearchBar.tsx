@@ -30,7 +30,7 @@ export default function SearchBar({
 
   const bookingFields = [
     { value: "hotelName", label: "Hotel" },
-    { value: "confirmationNo", label: "Confirmation No." },
+    { value: "confirmationNo", label: "Booking reference" },
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
     { value: "dateInRange", label: "Date in Range" }, 

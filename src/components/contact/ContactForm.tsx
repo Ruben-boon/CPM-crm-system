@@ -25,29 +25,28 @@ export function ContactForm() {
   const contactsContext = useContactsData();
   const router = useRouter();
 
-  // Log when contact changes
-  useEffect(() => {
-    if (contactsContext.selectedItem?._id) {
-      console.log(
-        `[ContactForm] Contact loaded: ${contactsContext.selectedItem._id}`
-      );
-      console.log(`[ContactForm] Contact data:`, {
-        name: `${getNestedValue(
-          contactsContext.selectedItem,
-          "general.firstName"
-        )} ${getNestedValue(contactsContext.selectedItem, "general.lastName")}`,
-        role: getNestedValue(contactsContext.selectedItem, "general.role"),
-        companyId: getNestedValue(
-          contactsContext.selectedItem,
-          "general.companyId"
-        ),
-        companyName: getNestedValue(
-          contactsContext.selectedItem,
-          "general.companyName"
-        ), // NEW: Log the company name
-      });
-    }
-  }, [contactsContext.selectedItem?._id]);
+  // useEffect(() => {
+  //   if (contactsContext.selectedItem?._id) {
+  //     console.log(
+  //       `[ContactForm] Contact loaded: ${contactsContext.selectedItem._id}`
+  //     );
+  //     console.log(`[ContactForm] Contact data:`, {
+  //       name: `${getNestedValue(
+  //         contactsContext.selectedItem,
+  //         "general.firstName"
+  //       )} ${getNestedValue(contactsContext.selectedItem, "general.lastName")}`,
+  //       role: getNestedValue(contactsContext.selectedItem, "general.role"),
+  //       companyId: getNestedValue(
+  //         contactsContext.selectedItem,
+  //         "general.companyId"
+  //       ),
+  //       companyName: getNestedValue(
+  //         contactsContext.selectedItem,
+  //         "general.companyName"
+  //       ), 
+  //     });
+  //   }
+  // }, [contactsContext.selectedItem?._id]);
 
   const getDisplayName = (item: any) => {
     const firstName = getNestedValue(item, "general.firstName") || "";
@@ -88,7 +87,7 @@ export function ContactForm() {
     router.push(`/${collection}/${itemId}`);
   };
 
-  // Determine if we should show stays and bookings based on role
+
   const contactRole = getNestedValue(
     contactsContext.selectedItem,
     "general.role"

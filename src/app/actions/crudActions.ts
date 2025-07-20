@@ -67,18 +67,14 @@ export async function searchDocuments<T>(
       } else {
         return [];
       }
-    // --- MODIFICATION START ---
     } else if (collectionName === "bookings" && searchField === "dateInRange") {
-        // Handle the date range query.
-        // This finds bookings where at least one stay's date range
-        // includes the selected search date.
         query.staySummaries = {
             $elemMatch: {
                 checkInDate: { $lte: searchTerm },
                 checkOutDate: { $gte: searchTerm }
             }
         };
-    // --- MODIFICATION END ---
+
     } else {
       const effectiveSearchField =
         collectionName === "bookings" && searchField === "hotelName"

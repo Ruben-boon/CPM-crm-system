@@ -134,7 +134,6 @@ export function StayForm() {
   const [isFieldLoading, setIsFieldLoading] = useState(false);
   const [relatedItemsLoading, setRelatedItemsLoading] = useState(false);
 
-  // Load room types when hotel changes
   useEffect(() => {
     if (staysContext.selectedItem?.hotelId) {
       loadRoomTypesFromHotel(staysContext.selectedItem.hotelId);

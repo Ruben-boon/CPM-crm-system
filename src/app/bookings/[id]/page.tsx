@@ -11,14 +11,20 @@ export default function BookingDetailPage() {
   const params = useParams();
   const bookingId = params.id;
   const [isLoaded, setIsLoaded] = useState(false);
-  const [currentContact, setCurrentContact] = useState<string | null>(null);
+  const [currentBooking, setCurrentBooking] = useState<string | null>(null);
 
   useEffect(() => {
+    if (currentBooking === bookingId) {
+      return;
+    }
+
+    setIsLoaded(false);
+
     const loadBooking = async () => {
       try {
-        // Handle "new" booking case
+
         if (bookingId === "new") {
-          selectItem({}, true); // Empty object + start editing mode
+          selectItem({}, true);
         } else {
           const result = await searchDocuments(
             "bookings",
@@ -26,34 +32,27 @@ export default function BookingDetailPage() {
             "_id"
           );
           if (Array.isArray(result) && result.length > 0) {
-            // Clear any previous contact data first
+
             selectItem(null);
-            
-            // Then set the new contact
+
+
             setTimeout(() => {
               selectItem(result[0]);
             }, 0);
           } else {
-            // Handle case where booking isn't found
             console.error("Booking not found");
           }
         }
       } catch (error) {
         console.error("Error loading booking:", error);
       } finally {
-        setCurrentContact(bookingId as string);
+        setCurrentBooking(bookingId as string);
         setIsLoaded(true);
       }
-      
     };
 
     loadBooking();
   }, [bookingId, selectItem]);
 
-  return (
-    <>
-     {isLoaded && <BookingForm key={bookingId} />}
-
-    </>
-  );
+  return <>{isLoaded && <BookingForm key={bookingId} />}</>;
 }

@@ -18,7 +18,6 @@ function BookingsLayoutContent({ children }) {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- MODIFICATION START: Auto-save on navigation ---
   useEffect(() => {
     const handleLinkClick = async (event: MouseEvent) => {
       const anchor = (event.target as HTMLElement).closest('a');
@@ -34,7 +33,6 @@ function BookingsLayoutContent({ children }) {
           setIsSaving(true);
           const toastId = toast.loading("Auto-saving changes...");
 
-          // --- FIX: Decide whether to create or update the booking ---
           const isNewBooking = !selectedItem?._id;
           const saveOperation = isNewBooking ? createItem(selectedItem) : updateItem(selectedItem);
           
@@ -45,8 +43,6 @@ function BookingsLayoutContent({ children }) {
 
           if (success) {
             toast.success("Changes saved automatically.");
-            // If it was a new booking, the context should now have the new ID.
-            // We can now safely navigate.
             router.push(newPath);
           } else {
             toast.error("Auto-save failed. Please save manually before leaving.");
@@ -61,10 +57,9 @@ function BookingsLayoutContent({ children }) {
       document.body.removeEventListener('click', handleLinkClick);
     };
   }, [isDirty, pathname, router, selectedItem, updateItem, createItem]);
-  // --- MODIFICATION END ---
 
   const handleSelectBooking = (booking, isNew = false) => {
-    // This function is now simpler, as the click handler manages the save logic.
+
     if (isNew) {
       router.push("/bookings/new");
     } else if (booking && booking._id) {
@@ -74,27 +69,28 @@ function BookingsLayoutContent({ children }) {
     }
   };
 
-  const handleCopyBooking = async (booking) => {
-    // The global click handler will manage auto-saving if the form is dirty.
-    // This function can now focus only on the copy logic.
-    try {
-        router.push("/bookings/new");
-        const result = await searchDocuments("bookings", booking._id.toString(), "_id");
-        
-        if (Array.isArray(result) && result.length > 0) {
-            const sourceBooking = JSON.parse(JSON.stringify(result[0]));
-            delete sourceBooking._id;
-            if (sourceBooking.confirmationNo) {
-                sourceBooking.confirmationNo = `${sourceBooking.confirmationNo} (Copy)`;
-            }
-            setTimeout(() => {
-                selectItem(sourceBooking, true);
-            }, 100);
-        }
-    } catch (error) {
-        console.error("Error creating booking copy:", error);
+const handleCopyBooking = async (booking) => {
+  try {
+    // 1. Fetch and prepare the data FIRST.
+    const result = await searchDocuments("bookings", booking._id.toString(), "_id");
+    
+    if (Array.isArray(result) && result.length > 0) {
+      const sourceBooking = JSON.parse(JSON.stringify(result[0]));
+      delete sourceBooking._id; 
+      sourceBooking.confirmationNo = `${sourceBooking.confirmationNo} (Copy)`;
+      sourceBooking.status = "upcoming_no_action";
+
+      // 2. Set the state in the context BEFORE navigating.
+      selectItem(sourceBooking, true);
+      
+      // 3. NOW navigate.
+      router.push("/bookings/new");
     }
-  };
+  } catch (error) {
+    console.error("Error creating booking copy:", error);
+    toast.error("An error occurred while copying the booking.");
+  }
+};
 
   return (
     <>
@@ -106,7 +102,6 @@ function BookingsLayoutContent({ children }) {
             type="bookings"
           />
           <div className="button-container">
-            {/* The global click handler will catch this navigation */}
             <Button intent="outline" icon={Plus} onClick={() => handleSelectBooking({}, true)}>
               New Booking
             </Button>
@@ -124,7 +119,6 @@ function BookingsLayoutContent({ children }) {
         {children}
       </div>
 
-      {/* The UnsavedChangesDialog is no longer needed */}
     </>
   );
 }

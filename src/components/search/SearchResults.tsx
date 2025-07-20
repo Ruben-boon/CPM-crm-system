@@ -20,22 +20,6 @@ interface SearchResultProps {
   onCopy?: (item: Item) => void;
   type?: "contacts" | "companies" | "bookings" | "hotels" | "stays";
 }
-
-// Helper function to get role display label
-const getRoleLabel = (role: string) => {
-  switch (role) {
-    case "booker":
-      return "Booker";
-    case "guest":
-      return "Guest";
-    case "both":
-      return "Booker & Guest";
-    default:
-      return role || "-";
-  }
-};
-
-// Helper function to format date
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
 
@@ -72,13 +56,28 @@ const formatDate = (dateString: string) => {
   }
 };
 
-// Helper function to get guest count text
-const getGuestCountText = (guestIds: any[] | undefined) => {
-  if (!guestIds || !Array.isArray(guestIds)) return "0 guests";
+// const getRoleLabel = (role: string) => {
+//   switch (role) {
+//     case "booker":
+//       return "Booker";
+//     case "guest":
+//       return "Guest";
+//     case "both":
+//       return "Booker & Guest";
+//     default:
+//       return role || "-";
+//   }
+// };
 
-  const count = guestIds.length;
-  return count === 1 ? "1 guest" : `${count} guests`;
-};
+// Helper function to format date
+
+
+// const getGuestCountText = (guestIds: any[] | undefined) => {
+//   if (!guestIds || !Array.isArray(guestIds)) return "0 guests";
+
+//   const count = guestIds.length;
+//   return count === 1 ? "1 guest" : `${count} guests`;
+// };
 
 // Helper function to get status label and class
 const getStatusInfo = (status: string) => {
@@ -133,7 +132,6 @@ const getStatusInfo = (status: string) => {
     statusMap[status] || { label: status || "-", className: "status-default" }
   );
 };
-
 export default function SearchResults({
   items,
   onSelect,
@@ -144,23 +142,20 @@ export default function SearchResults({
     return <div className="search-results__empty"></div>;
   }
 
-  // Handle the click event for an item
   const handleItemClick = (item: Item) => {
     onSelect(item);
   };
 
-  // Handle the copy event for an item
   const handleCopyClick = (e: React.MouseEvent, item: Item) => {
-    e.stopPropagation(); // Prevent triggering the parent click event
+    e.stopPropagation(); 
     if (onCopy) {
       onCopy(item);
     }
   };
 
-  // Sort items by status if they're bookings
+
   const sortedItems = [...items];
   if (type === "bookings") {
-    // Define status priority order (lower number = higher priority)
     const statusPriority: Record<string, number> = {
       upcoming_no_action: 1,
       upcoming_confirmation_sent: 2,
@@ -235,7 +230,7 @@ export default function SearchResults({
                     ? `${item.confirmationNo || "Booking"}`
                     : `Unknown item type`}
                 </div>
-                {onCopy && type !== "bookings" && (
+                {/* {onCopy && (
                   <button
                     className="search-results__copy-btn"
                     onClick={(e) => handleCopyClick(e, item)}
@@ -244,7 +239,7 @@ export default function SearchResults({
                   >
                     <Copy size={16} />
                   </button>
-                )}
+                )} */}
               </div>
 
               <dl className="search-results__details">

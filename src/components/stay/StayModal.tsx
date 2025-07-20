@@ -528,6 +528,7 @@ export function StayModal({
                   value={stayData.hotelConfirmationNo || ""}
                   onChange={handleFieldChange}
                   isEditing={true}
+                  required={true}
                 />
 
                 <DropdownField

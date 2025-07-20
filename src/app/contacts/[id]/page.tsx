@@ -14,12 +14,10 @@ export default function ContactDetailPage() {
   const [currentContact, setCurrentContact] = useState<string | null>(null);
 
   useEffect(() => {
-    // Skip if the contact ID hasn't changed
     if (currentContact === contactId) {
       return;
     }
 
-    // Reset state and mark as loading a new contact
     setIsLoaded(false);
     
     const loadContact = async () => {
@@ -28,7 +26,7 @@ export default function ContactDetailPage() {
         
         // Handle "new" contact case
         if (contactId === "new") {
-          selectItem({}, true); // Empty object + start editing mode
+          selectItem({}, true); 
         } else {
           const result = await searchDocuments(
             "contacts",
@@ -37,10 +35,10 @@ export default function ContactDetailPage() {
           );
           
           if (Array.isArray(result) && result.length > 0) {
-            // Clear any previous contact data first
+
             selectItem(null);
             
-            // Then set the new contact
+     
             setTimeout(() => {
               selectItem(result[0]);
             }, 0);

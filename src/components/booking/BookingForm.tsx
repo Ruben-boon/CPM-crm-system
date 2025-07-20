@@ -28,9 +28,8 @@ export function BookingForm() {
   };
 
   useEffect(() => {
-    // Modify top bar title to show confirmation number and status badge
     if (bookingsContext.selectedItem) {
-      // Small delay to ensure the DOM is ready
+
       setTimeout(() => {
         const topBarTitle = document.querySelector(".top-bar__title");
         if (topBarTitle) {
@@ -66,15 +65,46 @@ export function BookingForm() {
     bookingsContext.selectedItem?.confirmationNo,
   ]);
 
-  useEffect(() => {
-    // Clear stays when booking ID changes
-    if (bookingsContext.selectedItem?._id) {
-      setStays([]);
-      loadRelatedStays(bookingsContext.selectedItem._id);
-    } else {
-      setStays([]);
-    }
-  }, [bookingsContext.selectedItem?._id]);
+useEffect(() => {
+  // Clear stays when booking ID changes
+  if (bookingsContext.selectedItem?._id) {
+    setStays([]);
+    loadRelatedStays(bookingsContext.selectedItem._id);
+  } else if (bookingsContext.selectedItem?.staySummaries?.length > 0) {
+    // Handle copy case - booking has no _id but has staySummaries
+    loadRelatedStaysFromSummaries(bookingsContext.selectedItem.staySummaries);
+  } else {
+    setStays([]);
+  }
+}, [bookingsContext.selectedItem?._id, bookingsContext.selectedItem?.staySummaries]);
+
+
+const loadRelatedStaysFromSummaries = async (staySummaries) => {
+  if (!staySummaries || staySummaries.length === 0 || loadingRef.current) return;
+
+  try {
+    loadingRef.current = true;
+    setLoadingStays(true);
+
+    const stayIdsToLoad = staySummaries.map(summary => summary.stayId);
+
+    const stayPromises = stayIdsToLoad.map((stayId) =>
+      searchDocuments("stays", stayId, "_id")
+    );
+
+    const stayResults = await Promise.all(stayPromises);
+    const loadedStays = stayResults.flat().filter(Boolean);
+
+    setStays(loadedStays);
+
+  } catch (err) {
+    console.error("Error loading stays from summaries:", err);
+    toast.error("Failed to load stays");
+  } finally {
+    loadingRef.current = false;
+    setLoadingStays(false);
+  }
+};
 
   const loadRelatedStays = async (bookingId) => {
     if (!bookingId || loadingRef.current) return;
@@ -276,6 +306,7 @@ export function BookingForm() {
 
     setIsModalOpen(false);
   };
+
 
   return (
     <>
