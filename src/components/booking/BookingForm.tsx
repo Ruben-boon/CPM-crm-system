@@ -19,7 +19,7 @@ export function BookingForm() {
   const [isCopyMode, setIsCopyMode] = useState(false);
   const [stays, setStays] = useState([]);
   const [loadingStays, setLoadingStays] = useState(false);
-  const loadingRef = useRef(false); /
+  const loadingRef = useRef(false); 
 
   const getDisplayName = (item) => {
     return item.confirmationNo
