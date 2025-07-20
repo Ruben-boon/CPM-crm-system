@@ -33,12 +33,10 @@ export function StayCard({
   });
   const [savingFields, setSavingFields] = useState({});
 
-  // If stay is loading or missing, show the skeleton
   if (isLoading || !stay) {
     return <StayCardSkeleton />;
   }
 
-  // Handle field changes for stay updates
   const handleStayFieldChange = (field, value) => {
     setStayUpdate((prev) => ({
       ...prev,
@@ -46,14 +44,11 @@ export function StayCard({
     }));
   };
 
-  // Auto-save when field loses focus or Enter is pressed
   const handleAutoSave = async (fieldPath, value) => {
-    // Only save if the value has changed
     if (value !== stay[fieldPath]) {
       setSavingFields((prev) => ({ ...prev, [fieldPath]: true }));
 
       try {
-        // Create updated stay with all the current changes from the form
         const updatedStay = {
           ...stay,
           ...stayUpdate,
@@ -83,14 +78,12 @@ export function StayCard({
     }
   };
 
-  // Make sure the View button doesn't trigger form updates
   const handleViewClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     onViewStay(stay._id);
   };
 
-  // Make other button handlers also prevent default
   const handleEditClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -106,7 +99,6 @@ export function StayCard({
   const handleRemoveClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Pass the unique stay._id instead of the index
     onRemoveStay(stay._id);
   };
 
@@ -139,10 +131,8 @@ export function StayCard({
           </div>
         </div>
 
-        {/* Add quick fields when in edit mode */}
         {isEditing && (
           <div className="stay-quick-edit">
-            {/* Hotel Confirmation No field */}
             <div
               className={`form-field ${
                 savingFields.hotelConfirmationNo ? "field-saving" : ""
@@ -179,7 +169,6 @@ export function StayCard({
               )}
             </div>
 
-            {/* Purchase Invoice field with auto-save functionality */}
             <div
               className={`form-field ${
                 savingFields.purchaseInvoice ? "field-saving" : ""
@@ -213,7 +202,6 @@ export function StayCard({
               )}
             </div>
 
-            {/* --- ADDED START --- */}
             <div
               className={`form-field ${
                 savingFields.commissionInvoice ? "field-saving" : ""
@@ -249,7 +237,6 @@ export function StayCard({
                 <div className="save-indicator">Saving...</div>
               )}
             </div>
-            {/* --- ADDED END --- */}
           </div>
         )}
       </div>
@@ -288,7 +275,7 @@ export function StayCard({
               </Button>
             </>
           ) : (
-            // In non-edit mode, just show the "View" button
+
             <Button
               icon={ExternalLink}
               onClick={handleViewClick}

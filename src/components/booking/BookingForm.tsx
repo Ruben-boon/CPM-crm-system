@@ -19,7 +19,7 @@ export function BookingForm() {
   const [isCopyMode, setIsCopyMode] = useState(false);
   const [stays, setStays] = useState([]);
   const [loadingStays, setLoadingStays] = useState(false);
-  const loadingRef = useRef(false); // Prevent concurrent stay loads
+  const loadingRef = useRef(false); /
 
   const getDisplayName = (item) => {
     return item.confirmationNo
@@ -66,7 +66,6 @@ export function BookingForm() {
     bookingsContext.selectedItem?.confirmationNo,
   ]);
 
-  // Load related stays when booking ID changes
   useEffect(() => {
     // Clear stays when booking ID changes
     if (bookingsContext.selectedItem?._id) {

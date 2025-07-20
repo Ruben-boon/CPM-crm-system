@@ -21,6 +21,10 @@
 # production
 /build
 
+#data
+/src/backupdata/*
+/src/backupdata
+
 # misc
 .DS_Store
 *.pem

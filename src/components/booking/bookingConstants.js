@@ -1,5 +1,3 @@
-// Define constants for dropdown options used across booking components
-
 
 export const BOOKING_STATUS_OPTIONS = [
   //default status when a booking is created
@@ -49,7 +47,6 @@ export const PREPAID_OPTIONS = [
   { value: "no", label: "No" },
 ];
 
-// Helper functions
 export const formatDate = (dateString) => {
   if (!dateString) return "-";
   try {
