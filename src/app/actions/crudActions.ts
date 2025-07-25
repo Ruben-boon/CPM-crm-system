@@ -42,18 +42,13 @@ export async function searchDocuments<T>(
   searchTerm = "",
   searchField = "name"
 ): Promise<T[]> {
+  // 🔍 DATABASE REQUEST LOG
+  console.log(`🔍 [DB REQUEST] searchDocuments: ${collectionName} - "${searchTerm}" in "${searchField}"`);
+  
   const client = await clientPromise;
   const db = client.db("CRM");
 
   let query: any = {};
-  console.log(
-    "searchDocuments collectionName;",
-    collectionName,
-    "searchTerm",
-    searchTerm,
-    "searchField",
-    searchField
-  );
 
   if (searchTerm && searchField) {
     if (searchField === "_id") {
@@ -103,6 +98,9 @@ export async function searchDocuments<T>(
       .limit(20)
       .toArray();
 
+    // 📊 RESULT LOG
+    console.log(`📊 [DB RESULT] Found ${results.length} documents in ${collectionName}`);
+
     return results.map((doc) => {
       const plainDoc = JSON.parse(
         JSON.stringify(doc, (key, value) =>
@@ -121,10 +119,12 @@ export async function createDocument<T extends { _id?: string }>(
   collectionName: string,
   document: T
 ): Promise<DatabaseResult<T>> {
+  // 📝 DATABASE REQUEST LOG
+  console.log(`📝 [DB REQUEST] createDocument: ${collectionName} - ${document._id || 'new'}`);
+  
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
-  console.log("createDocument document:", document);
   try {
     const client = await clientPromise;
     const collection = client.db("CRM").collection(collectionName);
@@ -140,6 +140,10 @@ export async function createDocument<T extends { _id?: string }>(
     if (result.acknowledged) {
       const newId = result.insertedId.toString();
       await logActivity("create", collectionName, newId, userId);
+      
+      // ✅ SUCCESS LOG
+      console.log(`✅ [DB SUCCESS] Created document in ${collectionName} with ID: ${newId}`);
+      
       return {
         success: true,
         data: {
@@ -169,10 +173,12 @@ export async function updateDocument<
   id: string,
   document: T
 ): Promise<DatabaseResult<T>> {
+  // 🔄 DATABASE REQUEST LOG
+  console.log(`🔄 [DB REQUEST] updateDocument: ${collectionName} - ${id}`);
+  
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
-  console.log("updateDocument document:", document, "id:", id);
   try {
     const client = await clientPromise;
     const collection = client.db("CRM").collection(collectionName);
@@ -212,6 +218,10 @@ export async function updateDocument<
 
       if (result.modifiedCount === 1) {
         await logActivity("update", collectionName, id, userId);
+        
+        // ✅ SUCCESS LOG
+        console.log(`✅ [DB SUCCESS] Updated document in ${collectionName} with ID: ${id}`);
+        
         return {
           success: true,
           data: {
@@ -244,6 +254,9 @@ export async function deleteDocument(
   collectionName: string,
   id: string
 ): Promise<DatabaseResult<{ id: string }>> {
+  // 🗑️ DATABASE REQUEST LOG
+  console.log(`🗑️ [DB REQUEST] deleteDocument: ${collectionName} - ${id}`);
+  
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   try {
@@ -263,6 +276,10 @@ export async function deleteDocument(
 
       if (result.deletedCount === 1) {
         await logActivity("delete", collectionName, id, userId);
+        
+        // ✅ SUCCESS LOG
+        console.log(`✅ [DB SUCCESS] Deleted document from ${collectionName} with ID: ${id}`);
+        
         return { success: true, data: { id } };
       }
 

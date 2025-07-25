@@ -178,7 +178,6 @@ export function CommonForm<T extends { _id?: string }>({
     }
   };
 
-  console.log("commonForm:",selectedItem);
 
   const itemDisplayName = selectedItem
     ? displayName(selectedItem)

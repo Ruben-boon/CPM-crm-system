@@ -189,62 +189,70 @@ function createDataContext(collectionName: string) {
       []
     );
 
-    const updateField = (field: string, value: any) => {
-      if (!selectedItem) return;
+    const updateField = useCallback(
+      (field: string, value: any) => {
+        console.log("UPDATE FIELD CALLED:", field, value);
+        setSelectedItem((current) => {
+          if (!current) return current;
 
-      // Create a deep copy of the selected item
-      const updatedItem = JSON.parse(JSON.stringify(selectedItem));
+          // Create a deep copy of the selected item
+          const updatedItem = JSON.parse(JSON.stringify(current));
 
-      // Handle nested fields (e.g., "general.firstName")
-      const fieldParts = field.split(".");
+          // Handle nested fields (e.g., "general.firstName")
+          const fieldParts = field.split(".");
 
-      if (fieldParts.length === 1) {
-        // Direct field update
-        updatedItem[field] = value;
-      } else {
-        // Nested field update
-        let current = updatedItem;
-        for (let i = 0; i < fieldParts.length - 1; i++) {
-          const part = fieldParts[i];
-          if (!current[part]) current[part] = {};
-          current = current[part];
-        }
-        current[fieldParts[fieldParts.length - 1]] = value;
-      }
+          if (fieldParts.length === 1) {
+            // Direct field update
+            updatedItem[field] = value;
+          } else {
+            // Nested field update
+            let currentObj = updatedItem;
+            for (let i = 0; i < fieldParts.length - 1; i++) {
+              const part = fieldParts[i];
+              if (!currentObj[part]) currentObj[part] = {};
+              currentObj = currentObj[part];
+            }
+            currentObj[fieldParts[fieldParts.length - 1]] = value;
+          }
 
-      // Update the selected item
-      setSelectedItem(updatedItem);
+          return updatedItem;
+        });
 
-      // Track the change in pendingChanges
-      const getOriginalValue = () => {
-        if (!originalItem) return undefined;
+        // Track the change in pendingChanges
+        setPendingChanges((prev) => {
+          const getOriginalValue = () => {
+            if (!originalItem) return undefined;
 
-        let current = originalItem;
-        for (let i = 0; i < fieldParts.length - 1; i++) {
-          if (!current[fieldParts[i]]) return undefined;
-          current = current[fieldParts[i]];
-        }
-        return current[fieldParts[fieldParts.length - 1]];
-      };
+            const fieldParts = field.split(".");
+            let current = originalItem;
+            for (let i = 0; i < fieldParts.length - 1; i++) {
+              if (!current[fieldParts[i]]) return undefined;
+              current = current[fieldParts[i]];
+            }
+            return current[fieldParts[fieldParts.length - 1]];
+          };
 
-      const originalValue = getOriginalValue();
+          const originalValue = getOriginalValue();
 
-      // Only track as a change if it's different from the original
-      if (JSON.stringify(originalValue) !== JSON.stringify(value)) {
-        setPendingChanges((prev) => ({
-          ...prev,
-          [field]: {
-            oldValue: originalValue,
-            newValue: value,
-          },
-        }));
-      } else {
-        // If value is back to original, remove from pending changes
-        const newPendingChanges = { ...pendingChanges };
-        delete newPendingChanges[field];
-        setPendingChanges(newPendingChanges);
-      }
-    };
+          // Only track as a change if it's different from the original
+          if (JSON.stringify(originalValue) !== JSON.stringify(value)) {
+            return {
+              ...prev,
+              [field]: {
+                oldValue: originalValue,
+                newValue: value,
+              },
+            };
+          } else {
+            // If value is back to original, remove from pending changes
+            const newPendingChanges = { ...prev };
+            delete newPendingChanges[field];
+            return newPendingChanges;
+          }
+        });
+      },
+      [originalItem]
+    );
 
     const resetForm = useCallback(() => {
       if (originalItem) {

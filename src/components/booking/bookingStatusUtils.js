@@ -2,22 +2,10 @@ export function determineBookingStatus(booking, stays) {
   // Default status for new bookings
   if (!booking) return "upcoming_no_action";
 
-  // --- MODIFICATION START ---
-  // Calculate the latest departure date from the associated stays.
-  const checkOutDates = (stays || [])
-      .map(stay => stay.checkOutDate)
-      .filter(d => d && !isNaN(new Date(d).getTime())) // Filter out invalid dates
-      .map(d => new Date(d));
-
-  const latestDepartureDate = checkOutDates.length > 0
-      ? new Date(Math.max(...checkOutDates.map(d => d.getTime())))
-      : null;
-  // --- MODIFICATION END ---
+  // Use the already-calculated travelPeriodEnd from booking instead of recalculating
+  const departureDate = booking.travelPeriodEnd ? new Date(booking.travelPeriodEnd) : null;
   
   const currentDate = new Date();
-  // Use the dynamically calculated latest departure date.
-  const departureDate = latestDepartureDate;
-  
   const hasDepatureDatePassed = departureDate && departureDate < currentDate;
 
   // When departure date has passed, we prioritize these statuses

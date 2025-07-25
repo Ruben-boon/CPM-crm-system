@@ -9,14 +9,14 @@ import {
 import { DownloadPDFButton } from "../pdf/DownloadPDFButton";
 import { BOOKING_STATUS_OPTIONS } from "./bookingConstants";
 import { determineBookingStatus, getStatusLabel } from "./bookingStatusUtils";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { CalculatedDateField } from "../fields/CalculatedDateField";
 
 export function BookingDetails({ bookingsContext, stays }) {
+  console.log("🎯 BookingDetails component rendered");
   const [statusValue, setStatusValue] = useState("upcoming_no_action");
   const trackerRef = useRef({ downloadClicked: false, emailClicked: false });
-  const isSavingStatus = useRef(false);
 
   const confirmationEntityOptions = [
     {
@@ -33,14 +33,17 @@ export function BookingDetails({ bookingsContext, stays }) {
     () => bookingsContext.selectedItem?._id,
     [bookingsContext.selectedItem?._id]
   );
+
   const checkInDates = useMemo(
     () => stays.map((stay) => stay.checkInDate),
     [stays]
   );
+
   const checkOutDates = useMemo(
     () => stays.map((stay) => stay.checkOutDate),
     [stays]
   );
+
   const handleFieldChange = (fieldPath, value, displayValue) => {
     bookingsContext.updateField(fieldPath, value);
   };
@@ -49,57 +52,101 @@ export function BookingDetails({ bookingsContext, stays }) {
     return !!bookingsContext.pendingChanges[fieldPath];
   };
 
-  //autosave
-  useEffect(() => {
-    if (!bookingsContext.selectedItem?._id || isSavingStatus.current) {
+  // Calculate and update travel period dates
+  const dateUpdateRef = useRef({ start: null, end: null });
+
+  const calculateAndSaveDates = useCallback(() => {
+    if (!bookingsContext.selectedItem) return;
+
+    // Calculate earliest check-in
+    const validCheckInDates = checkInDates
+      .filter((d) => d && !isNaN(new Date(d).getTime()))
+      .map((d) => new Date(d));
+
+    const earliestCheckIn =
+      validCheckInDates.length > 0
+        ? new Date(Math.min(...validCheckInDates.map((d) => d.getTime())))
+            .toISOString()
+            .split("T")[0]
+        : null;
+
+    // Calculate latest check-out
+    const validCheckOutDates = checkOutDates
+      .filter((d) => d && !isNaN(new Date(d).getTime()))
+      .map((d) => new Date(d));
+
+    const latestCheckOut =
+      validCheckOutDates.length > 0
+        ? new Date(Math.max(...validCheckOutDates.map((d) => d.getTime())))
+            .toISOString()
+            .split("T")[0]
+        : null;
+
+    // Only update if values have actually changed
+    const currentEarliest = bookingsContext.selectedItem?.travelPeriodStart;
+    const currentLatest = bookingsContext.selectedItem?.travelPeriodEnd;
+
+    // Prevent duplicate updates
+    if (
+      dateUpdateRef.current.start === earliestCheckIn &&
+      dateUpdateRef.current.end === latestCheckOut
+    ) {
       return;
     }
 
-    const newStatus = determineBookingStatus(
+    if (currentEarliest !== earliestCheckIn) {
+      dateUpdateRef.current.start = earliestCheckIn;
+      bookingsContext.updateField("travelPeriodStart", earliestCheckIn);
+    }
+
+    if (currentLatest !== latestCheckOut) {
+      dateUpdateRef.current.end = latestCheckOut;
+      bookingsContext.updateField("travelPeriodEnd", latestCheckOut);
+    }
+  }, [
+    checkInDates,
+    checkOutDates,
+    bookingsContext.selectedItem?.travelPeriodStart,
+    bookingsContext.selectedItem?.travelPeriodEnd,
+  ]);
+
+  useEffect(() => {
+    console.log("🔥 BookingDetails MOUNTED");
+    return () => console.log("🔥 BookingDetailm UNMOUNTED");
+  }, []);
+  // Update calculated dates when stays change
+  useEffect(() => {
+    if (stays.length > 0) {
+      calculateAndSaveDates();
+    }
+  }, [stays, calculateAndSaveDates]);
+
+  // Update status ONCE when booking is first loaded or when booking ID changes
+  const statusUpdateRef = useRef(null);
+
+  useEffect(() => {
+    if (!bookingsContext.selectedItem?._id) return;
+
+    // Prevent duplicate updates for the same booking
+    if (statusUpdateRef.current === bookingsContext.selectedItem._id) return;
+    statusUpdateRef.current = bookingsContext.selectedItem._id;
+
+    const currentStatus = bookingsContext.selectedItem.status;
+    const calculatedStatus = determineBookingStatus(
       bookingsContext.selectedItem,
       stays
     );
-    setStatusValue(newStatus);
 
-    if (bookingsContext.selectedItem.status !== newStatus) {
-      const updateAndSaveStatus = async () => {
-        isSavingStatus.current = true;
-
-        try {
-          bookingsContext.updateField("status", newStatus);
-          const updatedBooking = {
-            ...bookingsContext.selectedItem,
-            status: newStatus,
-          };
-
-          const saveSuccess = await bookingsContext.updateItem(updatedBooking);
-
-          if (saveSuccess) {
-            toast.success("Booking status automatically updated and saved.");
-          } else {
-            toast.warning(
-              "Could not auto-save status. Please save your changes manually."
-            );
-          }
-        } catch (error) {
-          console.error("Error during automatic status save:", error);
-          toast.error("An error occurred while auto-saving the status.");
-        } finally {
-          isSavingStatus.current = false;
-        }
-      };
-
-      updateAndSaveStatus();
+    // Only update if status has actually changed
+    if (currentStatus !== calculatedStatus) {
+      console.log(
+        `Status update on load: ${currentStatus} → ${calculatedStatus}`
+      );
+      bookingsContext.updateField("status", calculatedStatus);
     }
-  }, [
-    bookingsContext.selectedItem,
-    stays,
-    bookingsContext.updateField,
-    bookingsContext.updateItem,
-    bookingsContext.pendingChanges,
-  ]);
+  }, [bookingsContext.selectedItem?._id]); // Only runs when booking ID changes
 
-  //download/send status
+  // Download/send status tracking
   useEffect(() => {
     const downloadButton = document.querySelector(
       ".download-button-container button:first-child"
@@ -133,6 +180,7 @@ export function BookingDetails({ bookingsContext, stays }) {
       }
     };
   }, [bookingId, stays]);
+
   const checkBothActions = () => {
     if (trackerRef.current.downloadClicked && trackerRef.current.emailClicked) {
       if (!bookingsContext.selectedItem?.confirmationSent) {

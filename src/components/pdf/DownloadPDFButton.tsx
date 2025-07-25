@@ -215,7 +215,15 @@ export function DownloadPDFButton({
 
     try {
       let preparedStays = await prepareStaysWithGuestNames(stays);
-      preparedStays = await fetchAndAttachHotelDetails(preparedStays); // Also fetch hotel details
+      preparedStays = await fetchAndAttachHotelDetails(preparedStays);
+
+      // Sort stays by check-in date (same as PDF)
+      preparedStays.sort((a, b) => {
+        const dateA = a.checkInDate ? new Date(a.checkInDate).getTime() : 0;
+        const dateB = b.checkInDate ? new Date(b.checkInDate).getTime() : 0;
+        return dateA - dateB;
+      });
+
       onSendConfirmation(bookerData, preparedStays);
     } catch (error) {
       console.error("Error preparing confirmation data:", error);
@@ -309,20 +317,19 @@ export function DownloadPDFButton({
       let preparedStays = await prepareStaysWithGuestNames(stays);
       preparedStays = await fetchAndAttachHotelDetails(preparedStays);
 
+      // Sort stays by check-in date
+      preparedStays.sort((a, b) => {
+        const dateA = a.checkInDate ? new Date(a.checkInDate).getTime() : 0;
+        const dateB = b.checkInDate ? new Date(b.checkInDate).getTime() : 0;
+        return dateA - dateB;
+      });
+
       // Create a new PDF document
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
-
-      // Define page margins and content area
-      const pageMargins = {
-        top: 16,
-        right: 16,
-        bottom: 16, // This margin is for the physical edge of the paper
-        left: 16,
-      };
 
       // MODIFIED: Increased footer space from 10 to 40 to prevent overlap
       const contentHeight = 297 - pageMargins.top - pageMargins.bottom - 40; // A4 height minus margins and footer space

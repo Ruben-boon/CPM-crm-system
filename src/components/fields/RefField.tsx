@@ -3,7 +3,6 @@ import { Search, X } from "lucide-react";
 import { searchDocuments } from "@/app/actions/crudActions";
 
 export function SkeletonLoader() {
-  console.log("skeleton loader triggered nice!");
   return <div className="skeleton-item-ref-field"></div>;
 }
 
@@ -32,8 +31,12 @@ interface RefFieldProps {
   setFieldLoading?: (isLoading: boolean) => void;
   searchDebounceMs?: number;
   nameFieldPath?: string;
-  nameFields?: string[]; // <-- ADDED PROP
+  nameFields?: string[];
 }
+
+// Global cache to prevent duplicate fetches across all RefField instances
+const fetchCache = new Map<string, Promise<any>>();
+const displayCache = new Map<string, any>();
 
 export function RefField({
   label,
@@ -54,7 +57,7 @@ export function RefField({
   setFieldLoading,
   searchDebounceMs = 300,
   nameFieldPath,
-  nameFields, // <-- ADDED PROP
+  nameFields,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -63,14 +66,10 @@ export function RefField({
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(!value);
 
-  // --- MODIFICATION START: Update queue ---
-  const [updateQueue, setUpdateQueue] = useState<{ path: string; value: any; metadata?: any }[]>([]);
-  // --- MODIFICATION END: Update queue ---
-
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const previousValueRef = useRef<string>("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const mountedRef = useRef(true);
 
   const normalizedDisplayFields = displayFields.map((field) =>
     typeof field === "string" ? { path: field } : field
@@ -122,20 +121,8 @@ export function RefField({
       onChange(path, val, metadata);
     } else if (updateField) {
       updateField(path, val, metadata);
-    } else {
-      console.error("No update function provided to RefField");
     }
   };
-  
-  // --- MODIFICATION START: Process update queue ---
-  useEffect(() => {
-    if (updateQueue.length > 0) {
-      const [firstUpdate, ...restOfQueue] = updateQueue;
-      handleUpdate(firstUpdate.path, firstUpdate.value, firstUpdate.metadata);
-      setUpdateQueue(restOfQueue);
-    }
-  }, [updateQueue, handleUpdate]);
-  // --- MODIFICATION END: Process update queue ---
 
   const performSearch = useCallback(
     async (term: string) => {
@@ -155,12 +142,16 @@ export function RefField({
           new Map(resultsArrays.flat().map((item) => [item._id, item])).values()
         );
 
-        setResults(combinedResults);
-        setIsSearching(combinedResults.length > 0);
+        if (mountedRef.current) {
+          setResults(combinedResults);
+          setIsSearching(combinedResults.length > 0);
+        }
       } catch (error) {
         console.error("Search failed:", error);
-        setResults([]);
-        setIsSearching(false);
+        if (mountedRef.current) {
+          setResults([]);
+          setIsSearching(false);
+        }
       }
     },
     [collectionName, normalizedDisplayFields]
@@ -178,78 +169,100 @@ export function RefField({
     }, searchDebounceMs);
   };
 
+  // Hot-reload resistant effect with caching
   useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (previousValueRef.current === value) {
+    if (!value) {
+      setDisplayValue("");
+      setShowSearchInput(true);
+      if (onLoadComplete) onLoadComplete(true);
       return;
     }
-    previousValueRef.current = value;
 
-    async function fetchDisplayName() {
-      if (!value) {
-        setDisplayValue("");
-        if (onLoadComplete) onLoadComplete(true);
-        return;
-      }
+    // Create cache key
+    const cacheKey = `${collectionName}-${value}`;
+    
+    // Check if we already have this data cached
+    if (displayCache.has(cacheKey)) {
+      const cachedData = displayCache.get(cacheKey);
+      setDisplayValue(cachedData);
+      setShowSearchInput(false);
+      if (onLoadComplete) onLoadComplete(true);
+      return;
+    }
 
-      try {
-        setIsLocalLoading(true);
-        if (setFieldLoading) setFieldLoading(true);
+    // Check if there's already a fetch in progress for this key
+    if (fetchCache.has(cacheKey)) {
+      fetchCache.get(cacheKey)!.then((response) => {
+        if (mountedRef.current && response && response.length > 0) {
+          const display = formatDisplayString(response[0]);
+          setDisplayValue(display);
+          setShowSearchInput(false);
+          displayCache.set(cacheKey, display);
+          if (onLoadComplete) onLoadComplete(true);
+        }
+      });
+      return;
+    }
 
-        const response = await searchDocuments(collectionName, value, "_id");
+    // Start new fetch
+    setIsLocalLoading(true);
+    if (setFieldLoading) setFieldLoading(true);
+
+    const fetchPromise = searchDocuments(collectionName, value, "_id");
+    fetchCache.set(cacheKey, fetchPromise);
+
+    fetchPromise
+      .then((response) => {
+        if (!mountedRef.current) return;
 
         if (response && response.length > 0) {
           const display = formatDisplayString(response[0]);
           setDisplayValue(display);
+          setShowSearchInput(false);
+          displayCache.set(cacheKey, display);
           if (onLoadComplete) onLoadComplete(true);
         } else {
-          setDisplayValue("");
+          setDisplayValue(`[Not found: ${value}]`);
+          setShowSearchInput(false);
           if (onLoadComplete) onLoadComplete(true, "Referenced item not found");
         }
-      } catch (error) {
+      })
+      .catch((error) => {
+        if (!mountedRef.current) return;
+        
         console.error(`Failed to load ${collectionName} details:`, error);
-        setDisplayValue(`[Unable to load ${collectionName}]`);
+        setDisplayValue(`[Error loading]`);
         if (onLoadComplete) {
           onLoadComplete(
             false,
             error instanceof Error ? error.message : "Unknown error"
           );
         }
-      } finally {
+      })
+      .finally(() => {
+        if (!mountedRef.current) return;
+        
         setIsLocalLoading(false);
         if (setFieldLoading) setFieldLoading(false);
-      }
-    }
+        // Remove from active fetch cache
+        fetchCache.delete(cacheKey);
+      });
 
-    fetchDisplayName();
-  }, [
-    value,
-    collectionName,
-    displayTemplate,
-    displaySeparator,
-    onLoadComplete,
-    setFieldLoading,
-    normalizedDisplayFields,
-  ]);
+  }, [value, collectionName]); // Minimal dependencies
 
-  useEffect(() => {
-    setShowSearchInput(!value);
-  }, [value]);
-
-  // --- MODIFICATION START: Use update queue on select ---
   const handleSelect = (result: any) => {
     const display = formatDisplayString(result);
     setDisplayValue(display);
+    setShowSearchInput(false);
+    
+    // Cache the result
+    const cacheKey = `${collectionName}-${result._id}`;
+    displayCache.set(cacheKey, display);
 
-    const updates = [{ path: fieldPath, value: result._id, metadata: { displayValue: display } }];
+    // Handle the main field update
+    handleUpdate(fieldPath, result._id, { displayValue: display });
 
+    // Handle the name field update if specified
     if (nameFieldPath) {
       let nameValue;
       if (nameFields && nameFields.length > 0) {
@@ -264,19 +277,15 @@ export function RefField({
         }
       }
       if (nameValue !== undefined) {
-        updates.push({ path: nameFieldPath, value: nameValue });
+        handleUpdate(nameFieldPath, nameValue);
       }
     }
-    setUpdateQueue(updates);
     
     setSearchTerm("");
     setResults([]);
     setIsSearching(false);
-    setShowSearchInput(false);
   };
-  // --- MODIFICATION END: Use update queue on select ---
 
-  // --- MODIFICATION START: Use update queue on clear ---
   const handleClear = () => {
     setDisplayValue("");
     setSearchTerm("");
@@ -284,11 +293,10 @@ export function RefField({
     setIsSearching(false);
     setShowSearchInput(true);
 
-    const updates = [{ path: fieldPath, value: "" }];
+    handleUpdate(fieldPath, "");
     if (nameFieldPath) {
-      updates.push({ path: nameFieldPath, value: "" });
+      handleUpdate(nameFieldPath, "");
     }
-    setUpdateQueue(updates);
     
     if (onLoadComplete) {
       onLoadComplete(true);
@@ -296,7 +304,17 @@ export function RefField({
 
     setTimeout(() => searchInputRef.current?.focus(), 0);
   };
-  // --- MODIFICATION END: Use update queue on clear ---
+
+  // Cleanup
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   if (!isEditing) {
     return (
