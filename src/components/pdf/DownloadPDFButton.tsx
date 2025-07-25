@@ -332,6 +332,7 @@ export function DownloadPDFButton({
 
       // Current page number
       let currentPage = 1;
+      let isFirstPage = true;
 
       // Function to add footer to current page
       const addFooter = (page: number, totalPages: number) => {
@@ -391,7 +392,6 @@ export function DownloadPDFButton({
         // MODIFIED: Render TIDS number
         pdf.text(entityDetails.tids, 16, 264 + lineSpacing * 4);
 
-
         // Middle column for contact
         pdf.text(entityDetails.phone, 80, 268);
         pdf.text("www.corporatemeetingpartner.com", 80, 268 + lineSpacing);
@@ -402,8 +402,11 @@ export function DownloadPDFButton({
         );
       };
 
-      // Function to check if we need a new page
       const checkNewPage = (requiredHeight: number) => {
+        if (isFirstPage) {
+          return false;
+        }
+
         if (y + requiredHeight > pageMargins.top + contentHeight) {
           pdf.addPage();
           currentPage++;
@@ -583,6 +586,7 @@ export function DownloadPDFButton({
       );
 
       y += 5;
+      isFirstPage = false;
 
       if (!preparedStays || preparedStays.length === 0) {
         checkNewPage(10);
@@ -594,8 +598,13 @@ export function DownloadPDFButton({
         y += 10;
       } else {
         // Process each stay
+        // Replace the stays processing section in your handleDownloadPDF function
+        // with this modified version:
+
+        // Process each stay
         for (let i = 0; i < preparedStays.length; i++) {
           const stay = preparedStays[i];
+          const isFirstStay = i === 0;
 
           let stayHeight = 80;
           const estimateTextHeight = (
@@ -616,7 +625,11 @@ export function DownloadPDFButton({
           if (stay.cancellations)
             stayHeight += estimateTextHeight(stay.cancellations);
 
-          checkNewPage(stayHeight);
+          // Only check for new page if it's NOT the first stay
+          if (!isFirstStay) {
+            checkNewPage(stayHeight);
+          }
+
           const nights = calculateNights(stay.checkInDate, stay.checkOutDate);
           const nightsText =
             parseInt(nights) === 1 ? `${nights} Night` : `${nights} Nights`;
@@ -625,7 +638,6 @@ export function DownloadPDFButton({
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
 
-          // MODIFIED: Removed room type from stay header
           const guestNamesForTitle = formatGuestNames(stay);
           const fullTitle = `Stay: ${guestNamesForTitle} - ${nightsText}`;
 
@@ -676,11 +688,77 @@ export function DownloadPDFButton({
           pdf.line(pageMargins.left, y, 190, y);
           y += 5;
 
-          // Stay details
+          // Modified addRow function for first stay to skip page breaks
+          const addRowForStay = (
+            key: string,
+            value: string,
+            indent = 0,
+            isLink = false,
+            url = ""
+          ): number => {
+            pdf.setFontSize(10);
+
+            const valueStartX = 75;
+            const maxValueWidth = 190 - valueStartX;
+
+            pdf.setFont("helvetica", "normal");
+            const splitValue = pdf.splitTextToSize(value, maxValueWidth);
+            const lineCount = splitValue.length;
+            const rowHeight = 6 * lineCount;
+
+            // Only check for new page if it's NOT the first stay
+            if (!isFirstStay && checkNewPage(rowHeight)) {
+              // New page
+            }
+
+            pdf.setFont("helvetica", "bold");
+            pdf.text(key, pageMargins.left + indent, y);
+
+            pdf.setFont("helvetica", "normal");
+
+            if (isLink) {
+              pdf.setTextColor(0, 0, 0);
+              if (lineCount === 1) {
+                pdf.textWithLink(value, valueStartX, y, { url: url });
+                pdf.setDrawColor(0, 0, 0);
+                pdf.line(
+                  valueStartX,
+                  y + 1,
+                  valueStartX + pdf.getTextWidth(value),
+                  y + 1
+                );
+              } else {
+                splitValue.forEach((line: string, index: number) => {
+                  const yPos = y + index * 6;
+                  pdf.textWithLink(line, valueStartX, yPos, { url: url });
+                  const lineWidth = pdf.getTextWidth(line);
+                  pdf.setDrawColor(0, 0, 0);
+                  pdf.line(
+                    valueStartX,
+                    yPos + 1,
+                    valueStartX + lineWidth,
+                    yPos + 1
+                  );
+                });
+              }
+            } else {
+              if (lineCount === 1) {
+                pdf.text(value, valueStartX, y);
+              } else {
+                splitValue.forEach((line: string, index: number) => {
+                  pdf.text(line, valueStartX, y + index * 6);
+                });
+              }
+            }
+
+            return rowHeight;
+          };
+
+          // Stay details using the modified addRowForStay function
           pdf.setFontSize(10);
           pdf.setFont("helvetica", "normal");
 
-          y += addRow("Hotel:", stay.hotelName || "Unknown hotel");
+          y += addRowForStay("Hotel:", stay.hotelName || "Unknown hotel");
 
           const addressParts = [
             stay.hotelAddress,
@@ -696,23 +774,26 @@ export function DownloadPDFButton({
             const fullAddress = [stay.hotelAddress, cityLine, stay.hotelCountry]
               .filter(Boolean)
               .join(", ");
-            y += addRow("Hotel address:", fullAddress);
+            y += addRowForStay("Hotel address:", fullAddress);
           }
 
           if (stay.hotelConfirmationNo) {
-            y += addRow("Hotel Confirmation No.:", stay.hotelConfirmationNo);
+            y += addRowForStay(
+              "Hotel Confirmation No.:",
+              stay.hotelConfirmationNo
+            );
           }
-          y += addRow("Room Type:", stay.roomType || "-");
+          y += addRowForStay("Room Type:", stay.roomType || "-");
 
-          y += addRow(
+          y += addRowForStay(
             "Room Price:",
             stay.roomPrice
               ? `${stay.roomPrice} ${stay.roomCurrency || ""} per night`
-              : "-",
+              : "-"
           );
-          
+
           if (stay.paymentType) {
-            y += addRow("", stay.paymentType);
+            y += addRowForStay("", stay.paymentType);
           }
 
           if (stay.roomPrice) {
@@ -723,7 +804,10 @@ export function DownloadPDFButton({
               190 - 75
             );
 
-            checkNewPage(disclaimerLines.length * 4);
+            // Only check for new page if it's NOT the first stay
+            if (!isFirstStay) {
+              checkNewPage(disclaimerLines.length * 4);
+            }
 
             pdf.setFontSize(10);
             pdf.setFont("helvetica", "italic");
@@ -736,28 +820,32 @@ export function DownloadPDFButton({
             y += 5;
           }
 
-          y += addRow("Guests:", formatGuestNames(stay));
-          
-          // MODIFIED: Use taxAmount and taxCurrency to display the tax information
+          y += addRowForStay("Guests:", formatGuestNames(stay));
+
           if (stay.taxAmount) {
-            const taxValue = `${stay.taxAmount} ${stay.taxCurrency || ""}`.trim();
-            y += addRow("Total local taxes:", taxValue);
+            const taxValue = `${stay.taxAmount} ${
+              stay.taxCurrency || ""
+            }`.trim();
+            y += addRowForStay("Total local taxes:", taxValue);
           }
 
           if (stay.specialRequests) {
-            y += addRow("Special Requests:", stay.specialRequests);
+            y += addRowForStay("Special Requests:", stay.specialRequests);
           }
 
           if (stay.remarks) {
-            y += addRow("Remarks:", stay.remarks);
+            y += addRowForStay("Remarks:", stay.remarks);
           }
 
           if (stay.paymentInstructions) {
-            y += addRow("Payment Instructions:", stay.paymentInstructions);
+            y += addRowForStay(
+              "Payment Instructions:",
+              stay.paymentInstructions
+            );
           }
 
           if (stay.cancellations) {
-            y += addRow("Cancellation Policy:", stay.cancellations);
+            y += addRowForStay("Cancellation Policy:", stay.cancellations);
           }
 
           y += 10;
