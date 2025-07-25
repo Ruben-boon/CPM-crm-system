@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { BookingForm } from "@/components/booking/BookingForm";
 
 export default function BookingDetailPage() {
-  const { selectItem } = useBookingsData();
+  const { selectItem, selectedItem } = useBookingsData();
   const params = useParams();
   const bookingId = params.id;
   const [isLoaded, setIsLoaded] = useState(false);
@@ -22,9 +22,27 @@ export default function BookingDetailPage() {
 
     const loadBooking = async () => {
       try {
-
         if (bookingId === "new") {
-          selectItem({}, true);
+          console.log('[DEBUG] New booking page - checking existing selectedItem:', {
+            hasSelectedItem: !!selectedItem,
+            selectedItemId: selectedItem?._id,
+            confirmationNo: selectedItem?.confirmationNo,
+            isEditing: selectedItem && !selectedItem._id // This indicates a copy operation
+          });
+
+          // Only clear selectedItem if there's no data (not a copy operation)
+          if (!selectedItem || selectedItem._id) {
+            console.log('[DEBUG] No existing data or has ID, setting empty item');
+            selectItem({}, true);
+          } else {
+            console.log('[DEBUG] Existing data found (likely from copy), keeping it');
+            // Data already exists (from copy operation), don't clear it
+            // Just ensure we're in editing mode
+            if (!selectedItem._id) {
+              // This is a copied item without an ID, make sure we're editing
+              selectItem(selectedItem, true);
+            }
+          }
         } else {
           const result = await searchDocuments(
             "bookings",
@@ -32,9 +50,7 @@ export default function BookingDetailPage() {
             "_id"
           );
           if (Array.isArray(result) && result.length > 0) {
-
             selectItem(null);
-
 
             setTimeout(() => {
               selectItem(result[0]);
@@ -52,7 +68,7 @@ export default function BookingDetailPage() {
     };
 
     loadBooking();
-  }, [bookingId, selectItem]);
+  }, [bookingId, selectItem]); // Remove selectedItem from dependencies to prevent infinite loops
 
   return <>{isLoaded && <BookingForm key={bookingId} />}</>;
 }

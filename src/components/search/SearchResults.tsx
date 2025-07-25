@@ -230,7 +230,7 @@ export default function SearchResults({
                     ? `${item.confirmationNo || "Booking"}`
                     : `Unknown item type`}
                 </div>
-                {/* {onCopy && (
+                {onCopy && (
                   <button
                     className="search-results__copy-btn"
                     onClick={(e) => handleCopyClick(e, item)}
@@ -239,7 +239,7 @@ export default function SearchResults({
                   >
                     <Copy size={16} />
                   </button>
-                )} */}
+                )}
               </div>
 
               <dl className="search-results__details">

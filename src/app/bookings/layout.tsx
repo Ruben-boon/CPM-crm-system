@@ -59,6 +59,7 @@ function BookingsLayoutContent({ children }) {
   }, [isDirty, pathname, router, selectedItem, updateItem, createItem]);
 
   const handleSelectBooking = (booking, isNew = false) => {
+    console.log('[DEBUG] handleSelectBooking called:', { booking, isNew });
 
     if (isNew) {
       router.push("/bookings/new");
@@ -69,28 +70,52 @@ function BookingsLayoutContent({ children }) {
     }
   };
 
-const handleCopyBooking = async (booking) => {
-  try {
-    // 1. Fetch and prepare the data FIRST.
-    const result = await searchDocuments("bookings", booking._id.toString(), "_id");
+  const handleCopyBooking = async (booking) => {
+    console.log('[DEBUG] handleCopyBooking started for booking:', booking._id);
     
-    if (Array.isArray(result) && result.length > 0) {
-      const sourceBooking = JSON.parse(JSON.stringify(result[0]));
-      delete sourceBooking._id; 
-      sourceBooking.confirmationNo = `${sourceBooking.confirmationNo} (Copy)`;
-      sourceBooking.status = "upcoming_no_action";
-
-      // 2. Set the state in the context BEFORE navigating.
-      selectItem(sourceBooking, true);
+    try {
+      // 1. Fetch and prepare the data FIRST.
+      console.log('[DEBUG] Fetching booking data...');
+      const result = await searchDocuments("bookings", booking._id.toString(), "_id");
       
-      // 3. NOW navigate.
-      router.push("/bookings/new");
+      if (Array.isArray(result) && result.length > 0) {
+        const sourceBooking = JSON.parse(JSON.stringify(result[0]));
+        console.log('[DEBUG] Source booking fetched:', {
+          originalId: sourceBooking._id,
+          confirmationNo: sourceBooking.confirmationNo,
+          bookerName: sourceBooking.bookerName,
+          bookerId: sourceBooking.bookerId
+        });
+        
+        delete sourceBooking._id; 
+        sourceBooking.confirmationNo = `${sourceBooking.confirmationNo} (Copy)`;
+        sourceBooking.status = "upcoming_no_action";
+        
+        console.log('[DEBUG] Prepared booking copy:', {
+          confirmationNo: sourceBooking.confirmationNo,
+          status: sourceBooking.status,
+          hasId: !!sourceBooking._id,
+          bookerName: sourceBooking.bookerName,
+          bookerId: sourceBooking.bookerId
+        });
+
+        // 2. Set the state in the context BEFORE navigating
+        console.log('[DEBUG] Calling selectItem with prepared booking...');
+        selectItem(sourceBooking, true);
+        
+        // 3. Navigate immediately - the new page will preserve the data
+        console.log('[DEBUG] Navigating to /bookings/new');
+        router.push("/bookings/new");
+        
+      } else {
+        console.error('[DEBUG] No booking found in search result');
+        toast.error("Booking not found for copying.");
+      }
+    } catch (error) {
+      console.error("[DEBUG] Error creating booking copy:", error);
+      toast.error("An error occurred while copying the booking.");
     }
-  } catch (error) {
-    console.error("Error creating booking copy:", error);
-    toast.error("An error occurred while copying the booking.");
-  }
-};
+  };
 
   return (
     <>
