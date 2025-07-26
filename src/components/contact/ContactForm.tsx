@@ -297,7 +297,8 @@ export function ContactForm() {
               emptyMessage="No bookings found where this contact is the booker"
               onItemClick={handleRelationClick}
               isFormEditing={contactsContext.isEditing}
-              showGuestNames={true} // NEW: Enable guest names display
+              showGuestNames={true} // Enable guest names display
+              showHotelNames={true} // NEW: Enable hotel names display
             />
           </div>
         )}

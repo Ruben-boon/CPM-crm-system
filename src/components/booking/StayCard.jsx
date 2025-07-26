@@ -1,4 +1,4 @@
-// Updated StayCard.jsx with detailed formatGuestNames implementation
+// Updated StayCard.jsx with enhanced guest names display
 
 "use client";
 import { useState } from "react";
@@ -37,43 +37,51 @@ export function StayCard({
     return <StayCardSkeleton />;
   }
 
-  // UPDATED: Enhanced formatGuestNames function with detailed logic
+  // ENHANCED: Comprehensive formatGuestNames function
   const formatGuestNames = (stay) => {
     /*
-     * Priority order for displaying guest information:
-     * 1. summaryGuestNames - Guest names from booking's staySummaries (most current)
-     * 2. guestNames - Guest names stored directly on the stay
-     * 3. guestIds - Guest IDs array (show count)
+     * Enhanced priority order for displaying guest information:
+     * 1. summaryGuestNames - Guest names from booking's staySummaries (most current from BookingForm context)
+     * 2. guestNames - Guest names stored directly on the stay (from stay's own data)
+     * 3. guestIds - Guest IDs array (show count with indication that names need to be loaded)
      * 4. Fallback - "No guests assigned"
      */
     
     // First Priority: Check for guest names from booking summary
-    // This comes from the enhanced loadRelatedStays function
+    // This comes from the enhanced loadRelatedStays function in BookingForm
     if (stay.summaryGuestNames && Array.isArray(stay.summaryGuestNames) && stay.summaryGuestNames.length > 0) {
-      return stay.summaryGuestNames.join(", ");
+      return {
+        display: stay.summaryGuestNames.join(", "),
+        type: "names",
+        source: "summary"
+      };
     }
     
     // Second Priority: Check for guest names stored on the stay itself
-    // This might be from the stay's own guestNames field if it exists
     if (stay.guestNames && Array.isArray(stay.guestNames) && stay.guestNames.length > 0) {
-      return stay.guestNames.join(", ");
+      return {
+        display: stay.guestNames.join(", "),
+        type: "names",
+        source: "stay"
+      };
     }
     
     // Third Priority: Count guest IDs if we have them but no names
-    // This gives users an indication of how many guests even without names
     if (stay.guestIds && Array.isArray(stay.guestIds) && stay.guestIds.length > 0) {
       const count = stay.guestIds.length;
-      return count === 1 ? "1 guest" : `${count} guests`;
+      return {
+        display: count === 1 ? "1 guest" : `${count} guests`,
+        type: "count",
+        source: "ids"
+      };
     }
     
     // Final Fallback: No guest information available
-    return "No guests assigned";
-  };
-
-  // UPDATED: Enhanced getGuestCountText that uses the same logic
-  const getGuestCountText = (stay) => {
-    // Use the same formatGuestNames logic for consistency
-    return formatGuestNames(stay);
+    return {
+      display: "No guests assigned",
+      type: "empty",
+      source: "none"
+    };
   };
 
   const handleStayFieldChange = (field, value) => {
@@ -145,6 +153,9 @@ export function StayCard({
     ? formatConfirmationNumber(stay.confirmationNo, "stay")
     : null;
 
+  // Get formatted guest information
+  const guestInfo = formatGuestNames(stay);
+
   return (
     <div className="stay-item">
       <div className="stay-info">
@@ -157,18 +168,19 @@ export function StayCard({
             {formatDate(stay.checkInDate)} - {formatDate(stay.checkOutDate)}
           </div>
           
-          {/* UPDATED: Using the enhanced formatGuestNames function */}
+          {/* ENHANCED: Better guest names display with visual indicators */}
           <div className="stay-guests">
-            {(() => {
-              const guestDisplay = formatGuestNames(stay);
-              const isGuestCount = guestDisplay.includes("guest") && !guestDisplay.includes(",");
-              
-              return (
-                <span className={isGuestCount ? "guest-count" : "guest-names"}>
-                  {guestDisplay}
-                </span>
-              );
-            })()}
+            <span 
+              className={`guest-display guest-display--${guestInfo.type}`}
+              title={`Guest information source: ${guestInfo.source}`}
+            >
+              {guestInfo.display}
+            </span>
+            {guestInfo.type === "count" && (
+              <span className="guest-indicator" title="Guest names not loaded - click to view details">
+                ⓘ
+              </span>
+            )}
           </div>
           
           <div className="stay-details">
@@ -358,20 +370,45 @@ export function StayCard({
           margin-bottom: 8px;
         }
 
-        /* New styles for guest display */
-        .guest-names {
-          color: #374151;
+        /* Enhanced styles for guest display */
+        .guest-display {
           font-weight: 500;
         }
 
-        .guest-count {
-          color: #6b7280;
+        .guest-display--names {
+          color: #059669; /* Green for actual names */
+        }
+
+        .guest-display--count {
+          color: #d97706; /* Orange for count only */
           font-style: italic;
         }
 
+        .guest-display--empty {
+          color: #6b7280; /* Gray for no guests */
+          font-style: italic;
+        }
+
+        .guest-indicator {
+          margin-left: 4px;
+          color: #3b82f6;
+          font-size: 12px;
+          cursor: help;
+        }
+
         .stay-guests {
-          min-width: 0; /* Allows text to wrap if needed */
+          min-width: 0;
           flex: 1;
+          display: flex;
+          align-items: center;
+        }
+
+        .guest-display {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       `}</style>
     </div>

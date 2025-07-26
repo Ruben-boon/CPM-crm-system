@@ -519,6 +519,8 @@ export function StayForm() {
                       onItemClick={handleRelationClick}
                       isFormEditing={staysContext.isEditing}
                       onLoadingChange={handleRelatedItemsLoading}
+                      showGuestNames={true} // Show guest names from bookings
+                      showHotelNames={true} // NEW: Show hotel names from bookings
                     />
                   </div>
                 )}

@@ -19,7 +19,8 @@ interface RelatedItemsProps {
   onItemClick?: (id: string, collection: string) => void;
   isFormEditing?: boolean;
   onLoadingChange?: (isLoading: boolean) => void;
-  showGuestNames?: boolean; // NEW: Option to show guest names for bookings
+  showGuestNames?: boolean; // Option to show guest names for bookings
+  showHotelNames?: boolean; // NEW: Option to show hotel names for bookings
 }
 
 // Use React.memo to prevent unnecessary rerenders
@@ -34,6 +35,7 @@ const RelatedItems = memo(function RelatedItems({
   isFormEditing = false,
   onLoadingChange,
   showGuestNames = false,
+  showHotelNames = false,
 }: RelatedItemsProps) {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +87,7 @@ const RelatedItems = memo(function RelatedItems({
     }, obj);
   };
 
-  // NEW: Function to get guest names from booking's staySummaries
+  // Function to get guest names from booking's staySummaries
   const getGuestNamesFromStaySummaries = (bookingItem: any): string => {
     if (!bookingItem?.staySummaries || !Array.isArray(bookingItem.staySummaries)) {
       return "";
@@ -107,6 +109,24 @@ const RelatedItems = memo(function RelatedItems({
     return Array.from(allGuestNames).join(", ");
   };
 
+  // NEW: Function to get hotel names from booking's staySummaries
+  const getHotelNamesFromStaySummaries = (bookingItem: any): string => {
+    if (!bookingItem?.staySummaries || !Array.isArray(bookingItem.staySummaries)) {
+      return "";
+    }
+
+    // Collect all unique hotel names from all stays
+    const allHotelNames = new Set<string>();
+    
+    bookingItem.staySummaries.forEach((summary: any) => {
+      if (summary.hotelName && summary.hotelName.trim()) {
+        allHotelNames.add(summary.hotelName.trim());
+      }
+    });
+
+    return Array.from(allHotelNames).join(", ");
+  };
+
   // Format the display value for an item
   const formatItemDisplay = (item: any): string => {
     const regularDisplay = displayFields
@@ -117,11 +137,29 @@ const RelatedItems = memo(function RelatedItems({
       .filter(Boolean)
       .join(" | ");
 
-    // NEW: Add guest names for bookings if enabled
-    if (showGuestNames && collectionName === "bookings") {
-      const guestNames = getGuestNamesFromStaySummaries(item);
-      if (guestNames) {
-        return `Guest: ${guestNames} | ${regularDisplay}`;
+    // Handle both guest names and hotel names for bookings
+    if (collectionName === "bookings") {
+      const extraInfo = [];
+      
+      // Add guest names if enabled
+      if (showGuestNames) {
+        const guestNames = getGuestNamesFromStaySummaries(item);
+        if (guestNames) {
+          extraInfo.push(`Guests: ${guestNames}`);
+        }
+      }
+      
+      // Add hotel names if enabled
+      if (showHotelNames) {
+        const hotelNames = getHotelNamesFromStaySummaries(item);
+        if (hotelNames) {
+          extraInfo.push(`Hotels: ${hotelNames}`);
+        }
+      }
+      
+      // Combine extra info with regular display
+      if (extraInfo.length > 0) {
+        return `${extraInfo.join(" | ")} | ${regularDisplay}`;
       }
     }
 
