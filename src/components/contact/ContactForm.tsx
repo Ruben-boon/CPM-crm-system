@@ -25,29 +25,6 @@ export function ContactForm() {
   const contactsContext = useContactsData();
   const router = useRouter();
 
-  // useEffect(() => {
-  //   if (contactsContext.selectedItem?._id) {
-  //     console.log(
-  //       `[ContactForm] Contact loaded: ${contactsContext.selectedItem._id}`
-  //     );
-  //     console.log(`[ContactForm] Contact data:`, {
-  //       name: `${getNestedValue(
-  //         contactsContext.selectedItem,
-  //         "general.firstName"
-  //       )} ${getNestedValue(contactsContext.selectedItem, "general.lastName")}`,
-  //       role: getNestedValue(contactsContext.selectedItem, "general.role"),
-  //       companyId: getNestedValue(
-  //         contactsContext.selectedItem,
-  //         "general.companyId"
-  //       ),
-  //       companyName: getNestedValue(
-  //         contactsContext.selectedItem,
-  //         "general.companyName"
-  //       ), 
-  //     });
-  //   }
-  // }, [contactsContext.selectedItem?._id]);
-
   const getDisplayName = (item: any) => {
     const firstName = getNestedValue(item, "general.firstName") || "";
     const lastName = getNestedValue(item, "general.lastName") || "";
@@ -86,7 +63,6 @@ export function ContactForm() {
     console.log(`[ContactForm] Relation clicked: ${collection}/${itemId}`);
     router.push(`/${collection}/${itemId}`);
   };
-
 
   const contactRole = getNestedValue(
     contactsContext.selectedItem,
@@ -284,25 +260,6 @@ export function ContactForm() {
           isChanged={isFieldChanged("general.remarks")}
         />
 
-        {shouldShowRelatedSections && isBooker && (
-          <div className="related-section">
-            <RelatedItems
-              key={`bookings-${contactsContext.selectedItem._id}`}
-              id={contactsContext.selectedItem._id}
-              referenceField="bookerId"
-              collectionName="bookings"
-              displayFields={[
-                { path: "confirmationNo" },
-                { path: "travelPeriodStart", label: "Travel Period" },
-                { path: "travelPeriodEnd" },
-              ]}
-              title="Bookings as Booker"
-              emptyMessage="No bookings found where this contact is the booker"
-              onItemClick={handleRelationClick}
-              isFormEditing={contactsContext.isEditing}
-            />
-          </div>
-        )}
         {shouldShowRelatedSections && isGuest && (
           <div className="related-section">
             <RelatedItems
@@ -317,6 +274,27 @@ export function ContactForm() {
               ]}
               title="Stays as Guest"
               emptyMessage="No stays found for this contact"
+              onItemClick={handleRelationClick}
+              isFormEditing={contactsContext.isEditing}
+            />
+          </div>
+        )}
+      </div>
+      <div className="col-full">
+        {shouldShowRelatedSections && isBooker && (
+          <div className="related-section">
+            <RelatedItems
+              key={`bookings-${contactsContext.selectedItem._id}`}
+              id={contactsContext.selectedItem._id}
+              referenceField="bookerId"
+              collectionName="bookings"
+              displayFields={[
+                { path: "confirmationNo" },
+                { path: "travelPeriodStart", label: "Travel Period" },
+                { path: "travelPeriodEnd" },
+              ]}
+              title="Bookings as Booker"
+              emptyMessage="No bookings found where this contact is the booker"
               onItemClick={handleRelationClick}
               isFormEditing={contactsContext.isEditing}
             />

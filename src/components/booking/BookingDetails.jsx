@@ -52,7 +52,6 @@ export function BookingDetails({ bookingsContext, stays }) {
     return !!bookingsContext.pendingChanges[fieldPath];
   };
 
-  // Calculate and update travel period dates
   const dateUpdateRef = useRef({ start: null, end: null });
 
   const calculateAndSaveDates = useCallback(() => {
@@ -114,14 +113,13 @@ export function BookingDetails({ bookingsContext, stays }) {
     console.log("🔥 BookingDetails MOUNTED");
     return () => console.log("🔥 BookingDetailm UNMOUNTED");
   }, []);
-  // Update calculated dates when stays change
+
   useEffect(() => {
     if (stays.length > 0) {
       calculateAndSaveDates();
     }
   }, [stays, calculateAndSaveDates]);
 
-  // Update status ONCE when booking is first loaded or when booking ID changes
   const statusUpdateRef = useRef(null);
 
   useEffect(() => {
@@ -144,7 +142,7 @@ export function BookingDetails({ bookingsContext, stays }) {
       );
       bookingsContext.updateField("status", calculatedStatus);
     }
-  }, [bookingsContext.selectedItem?._id]); // Only runs when booking ID changes
+  }, [bookingsContext.selectedItem?._id]); 
 
   // Download/send status tracking
   useEffect(() => {

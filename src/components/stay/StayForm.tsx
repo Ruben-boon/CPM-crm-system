@@ -140,7 +140,6 @@ export function StayForm() {
     }
   }, [staysContext.selectedItem?.hotelId]);
 
-  // Load room types from hotel
   const loadRoomTypesFromHotel = async (hotelId: string) => {
     try {
       setLoadingRoomTypes(true);
@@ -204,7 +203,6 @@ export function StayForm() {
     router.push(`/${collection}/${itemId}`);
   };
 
-  // Track loading state for related items
   const handleRelatedItemsLoading = (isLoading: boolean) => {
     setRelatedItemsLoading(isLoading);
   };
