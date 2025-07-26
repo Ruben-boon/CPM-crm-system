@@ -204,76 +204,67 @@ export function BookingDetails({ bookingsContext, stays }) {
   };
 
   const handleSendConfirmation = (bookerData, preparedStays) => {
-  const bookerFirstName = bookerData?.general?.firstName || "";
-  const bookerLastName = bookerData?.general?.lastName || "";
-  const bookerFullName = `${bookerFirstName} ${bookerLastName}`.trim();
+    const bookerFirstName = bookerData?.general?.firstName || "";
+    const bookerLastName = bookerData?.general?.lastName || "";
+    const bookerFullName = `${bookerFirstName} ${bookerLastName}`.trim();
 
-  let subject;
-  if (preparedStays && preparedStays.length > 0) {
-    const firstStay = preparedStays[0];
-    const hotelName = firstStay.hotelName || "the hotel";
-    
-    // Use guest names from stay summaries if available, otherwise from prepared stays
-    let guestName = "your guest";
-    if (firstStay.guestNames && firstStay.guestNames.length > 0) {
-      guestName = firstStay.guestNames[0];
-    } else if (firstStay.guestNames && firstStay.guestNames.length > 0) {
-      guestName = firstStay.guestNames[0];
+    let subject;
+    if (preparedStays && preparedStays.length > 0) {
+      const firstStay = preparedStays[0];
+      const hotelName = firstStay.hotelName || "the hotel";
+      const guestName =
+        firstStay.guestNames && firstStay.guestNames.length > 0
+          ? firstStay.guestNames[0]
+          : "your guest";
+      const checkInDate = formatDate(firstStay.checkInDate);
+      subject = `Your hotel confirmation: ${
+        bookingsContext.selectedItem?.confirmationNo || ""
+      }`;
+    } else {
+      subject = `Booking Confirmation: ${
+        bookingsContext.selectedItem?.confirmationNo || ""
+      }`;
     }
-    
-    const checkInDate = formatDate(firstStay.checkInDate);
-    subject = `Your hotel confirmation: ${
-      bookingsContext.selectedItem?.confirmationNo || ""
-    }`;
-  } else {
-    subject = `Booking Confirmation: ${
-      bookingsContext.selectedItem?.confirmationNo || ""
-    }`;
-  }
 
-  let stayDetailsText = "";
-  if (preparedStays && preparedStays.length > 0) {
-    stayDetailsText = preparedStays
-      .map((stay) => {
-        // Prefer guest names from stay summaries, fall back to stay data
-        let guestNames = "N/A";
-        if (stay.guestNames && stay.guestNames.length > 0) {
-          guestNames = stay.guestNames.join(", ");
-        } else if (stay.guestNames && stay.guestNames.length > 0) {
-          guestNames = stay.guestNames.join(", ");
-        }
-        
-        const hotelName = stay.hotelName || "N/A";
-        const checkIn = formatDate(stay.checkInDate);
-        const checkOut = formatDate(stay.checkOutDate);
-        return `Hotel: ${hotelName}, Guest: ${guestNames}, Check-in date: ${checkIn}, Check-out date: ${checkOut}`;
-      })
-      .join("\n");
-  }
-
-  const bodyContent = `Dear ${bookerFullName},\n\nThank you for making your reservation with us. Please find attached your booking confirmation for the following details:\n\n${stayDetailsText}\n\nShould you have any questions or need to make any changes, please do not hesitate to contact us directly.\n\nWe hope you and/or your guest(s) have a pleasant stay.`;
-
-  navigator.clipboard.writeText(bodyContent).then(
-    () => {
-      toast.success(
-        "Email content copied to clipboard. Please paste it into your new email."
-      );
-    },
-    (err) => {
-      toast.error("Could not copy email content to clipboard.");
-      console.error("Could not copy text: ", err);
+    let stayDetailsText = "";
+    if (preparedStays && preparedStays.length > 0) {
+      stayDetailsText = preparedStays
+        .map((stay) => {
+          const guestNames =
+            stay.guestNames && stay.guestNames.length > 0
+              ? stay.guestNames.join(", ")
+              : "N/A";
+          const hotelName = stay.hotelName || "N/A";
+          const checkIn = formatDate(stay.checkInDate);
+          const checkOut = formatDate(stay.checkOutDate);
+          return `Hotel: ${hotelName}, Guest: ${guestNames}, Check-in date: ${checkIn}, Check-out date: ${checkOut}`;
+        })
+        .join("\n");
     }
-  );
 
-  const bccEmail = "donotreply@corporatemeetingpartner.com";
-  const mailtoUrl = `mailto:${
-    bookerData?.general?.email || ""
-  }?subject=${encodeURIComponent(subject)}&bcc=${bccEmail}`;
+    const bodyContent = `Dear ${bookerFullName},\n\nThank you for making your reservation with us. Please find attached your booking confirmation for the following details:\n\n${stayDetailsText}\n\nShould you have any questions or need to make any changes, please do not hesitate to contact us directly.\n\nWe hope you and/or your guest(s) have a pleasant stay.`;
 
-  window.open(mailtoUrl, "_blank");
-  trackerRef.current.emailClicked = true;
-  checkBothActions();
-};
+    navigator.clipboard.writeText(bodyContent).then(
+      () => {
+        toast.success(
+          "Email content copied to clipboard. Please paste it into your new email."
+        );
+      },
+      (err) => {
+        toast.error("Could not copy email content to clipboard.");
+        console.error("Could not copy text: ", err);
+      }
+    );
+
+    const bccEmail = "donotreply@corporatemeetingpartner.com";
+    const mailtoUrl = `mailto:${
+      bookerData?.general?.email || ""
+    }?subject=${encodeURIComponent(subject)}&bcc=${bccEmail}`;
+
+    window.open(mailtoUrl, "_blank");
+    trackerRef.current.emailClicked = true;
+    checkBothActions();
+  };
 
   return (
     <>

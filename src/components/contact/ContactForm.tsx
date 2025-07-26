@@ -289,9 +289,9 @@ export function ContactForm() {
               referenceField="bookerId"
               collectionName="bookings"
               displayFields={[
+                { path: "travelPeriodStart", label: "Check in date" },
+                { path: "travelPeriodEnd", label: "Check out date" },
                 { path: "confirmationNo" },
-                { path: "travelPeriodStart", label: "Travel Period" },
-                { path: "travelPeriodEnd" },
               ]}
               title="Bookings as Booker"
               emptyMessage="No bookings found where this contact is the booker"
