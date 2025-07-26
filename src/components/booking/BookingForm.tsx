@@ -96,38 +96,56 @@ export function BookingForm() {
     }
   };
 
-  const loadRelatedStays = async (bookingId) => {
-    if (!bookingId || loadingRef.current) return;
+const loadRelatedStays = async (bookingId) => {
+  if (!bookingId || loadingRef.current) return;
 
-    try {
-      loadingRef.current = true;
-      setLoadingStays(true);
+  try {
+    loadingRef.current = true;
+    setLoadingStays(true);
 
-      const booking = bookingsContext.selectedItem;
-      const staySummaries = booking?.staySummaries || [];
+    const booking = bookingsContext.selectedItem;
+    const staySummaries = booking?.staySummaries || [];
 
-      if (staySummaries.length === 0) {
-        setStays([]);
-        return;
-      }
-
-      const stayIdsToLoad = staySummaries.map((summary) => summary.stayId);
-      const stayPromises = stayIdsToLoad.map((stayId) =>
-        searchDocuments("stays", stayId, "_id")
-      );
-
-      const stayResults = await Promise.all(stayPromises);
-      const loadedStays = stayResults.flat().filter(Boolean);
-
-      setStays(loadedStays);
-    } catch (err) {
-      console.error("Error loading related stays:", err);
-      toast.error("Failed to load stays");
-    } finally {
-      loadingRef.current = false;
-      setLoadingStays(false);
+    if (staySummaries.length === 0) {
+      setStays([]);
+      return;
     }
-  };
+
+    const stayIdsToLoad = staySummaries.map(summary => summary.stayId);
+
+    const stayPromises = stayIdsToLoad.map((stayId) =>
+      searchDocuments("stays", stayId, "_id")
+    );
+
+    const stayResults = await Promise.all(stayPromises);
+    const loadedStays = stayResults.flat().filter(Boolean);
+
+    // Enhance stays with guest names from summaries
+    const enhancedStays = loadedStays.map(stay => {
+      // Find the corresponding summary for this stay
+      const summary = staySummaries.find(s => s.stayId === stay._id);
+      
+      if (summary && summary.guestNames && summary.guestNames.length > 0) {
+        // Add guest names from summary to the stay object
+        return {
+          ...stay,
+          summaryGuestNames: summary.guestNames // Keep summary guest names separate
+        };
+      }
+      
+      return stay;
+    });
+
+    setStays(enhancedStays);
+
+  } catch (err) {
+    console.error("Error loading related stays:", err);
+    toast.error("Failed to load stays");
+  } finally {
+    loadingRef.current = false;
+    setLoadingStays(false);
+  }
+};
 
   const handleAddStay = (e) => {
     if (e) {
@@ -198,19 +216,16 @@ export function BookingForm() {
     }
   };
 
-  const handleRemoveStay = (stayIdToRemove) => {
+  const handleRemoveStay = async (stayIdToRemove) => {
     if (
       confirm(
         `Are you sure you want to remove this stay from the booking? This will not delete the stay itself.`
       )
     ) {
       const newStays = stays.filter((stay) => stay._id !== stayIdToRemove);
-      const newSummaries = newStays.map((stay) => ({
-        stayId: stay._id,
-        hotelName: stay.hotelName || "Unknown Hotel",
-        checkInDate: stay.checkInDate,
-        checkOutDate: stay.checkOutDate,
-      }));
+
+      // Create summaries with guest names for remaining stays
+      const newSummaries = await createStaySummariesWithGuestNames(newStays);
 
       bookingsContext.updateField("staySummaries", newSummaries);
       setStays(newStays);
@@ -268,16 +283,28 @@ export function BookingForm() {
       newStaysList.push(savedStay);
       setStays(newStaysList);
 
+      // Create summaries with guest names
+      const newSummaries = await createStaySummariesWithGuestNames(
+        newStaysList
+      );
+      bookingsContext.updateField("staySummaries", newSummaries);
+
       if (bookingsContext.selectedItem._id) {
-        const saveSuccess = await autoSaveBookingAfterStayChange(newStaysList);
+        const { stayIds, ...bookingData } = bookingsContext.selectedItem;
+        const updatedBooking = {
+          ...bookingData,
+          staySummaries: newSummaries,
+        };
+
+        const saveSuccess = await bookingsContext.updateItem(updatedBooking);
 
         if (saveSuccess) {
-          toast.success("Stay added and booking auto-saved", {
+          toast.success("Stay added and booking updated", {
             description: "The stay has been created and linked to this booking",
           });
         } else {
-          toast.warning("Stay created but booking not auto-saved", {
-            description: "Please save the booking manually to confirm changes",
+          toast.warning("Stay created but booking not updated", {
+            description: "Please save the booking to confirm changes",
           });
         }
       }
@@ -285,14 +312,65 @@ export function BookingForm() {
       newStaysList[existingStayIndex] = savedStay;
       setStays(newStaysList);
 
-      if (bookingsContext.selectedItem._id) {
-        await autoSaveBookingAfterStayChange(newStaysList);
-      }
-
+      // Update summaries with guest names
+      const updatedSummaries = await createStaySummariesWithGuestNames(
+        newStaysList
+      );
+      bookingsContext.updateField("staySummaries", updatedSummaries);
       toast.success("Stay updated successfully");
     }
 
     setIsModalOpen(false);
+  };
+
+  const createStaySummariesWithGuestNames = async (staysList) => {
+    const summariesWithGuestNames = [];
+
+    for (const stay of staysList) {
+      let guestNames = [];
+
+      // If the stay has guestIds, fetch the guest names
+      if (
+        stay.guestIds &&
+        Array.isArray(stay.guestIds) &&
+        stay.guestIds.length > 0
+      ) {
+        try {
+          // Fetch all guest details in parallel
+          const guestPromises = stay.guestIds.map((guestId) =>
+            searchDocuments("contacts", guestId, "_id")
+          );
+
+          const guestResults = await Promise.all(guestPromises);
+
+          guestNames = guestResults
+            .filter((result) => Array.isArray(result) && result.length > 0)
+            .map((result) => {
+              const contact = result[0];
+              const firstName = contact.general?.firstName || "";
+              const lastName = contact.general?.lastName || "";
+              return `${firstName} ${lastName}`.trim();
+            })
+            .filter((name) => name.length > 0);
+        } catch (error) {
+          console.error(
+            `Error fetching guest names for stay ${stay._id}:`,
+            error
+          );
+          // Continue with empty guest names if there's an error
+        }
+      }
+
+      summariesWithGuestNames.push({
+        stayId: stay._id,
+        hotelName: stay.hotelName || "Unknown Hotel",
+        checkInDate: stay.checkInDate,
+        checkOutDate: stay.checkOutDate,
+        guestNames: guestNames, // Add guest names array
+      });
+    }
+
+    return summariesWithGuestNames;
   };
 
   return (

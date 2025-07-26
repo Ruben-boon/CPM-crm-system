@@ -74,7 +74,13 @@ export const formatDate = (dateString) => {
   }
 };
 
-export const getGuestCountText = (guestIds) => {
+export const getGuestCountText = (guestIds, guestNames) => {
+  // If we have guest names, return the names
+  if (guestNames && Array.isArray(guestNames) && guestNames.length > 0) {
+    return guestNames.join(", ");
+  }
+  
+  // Otherwise return count
   if (!guestIds || !Array.isArray(guestIds)) return "0 guests";
   const count = guestIds.length;
   return count === 1 ? "1 guest" : `${count} guests`;
