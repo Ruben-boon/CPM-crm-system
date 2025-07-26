@@ -69,7 +69,18 @@ export async function searchDocuments<T>(
                 checkOutDate: { $gte: searchTerm }
             }
         };
-
+    } else if (collectionName === "bookings" && searchField === "guestName") {
+        // Search for guest names in staySummaries.guestNames array
+        query["staySummaries.guestNames"] = {
+            $regex: searchTerm,
+            $options: "i"
+        };
+    } else if (collectionName === "stays" && searchField === "guestName") {
+        // NEW: Search for guest names in stays.guestNames array
+        query["guestNames"] = {
+            $regex: searchTerm,
+            $options: "i"
+        };
     } else {
       const effectiveSearchField =
         collectionName === "bookings" && searchField === "hotelName"
@@ -95,6 +106,7 @@ export async function searchDocuments<T>(
     const results = await db
       .collection(collectionName)
       .find(query)
+      .sort({ createdAt: -1, _id: -1 }) // Sort by creation date descending, then by _id descending as fallback
       .limit(20)
       .toArray();
 

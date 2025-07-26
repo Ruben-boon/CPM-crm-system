@@ -33,7 +33,10 @@ export default function SearchBar({
     { value: "confirmationNo", label: "Booking reference" },
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
+    { value: "guestName", label: "Guest Name" }, // NEW: Added guest name search
     { value: "dateInRange", label: "Date in Range" }, 
+    { value: "travelPeriodStart", label: "Earliest check in" }, 
+
     { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
@@ -91,8 +94,10 @@ export default function SearchBar({
   };
 
   const isStatusField = type === "bookings" && searchField === "status";
-  // --- ADDED: Condition for the new date range field ---
   const isDateInRangeField = type === "bookings" && searchField === "dateInRange";
+  const isTravelPeriodStart = type === "bookings" && searchField === "travelPeriodStart";
+
+
 
   return (
     <div className="search-group">
@@ -117,8 +122,7 @@ export default function SearchBar({
             <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
             <option value="completed">Completed</option>
           </select>
-        // --- ADDED: Render a date picker for the new field ---
-        ) : isDateInRangeField ? (
+        ) : isDateInRangeField || isTravelPeriodStart ? (
           <input
             type="date"
             className="search-bar__input"
