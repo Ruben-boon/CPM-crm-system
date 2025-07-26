@@ -32,6 +32,9 @@ interface RefFieldProps {
   searchDebounceMs?: number;
   nameFieldPath?: string;
   nameFields?: string[];
+  // NEW: Props for guest names support
+  showGuestNames?: boolean;
+  contextItem?: any; // The parent item (booking) that contains staySummaries
 }
 
 // Global cache to prevent duplicate fetches across all RefField instances
@@ -58,6 +61,8 @@ export function RefField({
   searchDebounceMs = 300,
   nameFieldPath,
   nameFields,
+  showGuestNames = false,
+  contextItem,
 }: RefFieldProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -79,7 +84,57 @@ export function RefField({
     return path.split(".").reduce((o, p) => (o ? o[p] : undefined), obj);
   };
 
+  // NEW: Function to get guest names from booking's staySummaries
+  const getGuestNamesFromStaySummaries = (bookingItem: any): string => {
+    if (!bookingItem?.staySummaries || !Array.isArray(bookingItem.staySummaries)) {
+      return "";
+    }
+
+    // Collect all unique guest names from all stays
+    const allGuestNames = new Set<string>();
+    
+    bookingItem.staySummaries.forEach((summary: any) => {
+      if (summary.guestNames && Array.isArray(summary.guestNames)) {
+        summary.guestNames.forEach((name: string) => {
+          if (name && name.trim()) {
+            allGuestNames.add(name.trim());
+          }
+        });
+      }
+    });
+
+    return Array.from(allGuestNames).join(", ");
+  };
+
   const formatDisplayString = (doc: any): React.ReactNode => {
+    // NEW: Handle guest names for bookings
+    if (showGuestNames && collectionName === "bookings" && contextItem) {
+      const guestNames = getGuestNamesFromStaySummaries(doc);
+      const regularDisplay = getRegularDisplayString(doc);
+      
+      if (guestNames) {
+        if (displaySeparator === "<br>") {
+          return (
+            <>
+              {regularDisplay}
+              <br />
+              <span style={{ fontStyle: 'italic', color: '#6b7280' }}>
+                Guests: {guestNames}
+              </span>
+            </>
+          );
+        } else {
+          return `${regularDisplay} (Guests: ${guestNames})`;
+        }
+      }
+      
+      return regularDisplay;
+    }
+
+    return getRegularDisplayString(doc);
+  };
+
+  const getRegularDisplayString = (doc: any): React.ReactNode => {
     if (displayTemplate) {
       let result = displayTemplate;
       normalizedDisplayFields.forEach((field) => {
@@ -248,7 +303,7 @@ export function RefField({
         fetchCache.delete(cacheKey);
       });
 
-  }, [value, collectionName]); // Minimal dependencies
+  }, [value, collectionName, contextItem]); // Added contextItem as dependency
 
   const handleSelect = (result: any) => {
     const display = formatDisplayString(result);

@@ -19,9 +19,8 @@ interface RelatedItemsProps {
   onItemClick?: (id: string, collection: string) => void;
   isFormEditing?: boolean;
   onLoadingChange?: (isLoading: boolean) => void;
+  showGuestNames?: boolean; // NEW: Option to show guest names for bookings
 }
-
-
 
 // Use React.memo to prevent unnecessary rerenders
 const RelatedItems = memo(function RelatedItems({
@@ -34,6 +33,7 @@ const RelatedItems = memo(function RelatedItems({
   onItemClick,
   isFormEditing = false,
   onLoadingChange,
+  showGuestNames = false,
 }: RelatedItemsProps) {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,15 +85,47 @@ const RelatedItems = memo(function RelatedItems({
     }, obj);
   };
 
+  // NEW: Function to get guest names from booking's staySummaries
+  const getGuestNamesFromStaySummaries = (bookingItem: any): string => {
+    if (!bookingItem?.staySummaries || !Array.isArray(bookingItem.staySummaries)) {
+      return "";
+    }
+
+    // Collect all unique guest names from all stays
+    const allGuestNames = new Set<string>();
+    
+    bookingItem.staySummaries.forEach((summary: any) => {
+      if (summary.guestNames && Array.isArray(summary.guestNames)) {
+        summary.guestNames.forEach((name: string) => {
+          if (name && name.trim()) {
+            allGuestNames.add(name.trim());
+          }
+        });
+      }
+    });
+
+    return Array.from(allGuestNames).join(", ");
+  };
+
   // Format the display value for an item
   const formatItemDisplay = (item: any): string => {
-    return displayFields
+    const regularDisplay = displayFields
       .map((field) => {
         const value = getNestedValue(item, field.path);
         return field.label ? `${field.label}: ${value}` : value;
       })
       .filter(Boolean)
       .join(" | ");
+
+    // NEW: Add guest names for bookings if enabled
+    if (showGuestNames && collectionName === "bookings") {
+      const guestNames = getGuestNamesFromStaySummaries(item);
+      if (guestNames) {
+        return `Guest: ${guestNames} | ${regularDisplay}`;
+      }
+    }
+
+    return regularDisplay;
   };
 
   // If in edit mode, render a simpler version

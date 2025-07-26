@@ -280,7 +280,7 @@ export function ContactForm() {
           </div>
         )}
       </div>
-      <div className="col-full">
+     <div className="col-full">
         {shouldShowRelatedSections && isBooker && (
           <div className="related-section">
             <RelatedItems
@@ -297,6 +297,7 @@ export function ContactForm() {
               emptyMessage="No bookings found where this contact is the booker"
               onItemClick={handleRelationClick}
               isFormEditing={contactsContext.isEditing}
+              showGuestNames={true} // NEW: Enable guest names display
             />
           </div>
         )}
