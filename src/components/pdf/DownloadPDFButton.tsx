@@ -318,7 +318,7 @@ export function DownloadPDFButton({
 
       // Define page margins and content area
       const pageMargins = {
-        top: 10,
+        top: 16,
         right: 16,
         bottom: 16, // This margin is for the physical edge of the paper
         left: 16,
@@ -391,6 +391,7 @@ export function DownloadPDFButton({
         // MODIFIED: Render TIDS number
         pdf.text(entityDetails.tids, 16, 264 + lineSpacing * 4);
 
+
         // Middle column for contact
         pdf.text(entityDetails.phone, 80, 268);
         pdf.text("www.corporatemeetingpartner.com", 80, 268 + lineSpacing);
@@ -450,7 +451,7 @@ export function DownloadPDFButton({
       // Add full company address to the top right
       if (companyData) {
         pdf.setFontSize(10);
-        let companyY = pageMargins.top;
+        let companyY = 28; // Starting Y position at top margin
         const rightMargin = 190; // Right side of the page
 
         if (companyData.name) {
@@ -707,9 +708,9 @@ export function DownloadPDFButton({
             "Room Price:",
             stay.roomPrice
               ? `${stay.roomPrice} ${stay.roomCurrency || ""} per night`
-              : "-"
+              : "-",
           );
-
+          
           if (stay.paymentType) {
             y += addRow("", stay.paymentType);
           }
@@ -736,12 +737,10 @@ export function DownloadPDFButton({
           }
 
           y += addRow("Guests:", formatGuestNames(stay));
-
+          
           // MODIFIED: Use taxAmount and taxCurrency to display the tax information
           if (stay.taxAmount) {
-            const taxValue = `${stay.taxAmount} ${
-              stay.taxCurrency || ""
-            }`.trim();
+            const taxValue = `${stay.taxAmount} ${stay.taxCurrency || ""}`.trim();
             y += addRow("Total local taxes:", taxValue);
           }
 
