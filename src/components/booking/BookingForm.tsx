@@ -19,42 +19,55 @@ export function BookingForm() {
   const [loadingStays, setLoadingStays] = useState(false);
   const loadingRef = useRef(false);
 
-  const getDisplayName = (item) => {
-    return item.confirmationNo ? item.confirmationNo : "New Booking";
-  };
+const getDisplayName = (item) => {
+  // For new bookings (no _id), always show "New Booking"
+  if (!item._id) {
+    return "New Booking";
+  }
+  // For existing bookings, show confirmation number or fallback
+  return item.confirmationNo ? item.confirmationNo : "Booking";
+};
 
-  useEffect(() => {
-    if (bookingsContext.selectedItem) {
-      const topBarTitle = document.querySelector(".top-bar__title");
-      if (topBarTitle) {
-        topBarTitle.innerHTML = "";
+useEffect(() => {
+  if (bookingsContext.selectedItem) {
+    const topBarTitle = document.querySelector(".top-bar__title");
+    if (topBarTitle) {
+      topBarTitle.innerHTML = "";
 
-        const confirmationSpan = document.createElement("span");
-        const confirmationText = bookingsContext.selectedItem.confirmationNo
-          ? bookingsContext.selectedItem.confirmationNo
-          : "New Booking";
-        confirmationSpan.textContent = confirmationText;
-        topBarTitle.appendChild(confirmationSpan);
+      const confirmationSpan = document.createElement("span");
+      
+      // Use the updated logic: "New Booking" for new items, confirmation number for existing
+      let displayText;
+      if (!bookingsContext.selectedItem._id) {
+        displayText = "New Booking";
+      } else {
+        displayText = bookingsContext.selectedItem.confirmationNo || "Booking";
+      }
+      
+      confirmationSpan.textContent = displayText;
+      topBarTitle.appendChild(confirmationSpan);
 
-        // Get status directly from the selected item without any modifications
-        if (bookingsContext.selectedItem.status) {
-          const statusBadge = document.createElement("span");
-          statusBadge.className = `status-badge status-${bookingsContext.selectedItem.status}`;
-          statusBadge.textContent = getStatusLabel(
-            bookingsContext.selectedItem.status,
-            BOOKING_STATUS_OPTIONS
-          );
-          topBarTitle.appendChild(statusBadge);
-        }
+      // Get status directly from the selected item
+      if (bookingsContext.selectedItem.status) {
+        const statusBadge = document.createElement("span");
+        statusBadge.className = `status-badge status-${bookingsContext.selectedItem.status}`;
+        statusBadge.textContent = getStatusLabel(
+          bookingsContext.selectedItem.status,
+          BOOKING_STATUS_OPTIONS
+        );
+        topBarTitle.appendChild(statusBadge);
       }
     }
-  }, [
-    bookingsContext.selectedItem,
-    bookingsContext.selectedItem?.confirmationNo,
-    bookingsContext.selectedItem?.status, // Added status as dependency so it updates when changed
-  ]);
+  }
+}, [
+  bookingsContext.selectedItem,
+  bookingsContext.selectedItem?._id,
+  bookingsContext.selectedItem?.confirmationNo,
+  bookingsContext.selectedItem?.status,
+]);
 
-  // Rest of your component remains the same...
+
+
   useEffect(() => {
     if (bookingsContext.selectedItem?._id) {
       setStays([]);

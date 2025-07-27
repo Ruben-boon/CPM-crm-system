@@ -177,7 +177,18 @@ function createDataContext(collectionName: string) {
 
     const selectItem = useCallback(
       (item: Partial<Item> | null, startEditing = false) => {
-        const newItem = item ? ({ _id: "", ...item } as Item) : null;
+        let newItem = item ? ({ _id: "", ...item } as Item) : null;
+
+        // Set default status for new bookings (only for truly new items, not copies)
+        if (
+          newItem &&
+          !newItem._id &&
+          collectionName === "bookings" &&
+          !newItem.status
+        ) {
+          newItem.status = "upcoming_no_action";
+        }
+
         setSelectedItem(newItem);
 
         // Store a deep copy of the original item for reset functionality
@@ -186,7 +197,7 @@ function createDataContext(collectionName: string) {
         setIsEditing(startEditing);
         setPendingChanges({});
       },
-      []
+      [collectionName] // Add collectionName to dependencies
     );
 
     const updateField = useCallback(

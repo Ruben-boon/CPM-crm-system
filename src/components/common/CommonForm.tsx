@@ -1,4 +1,4 @@
-// CommonForm.tsx
+// components/common/CommonForm.tsx
 "use client";
 import Button from "@/components/common/Button";
 import { Save, X, Edit, Trash2 } from "lucide-react";
@@ -6,7 +6,8 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
-import { LoadingSpinner } from "../loadingSpinner";
+import { UnsavedChangesModal } from "./UnsavedChangesModal";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 export interface DataContextState<T> {
   selectedItem: T | null;
@@ -55,7 +56,34 @@ export function CommonForm<T extends { _id?: string }>({
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [lastSavedState, setLastSavedState] = useState<any>(null);
+
+  // Handle unsaved changes navigation
+  const {
+    showModal: showUnsavedModal,
+    isSaving,
+    handleSaveAndContinue,
+    handleDiscardAndContinue,
+    handleCancel: handleCancelNavigation,
+  } = useUnsavedChanges({
+    isDirty,
+    isEditing,
+    onSave: async () => {
+      if (!selectedItem) return false;
+      
+      const isUpdate = !!selectedItem._id;
+      const success = isUpdate
+        ? await updateItem(selectedItem as T)
+        : await createItem(selectedItem as T);
+        
+      if (success) {
+        toast.success(`${itemName} ${isUpdate ? "updated" : "created"} successfully`);
+        setIsEditing(false);
+        setIsCreating(false);
+      }
+      
+      return success;
+    },
+  });
 
   useEffect(() => {
     if (selectedItem) {
@@ -64,10 +92,6 @@ export function CommonForm<T extends { _id?: string }>({
 
       if (isNewItem && !isEditing) {
         setIsEditing(true);
-      }
-      
-      if (!isEditing) {
-        setLastSavedState(JSON.stringify(selectedItem));
       }
     }
   }, [selectedItem, isEditing, setIsEditing]);
@@ -96,8 +120,6 @@ export function CommonForm<T extends { _id?: string }>({
         );
         setIsEditing(false);
         setIsCreating(false);
-        // Update last saved state after successful save
-        setLastSavedState(JSON.stringify(selectedItem));
 
         // For new items, navigate to the detail view with the new ID
         if (!isUpdate && (selectedItem as any)?._id) {
@@ -178,14 +200,9 @@ export function CommonForm<T extends { _id?: string }>({
     }
   };
 
-
   const itemDisplayName = selectedItem
     ? displayName(selectedItem)
     : `this ${itemName.toLowerCase()}`;
-
-  // Only show Save button if truly dirty (comparing with last saved state)
-  const isReallyDirty = isCreating || 
-    (isEditing && selectedItem && lastSavedState !== JSON.stringify(selectedItem));
 
   return (
     <>
@@ -195,6 +212,14 @@ export function CommonForm<T extends { _id?: string }>({
           onClose={handleCancelDelete}
           onConfirm={handleConfirmDelete}
           itemName={itemDisplayName}
+        />
+
+        <UnsavedChangesModal
+          isOpen={showUnsavedModal}
+          onCancel={handleCancelNavigation}
+          onDiscard={handleDiscardAndContinue}
+          onSave={handleSaveAndContinue}
+          isSaving={isSaving}
         />
 
         <form onSubmit={handleSave} className={`${entityType}-form`}>

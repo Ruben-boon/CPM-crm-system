@@ -81,7 +81,10 @@ const formatFullDate = (dateString: string) => {
 };
 
 // Helper function to calculate nights between dates
-const calculateNights = (checkInDate?: string, checkOutDate?: string): string => {
+const calculateNights = (
+  checkInDate?: string,
+  checkOutDate?: string
+): string => {
   if (!checkInDate || !checkOutDate) return "-";
 
   try {
@@ -131,12 +134,30 @@ const getStatusInfo = (status: string) => {
 
     // Stay statuses
     unconfirmed: { label: "Unconfirmed", className: "status-unconfirmed" },
-    unconfirmed_prepaid: { label: "Unconfirmed Prepaid", className: "status-unconfirmed_prepaid" },
-    confirmed_prepaid_upcoming: { label: "Confirmed Prepaid Upcoming", className: "status-confirmed_prepaid_upcoming" },
-    confirmed_upcoming: { label: "Confirmed Upcoming", className: "status-confirmed_upcoming" },
-    confirmed_prepaid_stayed: { label: "Confirmed Prepaid Stayed", className: "status-confirmed_prepaid_stayed" },
-    confirmed_stayed: { label: "Confirmed Stayed", className: "status-confirmed_stayed" },
-    purchase_invoice_received: { label: "Purchase Invoice Received", className: "status-purchase_invoice_received" },
+    unconfirmed_prepaid: {
+      label: "Unconfirmed Prepaid",
+      className: "status-unconfirmed_prepaid",
+    },
+    confirmed_prepaid_upcoming: {
+      label: "Confirmed Prepaid Upcoming",
+      className: "status-confirmed_prepaid_upcoming",
+    },
+    confirmed_upcoming: {
+      label: "Confirmed Upcoming",
+      className: "status-confirmed_upcoming",
+    },
+    confirmed_prepaid_stayed: {
+      label: "Confirmed Prepaid Stayed",
+      className: "status-confirmed_prepaid_stayed",
+    },
+    confirmed_stayed: {
+      label: "Confirmed Stayed",
+      className: "status-confirmed_stayed",
+    },
+    purchase_invoice_received: {
+      label: "Purchase Invoice Received",
+      className: "status-purchase_invoice_received",
+    },
     cancelled: { label: "Cancelled", className: "status-cancelled" },
 
     // Legacy/other statuses
@@ -164,16 +185,24 @@ const getStatusInfo = (status: string) => {
 // Helper function to format guest names for stays
 const formatGuestNames = (stay: any): string => {
   // Check for guest names array
-  if (stay.guestNames && Array.isArray(stay.guestNames) && stay.guestNames.length > 0) {
+  if (
+    stay.guestNames &&
+    Array.isArray(stay.guestNames) &&
+    stay.guestNames.length > 0
+  ) {
     return stay.guestNames.join(", ");
   }
-  
+
   // Check for guest IDs count
-  if (stay.guestIds && Array.isArray(stay.guestIds) && stay.guestIds.length > 0) {
+  if (
+    stay.guestIds &&
+    Array.isArray(stay.guestIds) &&
+    stay.guestIds.length > 0
+  ) {
     const count = stay.guestIds.length;
     return count === 1 ? "1 guest" : `${count} guests`;
   }
-  
+
   return "No guests";
 };
 
@@ -192,11 +221,13 @@ export default function SearchResults({
   };
 
   const handleCopyClick = (e: React.MouseEvent, item: Item) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     if (onCopy) {
       onCopy(item);
     }
   };
+
+  const showCopyButton = onCopy && (type === "bookings" || type === "stays");
 
   const sortedItems = [...items];
   if (type === "bookings") {
@@ -230,10 +261,15 @@ export default function SearchResults({
       const getEarliestDate = (summaries: any[] | undefined) => {
         if (!summaries || summaries.length === 0) return null;
         const validDates = summaries
-          .map(s => new Date(s.checkInDate))
-          .filter(d => !isNaN(d.getTime()));
+          .map((s) => new Date(s.checkInDate))
+          .filter((d) => !isNaN(d.getTime()));
         if (validDates.length === 0) return null;
-        return new Date(Math.min.apply(null, validDates.map(d => d.getTime())));
+        return new Date(
+          Math.min.apply(
+            null,
+            validDates.map((d) => d.getTime())
+          )
+        );
       };
 
       const aDate = getEarliestDate(a.staySummaries);
@@ -253,7 +289,10 @@ export default function SearchResults({
     <>
       <ul className="search-results">
         {sortedItems.map((item) => (
-          <li key={item._id.toString()} className={`search-results__item search-results__item--${type}`}>
+          <li
+            key={item._id.toString()}
+            className={`search-results__item search-results__item--${type}`}
+          >
             <div
               className="search-results__content"
               onClick={() => handleItemClick(item)}
@@ -274,7 +313,7 @@ export default function SearchResults({
                     ? `${item.confirmationNo || "Booking"}`
                     : `Unknown item type`}
                 </div>
-                {onCopy && (
+                {showCopyButton && (
                   <button
                     className="search-results__copy-btn"
                     onClick={(e) => handleCopyClick(e, item)}
@@ -318,7 +357,9 @@ export default function SearchResults({
                       <div className="search-results__details-section">
                         <dd>
                           <MapPin size={14} />
-                          {[item.general?.city, item.general?.country].filter(Boolean).join(", ")}
+                          {[item.general?.city, item.general?.country]
+                            .filter(Boolean)
+                            .join(", ")}
                         </dd>
                       </div>
                     )}
@@ -403,14 +444,22 @@ export default function SearchResults({
                     <div className="search-results__details-section">
                       <dd>
                         <Calendar size={14} />
-                        {formatFullDate(item.checkInDate)} - {formatFullDate(item.checkOutDate)}
+                        {formatFullDate(item.checkInDate)} -{" "}
+                        {formatFullDate(item.checkOutDate)}
                         {(() => {
-                          const nights = calculateNights(item.checkInDate, item.checkOutDate);
-                          return nights !== "-" ? ` (${nights} ${nights === "1" ? "night" : "nights"})` : "";
+                          const nights = calculateNights(
+                            item.checkInDate,
+                            item.checkOutDate
+                          );
+                          return nights !== "-"
+                            ? ` (${nights} ${
+                                nights === "1" ? "night" : "nights"
+                              })`
+                            : "";
                         })()}
                       </dd>
                     </div>
-                    
+
                     {/* Guest information */}
                     <div className="search-results__details-section">
                       <dd>
@@ -426,8 +475,14 @@ export default function SearchResults({
                           <Bed size={14} />
                           {[
                             item.roomType,
-                            item.roomPrice ? `${item.roomCurrency || "EUR"} ${item.roomPrice}` : null
-                          ].filter(Boolean).join(" - ")}
+                            item.roomPrice
+                              ? `${item.roomCurrency || "EUR"} ${
+                                  item.roomPrice
+                                }`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" - ")}
                         </dd>
                       </div>
                     )}

@@ -67,14 +67,6 @@ export function DownloadPDFButton({
   const [companyData, setCompanyData] = useState<any>(null);
   const [bookerData, setBookerData] = useState<any>(null);
 
-  // FIXED: Define pageMargins at the top level
-  const pageMargins = {
-    top: 20,
-    bottom: 20,
-    left: 16,
-    right: 16
-  };
-
   // Fetch company data when booking data changes
   useEffect(() => {
     async function fetchCompanyData() {
@@ -223,15 +215,7 @@ export function DownloadPDFButton({
 
     try {
       let preparedStays = await prepareStaysWithGuestNames(stays);
-      preparedStays = await fetchAndAttachHotelDetails(preparedStays);
-
-      // Sort stays by check-in date (same as PDF)
-      preparedStays.sort((a, b) => {
-        const dateA = a.checkInDate ? new Date(a.checkInDate).getTime() : 0;
-        const dateB = b.checkInDate ? new Date(b.checkInDate).getTime() : 0;
-        return dateA - dateB;
-      });
-
+      preparedStays = await fetchAndAttachHotelDetails(preparedStays); // Also fetch hotel details
       onSendConfirmation(bookerData, preparedStays);
     } catch (error) {
       console.error("Error preparing confirmation data:", error);
@@ -325,13 +309,6 @@ export function DownloadPDFButton({
       let preparedStays = await prepareStaysWithGuestNames(stays);
       preparedStays = await fetchAndAttachHotelDetails(preparedStays);
 
-      // Sort stays by check-in date
-      preparedStays.sort((a, b) => {
-        const dateA = a.checkInDate ? new Date(a.checkInDate).getTime() : 0;
-        const dateB = b.checkInDate ? new Date(b.checkInDate).getTime() : 0;
-        return dateA - dateB;
-      });
-
       // Create a new PDF document
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -339,7 +316,15 @@ export function DownloadPDFButton({
         format: "a4",
       });
 
-      // FIXED: Now pageMargins is properly defined and accessible
+      // Define page margins and content area
+      const pageMargins = {
+        top: 10,
+        right: 16,
+        bottom: 16, // This margin is for the physical edge of the paper
+        left: 16,
+      };
+
+      // MODIFIED: Increased footer space from 10 to 40 to prevent overlap
       const contentHeight = 297 - pageMargins.top - pageMargins.bottom - 40; // A4 height minus margins and footer space
 
       // Current y position on the page
@@ -347,7 +332,6 @@ export function DownloadPDFButton({
 
       // Current page number
       let currentPage = 1;
-      let isFirstPage = true;
 
       // Function to add footer to current page
       const addFooter = (page: number, totalPages: number) => {
@@ -417,11 +401,8 @@ export function DownloadPDFButton({
         );
       };
 
+      // Function to check if we need a new page
       const checkNewPage = (requiredHeight: number) => {
-        if (isFirstPage) {
-          return false;
-        }
-
         if (y + requiredHeight > pageMargins.top + contentHeight) {
           pdf.addPage();
           currentPage++;
@@ -469,7 +450,7 @@ export function DownloadPDFButton({
       // Add full company address to the top right
       if (companyData) {
         pdf.setFontSize(10);
-        let companyY = 28; // Starting Y position at top margin
+        let companyY = pageMargins.top;
         const rightMargin = 190; // Right side of the page
 
         if (companyData.name) {
@@ -601,7 +582,6 @@ export function DownloadPDFButton({
       );
 
       y += 5;
-      isFirstPage = false;
 
       if (!preparedStays || preparedStays.length === 0) {
         checkNewPage(10);
@@ -615,7 +595,6 @@ export function DownloadPDFButton({
         // Process each stay
         for (let i = 0; i < preparedStays.length; i++) {
           const stay = preparedStays[i];
-          const isFirstStay = i === 0;
 
           let stayHeight = 80;
           const estimateTextHeight = (
@@ -636,11 +615,7 @@ export function DownloadPDFButton({
           if (stay.cancellations)
             stayHeight += estimateTextHeight(stay.cancellations);
 
-          // Only check for new page if it's NOT the first stay
-          if (!isFirstStay) {
-            checkNewPage(stayHeight);
-          }
-
+          checkNewPage(stayHeight);
           const nights = calculateNights(stay.checkInDate, stay.checkOutDate);
           const nightsText =
             parseInt(nights) === 1 ? `${nights} Night` : `${nights} Nights`;
@@ -649,6 +624,7 @@ export function DownloadPDFButton({
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
 
+          // MODIFIED: Removed room type from stay header
           const guestNamesForTitle = formatGuestNames(stay);
           const fullTitle = `Stay: ${guestNamesForTitle} - ${nightsText}`;
 
@@ -699,77 +675,11 @@ export function DownloadPDFButton({
           pdf.line(pageMargins.left, y, 190, y);
           y += 5;
 
-          // Modified addRow function for first stay to skip page breaks
-          const addRowForStay = (
-            key: string,
-            value: string,
-            indent = 0,
-            isLink = false,
-            url = ""
-          ): number => {
-            pdf.setFontSize(10);
-
-            const valueStartX = 75;
-            const maxValueWidth = 190 - valueStartX;
-
-            pdf.setFont("helvetica", "normal");
-            const splitValue = pdf.splitTextToSize(value, maxValueWidth);
-            const lineCount = splitValue.length;
-            const rowHeight = 6 * lineCount;
-
-            // Only check for new page if it's NOT the first stay
-            if (!isFirstStay && checkNewPage(rowHeight)) {
-              // New page
-            }
-
-            pdf.setFont("helvetica", "bold");
-            pdf.text(key, pageMargins.left + indent, y);
-
-            pdf.setFont("helvetica", "normal");
-
-            if (isLink) {
-              pdf.setTextColor(0, 0, 0);
-              if (lineCount === 1) {
-                pdf.textWithLink(value, valueStartX, y, { url: url });
-                pdf.setDrawColor(0, 0, 0);
-                pdf.line(
-                  valueStartX,
-                  y + 1,
-                  valueStartX + pdf.getTextWidth(value),
-                  y + 1
-                );
-              } else {
-                splitValue.forEach((line: string, index: number) => {
-                  const yPos = y + index * 6;
-                  pdf.textWithLink(line, valueStartX, yPos, { url: url });
-                  const lineWidth = pdf.getTextWidth(line);
-                  pdf.setDrawColor(0, 0, 0);
-                  pdf.line(
-                    valueStartX,
-                    yPos + 1,
-                    valueStartX + lineWidth,
-                    yPos + 1
-                  );
-                });
-              }
-            } else {
-              if (lineCount === 1) {
-                pdf.text(value, valueStartX, y);
-              } else {
-                splitValue.forEach((line: string, index: number) => {
-                  pdf.text(line, valueStartX, y + index * 6);
-                });
-              }
-            }
-
-            return rowHeight;
-          };
-
-          // Stay details using the modified addRowForStay function
+          // Stay details
           pdf.setFontSize(10);
           pdf.setFont("helvetica", "normal");
 
-          y += addRowForStay("Hotel:", stay.hotelName || "Unknown hotel");
+          y += addRow("Hotel:", stay.hotelName || "Unknown hotel");
 
           const addressParts = [
             stay.hotelAddress,
@@ -785,18 +695,15 @@ export function DownloadPDFButton({
             const fullAddress = [stay.hotelAddress, cityLine, stay.hotelCountry]
               .filter(Boolean)
               .join(", ");
-            y += addRowForStay("Hotel address:", fullAddress);
+            y += addRow("Hotel address:", fullAddress);
           }
 
           if (stay.hotelConfirmationNo) {
-            y += addRowForStay(
-              "Hotel Confirmation No.:",
-              stay.hotelConfirmationNo
-            );
+            y += addRow("Hotel Confirmation No.:", stay.hotelConfirmationNo);
           }
-          y += addRowForStay("Room Type:", stay.roomType || "-");
+          y += addRow("Room Type:", stay.roomType || "-");
 
-          y += addRowForStay(
+          y += addRow(
             "Room Price:",
             stay.roomPrice
               ? `${stay.roomPrice} ${stay.roomCurrency || ""} per night`
@@ -804,7 +711,7 @@ export function DownloadPDFButton({
           );
 
           if (stay.paymentType) {
-            y += addRowForStay("", stay.paymentType);
+            y += addRow("", stay.paymentType);
           }
 
           if (stay.roomPrice) {
@@ -815,10 +722,7 @@ export function DownloadPDFButton({
               190 - 75
             );
 
-            // Only check for new page if it's NOT the first stay
-            if (!isFirstStay) {
-              checkNewPage(disclaimerLines.length * 4);
-            }
+            checkNewPage(disclaimerLines.length * 4);
 
             pdf.setFontSize(10);
             pdf.setFont("helvetica", "italic");
@@ -831,32 +735,30 @@ export function DownloadPDFButton({
             y += 5;
           }
 
-          y += addRowForStay("Guests:", formatGuestNames(stay));
+          y += addRow("Guests:", formatGuestNames(stay));
 
+          // MODIFIED: Use taxAmount and taxCurrency to display the tax information
           if (stay.taxAmount) {
             const taxValue = `${stay.taxAmount} ${
               stay.taxCurrency || ""
             }`.trim();
-            y += addRowForStay("Total local taxes:", taxValue);
+            y += addRow("Total local taxes:", taxValue);
           }
 
           if (stay.specialRequests) {
-            y += addRowForStay("Special Requests:", stay.specialRequests);
+            y += addRow("Special Requests:", stay.specialRequests);
           }
 
           if (stay.remarks) {
-            y += addRowForStay("Remarks:", stay.remarks);
+            y += addRow("Remarks:", stay.remarks);
           }
 
           if (stay.paymentInstructions) {
-            y += addRowForStay(
-              "Payment Instructions:",
-              stay.paymentInstructions
-            );
+            y += addRow("Payment Instructions:", stay.paymentInstructions);
           }
 
           if (stay.cancellations) {
-            y += addRowForStay("Cancellation Policy:", stay.cancellations);
+            y += addRow("Cancellation Policy:", stay.cancellations);
           }
 
           y += 10;
