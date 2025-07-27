@@ -34,8 +34,8 @@ export default function SearchBar({
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
     { value: "guestName", label: "Guest Name" },
-    { value: "dateInRange", label: "Date in Range" }, 
-    { value: "travelPeriodStart", label: "Earliest check in" }, 
+    // { value: "dateInRange", label: "Date in Range" }, 
+    // { value: "travelPeriodStart", label: "Earliest check in" }, 
     { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
@@ -107,10 +107,10 @@ export default function SearchBar({
   const isStatusField = (type === "bookings" && searchField === "status") || 
                        (type === "stays" && searchField === "status");
   const isPrepaidField = type === "stays" && searchField === "prepaid";
-  const isDateInRangeField = type === "bookings" && searchField === "dateInRange";
-  const isTravelPeriodStart = type === "bookings" && searchField === "travelPeriodStart";
-  const isDateField = (type === "stays" && (searchField === "checkInDate" || searchField === "checkOutDate")) ||
-                      isTravelPeriodStart || isDateInRangeField;
+  // const isDateInRangeField = type === "bookings" && searchField === "dateInRange";
+  // const isTravelPeriodStart = type === "bookings" && searchField === "travelPeriodStart";
+  // const isDateField = (type === "stays" && (searchField === "checkInDate" || searchField === "checkOutDate")) ||
+  //                     isTravelPeriodStart || isDateInRangeField;
 
   return (
     <div className="search-group">
@@ -164,20 +164,7 @@ export default function SearchBar({
             <option value="yes">Yes</option>
             <option value="no">No</option>
           </select>
-        ) : isDateField ? (
-          <input
-            type="date"
-            className="search-bar__input"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Search immediately on date change
-              onSearch(e.target.value, searchField);
-            }}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-          />
-        ) : (
+        ) :  (
           <input
             type="text"
             className="search-bar__input"

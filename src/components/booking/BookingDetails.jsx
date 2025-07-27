@@ -114,7 +114,6 @@ export function BookingDetails({ bookingsContext, stays }) {
     console.log("🔥 BookingDetails MOUNTED");
     return () => console.log("🔥 BookingDetailm UNMOUNTED");
   }, []);
-  
   // Update calculated dates when stays change
   useEffect(() => {
     if (stays.length > 0) {
@@ -122,7 +121,30 @@ export function BookingDetails({ bookingsContext, stays }) {
     }
   }, [stays, calculateAndSaveDates]);
 
-  // REMOVED: Automatic status update logic - status should come from database only
+  // Update status ONCE when booking is first loaded or when booking ID changes
+  const statusUpdateRef = useRef(null);
+
+  useEffect(() => {
+    if (!bookingsContext.selectedItem?._id) return;
+
+    // Prevent duplicate updates for the same booking
+    if (statusUpdateRef.current === bookingsContext.selectedItem._id) return;
+    statusUpdateRef.current = bookingsContext.selectedItem._id;
+
+    const currentStatus = bookingsContext.selectedItem.status;
+    const calculatedStatus = determineBookingStatus(
+      bookingsContext.selectedItem,
+      stays
+    );
+
+    // Only update if status has actually changed
+    if (currentStatus !== calculatedStatus) {
+      console.log(
+        `Status update on load: ${currentStatus} → ${calculatedStatus}`
+      );
+      bookingsContext.updateField("status", calculatedStatus);
+    }
+  }, [bookingsContext.selectedItem?._id]); // Only runs when booking ID changes
 
   // Download/send status tracking
   useEffect(() => {
@@ -160,11 +182,25 @@ export function BookingDetails({ bookingsContext, stays }) {
   }, [bookingId, stays]);
 
   const checkBothActions = () => {
-    if (trackerRef.current.downloadClicked && trackerRef.current.emailClicked) {
+    if (trackerRef.current.emailClicked) {
       if (!bookingsContext.selectedItem?.confirmationSent) {
         bookingsContext.updateField("confirmationSent", true);
+        bookingsContext.updateField("status", "upcoming_confirmation_sent");
+
         toast.success("Confirmation marked as sent");
       }
+    }
+  };
+
+  const handleConfirmationSentChange = (checked) => {
+    bookingsContext.updateField("confirmationSent", checked);
+
+    // If checking the box, also update status
+    if (checked) {
+      bookingsContext.updateField("status", "upcoming_confirmation_sent");
+    } else {
+      // If unchecking, revert to default upcoming status
+      bookingsContext.updateField("status", "upcoming_no_action");
     }
   };
 
@@ -325,18 +361,6 @@ export function BookingDetails({ bookingsContext, stays }) {
           isEditing={bookingsContext.isEditing}
           isChanged={isFieldChanged("salesInvoice")}
         />
-        
-        {/* ADDED: Manual status dropdown field */}
-        <DropdownField
-          label="Status"
-          fieldPath="status"
-          value={bookingsContext.selectedItem?.status || "upcoming_no_action"}
-          onChange={handleFieldChange}
-          isEditing={bookingsContext.isEditing}
-          options={BOOKING_STATUS_OPTIONS}
-          isChanged={isFieldChanged("status")}
-        />
-        
         <TextField
           label="Notes"
           fieldPath="notes"
@@ -370,9 +394,7 @@ export function BookingDetails({ bookingsContext, stays }) {
             type="checkbox"
             id="confirmationSent"
             checked={bookingsContext.selectedItem?.confirmationSent || false}
-            onChange={(e) =>
-              handleFieldChange("confirmationSent", e.target.checked)
-            }
+            onChange={(e) => handleConfirmationSentChange(e.target.checked)}
             disabled={!bookingsContext.isEditing}
           />
           <label htmlFor="confirmationSent" className="checkbox-label">
