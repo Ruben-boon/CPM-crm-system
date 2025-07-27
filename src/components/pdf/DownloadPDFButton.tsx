@@ -67,6 +67,14 @@ export function DownloadPDFButton({
   const [companyData, setCompanyData] = useState<any>(null);
   const [bookerData, setBookerData] = useState<any>(null);
 
+  // FIXED: Define pageMargins at the top level
+  const pageMargins = {
+    top: 20,
+    bottom: 20,
+    left: 16,
+    right: 16
+  };
+
   // Fetch company data when booking data changes
   useEffect(() => {
     async function fetchCompanyData() {
@@ -331,7 +339,7 @@ export function DownloadPDFButton({
         format: "a4",
       });
 
-      // MODIFIED: Increased footer space from 10 to 40 to prevent overlap
+      // FIXED: Now pageMargins is properly defined and accessible
       const contentHeight = 297 - pageMargins.top - pageMargins.bottom - 40; // A4 height minus margins and footer space
 
       // Current y position on the page
@@ -604,10 +612,6 @@ export function DownloadPDFButton({
         });
         y += 10;
       } else {
-        // Process each stay
-        // Replace the stays processing section in your handleDownloadPDF function
-        // with this modified version:
-
         // Process each stay
         for (let i = 0; i < preparedStays.length; i++) {
           const stay = preparedStays[i];

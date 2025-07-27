@@ -1,6 +1,6 @@
 "use client";
 import { Search } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 interface SearchBarProps {
   onSearch: (searchTerm: string, searchField: string) => void;
@@ -13,9 +13,6 @@ export default function SearchBar({
   isLoading = false,
   type = "contacts"
 }: SearchBarProps) {
-  const lastValidDateRef = useRef<string>("");
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
   const contactFields = [
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },
@@ -37,9 +34,8 @@ export default function SearchBar({
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
     { value: "guestName", label: "Guest Name" },
-    // { value: "dateInRange", label: "Date in Range" }, 
-    // { value: "travelPeriodStart", label: "Earliest check in" }, 
-    // { value: "travelPeriodEnd", label: "Latest check out" },
+    { value: "dateInRange", label: "Date in Range" }, 
+    { value: "travelPeriodStart", label: "Earliest check in" }, 
     { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
@@ -54,11 +50,22 @@ export default function SearchBar({
     { value: "phone", label: "Phone" },
   ] as const;
 
+  // UPDATED: Enhanced stays search fields with more non-date options
   const stayFields = [
-    { value: "hotelName", label: "Hotel" },
+    { value: "hotelName", label: "Hotel Name" },
+    { value: "hotelConfirmationNo", label: "Hotel Confirmation No." },
+    // { value: "confirmationNo", label: "Stay Confirmation No." },
+    { value: "roomType", label: "Room Type" },
+    // { value: "roomNumber", label: "Room Number" },
+    // { value: "status", label: "Status" },
+    // { value: "reference", label: "Reference" },
+    { value: "prepaid", label: "Prepaid" },
+    { value: "purchaseInvoice", label: "Purchase Invoice" },
+    { value: "commissionInvoice", label: "Commission Invoice" },
     // { value: "checkInDate", label: "Check-in Date" },
     // { value: "checkOutDate", label: "Check-out Date" },
-    { value: "guestName", label: "Guest Name" },
+    // REMOVED: guestName field as requested
+    // { value: "guestName", label: "Guest Name" },
   ] as const;
 
   const getSearchableFields = () => {
@@ -97,42 +104,13 @@ export default function SearchBar({
     }
   };
 
-  // Helper function to check if a date string is valid and complete
-  const isValidCompleteDate = (dateStr: string): boolean => {
-    if (!dateStr || dateStr.length !== 10) return false;
-    const date = new Date(dateStr);
-    return date instanceof Date && !isNaN(date.getTime()) && dateStr.includes('-');
-  };
-
-  // Handle date changes with validation
-  const handleDateChange = (value: string) => {
-    setSearchTerm(value);
-    
-    // Only search if:
-    // 1. We have a valid, complete date
-    // 2. It's different from the last valid date we processed
-    // 3. The change represents an actual date selection (not navigation)
-    if (isValidCompleteDate(value) && value !== lastValidDateRef.current) {
-      // Small delay to ensure the date picker has time to close
-      setTimeout(() => {
-        // Double-check that the input still has this value (user didn't continue navigating)
-        if (dateInputRef.current && dateInputRef.current.value === value) {
-          lastValidDateRef.current = value;
-          onSearch(value, searchField);
-        }
-      }, 100);
-    }
-  };
-
-  const isStatusField = type === "bookings" && searchField === "status";
-  const isDateField = type === "bookings" && (
-    searchField === "dateInRange" || 
-    searchField === "travelPeriodStart" || 
-    searchField === "travelPeriodEnd"
-  ) || type === "stays" && (
-    searchField === "checkInDate" || 
-    searchField === "checkOutDate"
-  );
+  const isStatusField = (type === "bookings" && searchField === "status") || 
+                       (type === "stays" && searchField === "status");
+  const isPrepaidField = type === "stays" && searchField === "prepaid";
+  const isDateInRangeField = type === "bookings" && searchField === "dateInRange";
+  const isTravelPeriodStart = type === "bookings" && searchField === "travelPeriodStart";
+  const isDateField = (type === "stays" && (searchField === "checkInDate" || searchField === "checkOutDate")) ||
+                      isTravelPeriodStart || isDateInRangeField;
 
   return (
     <div className="search-group">
@@ -148,24 +126,53 @@ export default function SearchBar({
               onSearch(e.target.value, searchField);
             }}
           >
-            <option value="">All Statuses</option>
-            <option value="upcoming_no_action">Upcoming - No action taken</option>
-            <option value="upcoming_confirmation_sent">Upcoming - Confirmation send</option>
-            <option value="stayed_missing_invoice">Stayed - Missing Purchase Invoice(s)</option>
-            <option value="invoicing_missing_both">Invoicing - Missing sales invoice and commision</option>
-            <option value="invoicing_missing_sales">Invoicing - Missing sales invoice</option>
-            <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
-            <option value="completed">Completed</option>
+            {type === "bookings" ? (
+              <>
+                <option value="">All Statuses</option>
+                <option value="upcoming_no_action">Upcoming - No action taken</option>
+                <option value="upcoming_confirmation_sent">Upcoming - Confirmation send</option>
+                <option value="stayed_missing_invoice">Stayed - Missing Purchase Invoice(s)</option>
+                <option value="invoicing_missing_both">Invoicing - Missing sales invoice and commission</option>
+                <option value="invoicing_missing_sales">Invoicing - Missing sales invoice</option>
+                <option value="invoicing_missing_commission">Invoicing - Missing commission</option>
+                <option value="completed">Completed</option>
+              </>
+            ) : (
+              <>
+                <option value="">All Statuses</option>
+                <option value="unconfirmed">Unconfirmed</option>
+                <option value="unconfirmed_prepaid">Unconfirmed Prepaid</option>
+                <option value="confirmed_prepaid_upcoming">Confirmed Prepaid Upcoming</option>
+                <option value="confirmed_upcoming">Confirmed Upcoming</option>
+                <option value="confirmed_prepaid_stayed">Confirmed Prepaid Stayed</option>
+                <option value="confirmed_stayed">Confirmed Stayed</option>
+                <option value="purchase_invoice_received">Purchase Invoice Received</option>
+                <option value="cancelled">Cancelled</option>
+              </>
+            )}
+          </select>
+        ) : isPrepaidField ? (
+          <select 
+            className="status-dropdown"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              onSearch(e.target.value, searchField);
+            }}
+          >
+            <option value="">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
           </select>
         ) : isDateField ? (
           <input
-            ref={dateInputRef}
             type="date"
             className="search-bar__input"
             value={searchTerm}
             onChange={(e) => {
-              // Use our smart date change handler
-              handleDateChange(e.target.value);
+              setSearchTerm(e.target.value);
+              // Search immediately on date change
+              onSearch(e.target.value, searchField);
             }}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
@@ -188,7 +195,6 @@ export default function SearchBar({
         onChange={(e) => {
           setSearchField(e.target.value);
           setSearchTerm("");
-          lastValidDateRef.current = ""; // Reset the last valid date when changing fields
           onSearch("", e.target.value);
         }}
         disabled={isLoading}
