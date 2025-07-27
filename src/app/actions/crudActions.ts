@@ -37,6 +37,7 @@ async function logActivity(
   }
 }
 
+
 export async function searchDocuments<T>(
   collectionName: string,
   searchTerm = "",
@@ -63,24 +64,27 @@ export async function searchDocuments<T>(
         return [];
       }
     } else if (collectionName === "bookings" && searchField === "dateInRange") {
-        query.staySummaries = {
-            $elemMatch: {
-                checkInDate: { $lte: searchTerm },
-                checkOutDate: { $gte: searchTerm }
-            }
-        };
+      query.staySummaries = {
+        $elemMatch: {
+          checkInDate: { $lte: searchTerm },
+          checkOutDate: { $gte: searchTerm }
+        }
+      };
     } else if (collectionName === "bookings" && searchField === "guestName") {
-        // Search for guest names in staySummaries.guestNames array
-        query["staySummaries.guestNames"] = {
-            $regex: searchTerm,
-            $options: "i"
-        };
+      // Search for guest names in staySummaries.guestNames array
+      query["staySummaries.guestNames"] = {
+        $regex: searchTerm,
+        $options: "i"
+      };
     } else if (collectionName === "stays" && searchField === "guestName") {
-        // NEW: Search for guest names in stays.guestNames array
-        query["guestNames"] = {
-            $regex: searchTerm,
-            $options: "i"
-        };
+      // Search for guest names in stays.guestNames array
+      query["guestNames"] = {
+        $regex: searchTerm,
+        $options: "i"
+      };
+    } else if (searchField === "staySummaries.stayId") {
+      // NEW: Handle backwards reference from stays to bookings
+      query["staySummaries.stayId"] = searchTerm;
     } else {
       const effectiveSearchField =
         collectionName === "bookings" && searchField === "hotelName"
@@ -106,7 +110,7 @@ export async function searchDocuments<T>(
     const results = await db
       .collection(collectionName)
       .find(query)
-      .sort({ createdAt: -1, _id: -1 }) // Sort by creation date descending, then by _id descending as fallback
+      .sort({ createdAt: -1, _id: -1 })
       .limit(20)
       .toArray();
 

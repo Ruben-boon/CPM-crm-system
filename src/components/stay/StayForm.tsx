@@ -501,13 +501,12 @@ export function StayForm() {
                 />
               </div>
 
-              {/* Related Bookings Section */}
               <div className="col-full">
                 {staysContext.selectedItem?._id && !staysContext.isEditing && (
                   <div className="related-section">
                     <RelatedItems
                       id={staysContext.selectedItem._id}
-                      referenceField="stayIds"
+                      referenceField="staySummaries.stayId" // This is the correct field path
                       collectionName="bookings"
                       displayFields={[
                         { path: "confirmationNo" },
@@ -519,8 +518,8 @@ export function StayForm() {
                       onItemClick={handleRelationClick}
                       isFormEditing={staysContext.isEditing}
                       onLoadingChange={handleRelatedItemsLoading}
-                      showGuestNames={true} // Show guest names from bookings
-                      showHotelNames={true} // NEW: Show hotel names from bookings
+                      showGuestNames={true}
+                      showHotelNames={true}
                     />
                   </div>
                 )}

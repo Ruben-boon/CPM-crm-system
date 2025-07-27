@@ -1,6 +1,6 @@
 "use client";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface SearchBarProps {
   onSearch: (searchTerm: string, searchField: string) => void;
@@ -13,6 +13,9 @@ export default function SearchBar({
   isLoading = false,
   type = "contacts"
 }: SearchBarProps) {
+  const lastValidDateRef = useRef<string>("");
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const contactFields = [
     { value: "general.firstName", label: "First Name" },
     { value: "general.lastName", label: "Last Name" },
@@ -33,10 +36,10 @@ export default function SearchBar({
     { value: "confirmationNo", label: "Booking reference" },
     { value: "companyName", label: "Company" },
     { value: "bookerName", label: "Booker" },
-    { value: "guestName", label: "Guest Name" }, // NEW: Added guest name search
-    { value: "dateInRange", label: "Date in Range" }, 
-    { value: "travelPeriodStart", label: "Earliest check in" }, 
-
+    { value: "guestName", label: "Guest Name" },
+    // { value: "dateInRange", label: "Date in Range" }, 
+    // { value: "travelPeriodStart", label: "Earliest check in" }, 
+    // { value: "travelPeriodEnd", label: "Latest check out" },
     { value: "status", label: "Status" },
     { value: "costCentre", label: "Cost Centre" },
   ] as const;
@@ -53,8 +56,9 @@ export default function SearchBar({
 
   const stayFields = [
     { value: "hotelName", label: "Hotel" },
-    { value: "checkInDate", label: "Check-in Date" },
-    { value: "checkOutDate", label: "Check-out Date" },
+    // { value: "checkInDate", label: "Check-in Date" },
+    // { value: "checkOutDate", label: "Check-out Date" },
+    { value: "guestName", label: "Guest Name" },
   ] as const;
 
   const getSearchableFields = () => {
@@ -93,11 +97,42 @@ export default function SearchBar({
     }
   };
 
+  // Helper function to check if a date string is valid and complete
+  const isValidCompleteDate = (dateStr: string): boolean => {
+    if (!dateStr || dateStr.length !== 10) return false;
+    const date = new Date(dateStr);
+    return date instanceof Date && !isNaN(date.getTime()) && dateStr.includes('-');
+  };
+
+  // Handle date changes with validation
+  const handleDateChange = (value: string) => {
+    setSearchTerm(value);
+    
+    // Only search if:
+    // 1. We have a valid, complete date
+    // 2. It's different from the last valid date we processed
+    // 3. The change represents an actual date selection (not navigation)
+    if (isValidCompleteDate(value) && value !== lastValidDateRef.current) {
+      // Small delay to ensure the date picker has time to close
+      setTimeout(() => {
+        // Double-check that the input still has this value (user didn't continue navigating)
+        if (dateInputRef.current && dateInputRef.current.value === value) {
+          lastValidDateRef.current = value;
+          onSearch(value, searchField);
+        }
+      }, 100);
+    }
+  };
+
   const isStatusField = type === "bookings" && searchField === "status";
-  const isDateInRangeField = type === "bookings" && searchField === "dateInRange";
-  const isTravelPeriodStart = type === "bookings" && searchField === "travelPeriodStart";
-
-
+  const isDateField = type === "bookings" && (
+    searchField === "dateInRange" || 
+    searchField === "travelPeriodStart" || 
+    searchField === "travelPeriodEnd"
+  ) || type === "stays" && (
+    searchField === "checkInDate" || 
+    searchField === "checkOutDate"
+  );
 
   return (
     <div className="search-group">
@@ -122,15 +157,15 @@ export default function SearchBar({
             <option value="invoicing_missing_commission">Invoicing - Missing commision</option>
             <option value="completed">Completed</option>
           </select>
-        ) : isDateInRangeField || isTravelPeriodStart ? (
+        ) : isDateField ? (
           <input
+            ref={dateInputRef}
             type="date"
             className="search-bar__input"
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Search immediately on date change
-              onSearch(e.target.value, searchField);
+              // Use our smart date change handler
+              handleDateChange(e.target.value);
             }}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
@@ -153,6 +188,7 @@ export default function SearchBar({
         onChange={(e) => {
           setSearchField(e.target.value);
           setSearchTerm("");
+          lastValidDateRef.current = ""; // Reset the last valid date when changing fields
           onSearch("", e.target.value);
         }}
         disabled={isLoading}
