@@ -253,32 +253,32 @@ useEffect(() => {
     }
   };
 
-  const autoSaveBookingAfterStayChange = async (newStaysList) => {
-    if (!bookingsContext.selectedItem._id) return false;
+  // const autoSaveBookingAfterStayChange = async (newStaysList) => {
+  //   if (!bookingsContext.selectedItem._id) return false;
 
-    try {
-      const newSummaries = newStaysList.map((stay) => ({
-        stayId: stay._id,
-        hotelName: stay.hotelName || "Unknown Hotel",
-        checkInDate: stay.checkInDate,
-        checkOutDate: stay.checkOutDate,
-      }));
+  //   try {
+  //     const newSummaries = newStaysList.map((stay) => ({
+  //       stayId: stay._id,
+  //       hotelName: stay.hotelName || "Unknown Hotel",
+  //       checkInDate: stay.checkInDate,
+  //       checkOutDate: stay.checkOutDate,
+  //     }));
 
-      bookingsContext.updateField("staySummaries", newSummaries);
+  //     bookingsContext.updateField("staySummaries", newSummaries);
 
-      const { stayIds, ...bookingData } = bookingsContext.selectedItem;
-      const updatedBooking = {
-        ...bookingData,
-        staySummaries: newSummaries,
-      };
+  //     const { stayIds, ...bookingData } = bookingsContext.selectedItem;
+  //     const updatedBooking = {
+  //       ...bookingData,
+  //       staySummaries: newSummaries,
+  //     };
 
-      const saveSuccess = await bookingsContext.updateItem(updatedBooking);
-      return saveSuccess;
-    } catch (error) {
-      console.error("Error auto-saving booking:", error);
-      return false;
-    }
-  };
+  //     const saveSuccess = await bookingsContext.updateItem(updatedBooking);
+  //     return saveSuccess;
+  //   } catch (error) {
+  //     console.error("Error auto-saving booking:", error);
+  //     return false;
+  //   }
+  // };
 
   const handleStaySaved = async (savedStay) => {
     if (!savedStay || !savedStay._id) {

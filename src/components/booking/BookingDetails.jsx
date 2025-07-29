@@ -120,31 +120,54 @@ export function BookingDetails({ bookingsContext, stays }) {
       calculateAndSaveDates();
     }
   }, [stays, calculateAndSaveDates]);
-
-  // Update status ONCE when booking is first loaded or when booking ID changes
   const statusUpdateRef = useRef(null);
 
   useEffect(() => {
-    if (!bookingsContext.selectedItem?._id) return;
+    const updateStatusWithSave = async () => {
+      if (!bookingsContext.selectedItem?._id) return;
 
-    // Prevent duplicate updates for the same booking
-    if (statusUpdateRef.current === bookingsContext.selectedItem._id) return;
-    statusUpdateRef.current = bookingsContext.selectedItem._id;
+      // Prevent duplicate updates for the same booking
+      if (statusUpdateRef.current === bookingsContext.selectedItem._id) return;
+      statusUpdateRef.current = bookingsContext.selectedItem._id;
 
-    const currentStatus = bookingsContext.selectedItem.status;
-    const calculatedStatus = determineBookingStatus(
-      bookingsContext.selectedItem,
-      stays
-    );
-
-    // Only update if status has actually changed
-    if (currentStatus !== calculatedStatus) {
-      console.log(
-        `Status update on load: ${currentStatus} → ${calculatedStatus}`
+      const currentStatus = bookingsContext.selectedItem.status;
+      const calculatedStatus = determineBookingStatus(
+        bookingsContext.selectedItem,
+        stays
       );
-      bookingsContext.updateField("status", calculatedStatus);
-    }
-  }, [bookingsContext.selectedItem?._id]); // Only runs when booking ID changes
+
+      // Only update if status has actually changed
+      if (currentStatus !== calculatedStatus) {
+        console.log(
+          `Status update on load: ${currentStatus} → ${calculatedStatus}`
+        );
+
+        // Update local state
+        bookingsContext.updateField("status", calculatedStatus);
+
+        // Save to database
+        try {
+          const updatedItem = {
+            ...bookingsContext.selectedItem,
+            status: calculatedStatus,
+          };
+          const success = await bookingsContext.updateItem(updatedItem);
+
+          if (success) {
+            console.log(
+              `✅ Status successfully saved to database: ${calculatedStatus}`
+            );
+          } else {
+            console.error(`❌ Failed to save status to database`);
+          }
+        } catch (error) {
+          console.error(`❌ Error saving status to database:`, error);
+        }
+      }
+    };
+
+    updateStatusWithSave();
+  }, [bookingsContext.selectedItem?._id, stays]);
 
   // Download/send status tracking
   useEffect(() => {

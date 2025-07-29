@@ -216,19 +216,19 @@ export async function updateDocument<
         ...(userId ? { updatedBy: userId, updatedAt: new Date() } : {}),
       };
 
-      if (version !== undefined) {
-        const currentDoc = await collection.findOne(query);
-        const currentVersion = currentDoc?.version || 0;
+      // if (version !== undefined) {
+      //   const currentDoc = await collection.findOne(query);
+      //   const currentVersion = currentDoc?.version || 0;
 
-        if (version !== currentVersion) {
-          return {
-            success: false,
-            error:
-              "Document has been modified by another user. Please refresh and try again.",
-          };
-        }
-        dataWithAudit.version = currentVersion + 1;
-      }
+      //   if (version !== currentVersion) {
+      //     return {
+      //       success: false,
+      //       error:
+      //         "Document has been modified by another user. Please refresh and try again.",
+      //     };
+      //   }
+      //   dataWithAudit.version = currentVersion + 1;
+      // }
 
       const result = await collection.updateOne(query, { $set: dataWithAudit });
 
@@ -270,7 +270,6 @@ export async function deleteDocument(
   collectionName: string,
   id: string
 ): Promise<DatabaseResult<{ id: string }>> {
-  // 🗑️ DATABASE REQUEST LOG
   console.log(`🗑️ [DB REQUEST] deleteDocument: ${collectionName} - ${id}`);
   
   const session = await getServerSession(authOptions);
@@ -293,7 +292,6 @@ export async function deleteDocument(
       if (result.deletedCount === 1) {
         await logActivity("delete", collectionName, id, userId);
         
-        // ✅ SUCCESS LOG
         console.log(`✅ [DB SUCCESS] Deleted document from ${collectionName} with ID: ${id}`);
         
         return { success: true, data: { id } };

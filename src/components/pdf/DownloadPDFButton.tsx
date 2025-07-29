@@ -25,7 +25,7 @@ interface Stay {
   taxCurrency?: string; // Correct field for tax currency
   reference?: string;
   guestIds?: string[];
-  guestNames?: string[];
+  // guestNames?: string[];
   specialRequests?: string;
   remarks?: string;
   paymentInstructions?: string;
@@ -130,12 +130,9 @@ export function DownloadPDFButton({
 
     for (let i = 0; i < staysWithNames.length; i++) {
       const stay = staysWithNames[i];
-      if (
-        stay.guestIds &&
-        stay.guestIds.length > 0 &&
-        (!stay.guestNames || stay.guestNames.length === 0)
-      ) {
-        stay.guestNames = [];
+      if (stay.guestIds && stay.guestIds.length > 0) {
+        // Create a temporary guestNames array for PDF generation
+        const guestNames: string[] = [];
 
         for (const guestId of stay.guestIds) {
           try {
@@ -146,7 +143,7 @@ export function DownloadPDFButton({
               const lastName = contact.general?.lastName || "";
               const fullName = `${firstName} ${lastName}`.trim();
               if (fullName) {
-                stay.guestNames.push(fullName);
+                guestNames.push(fullName);
               }
             }
           } catch (error) {
@@ -156,12 +153,14 @@ export function DownloadPDFButton({
             );
           }
         }
+
+        // Temporarily add guestNames for PDF generation only
+        (stay as any).guestNames = guestNames;
       }
     }
 
     return staysWithNames;
   };
-
   const fetchAndAttachHotelDetails = async (
     staysToPrepare: Stay[]
   ): Promise<Stay[]> => {
@@ -292,21 +291,24 @@ export function DownloadPDFButton({
     return bookingData.bookerId || "-";
   };
 
-  // Simplified helper for guest names with prepared data
+
   const formatGuestNames = (stay: Stay): string => {
     if (!stay.guestIds || stay.guestIds.length === 0) {
       return "-";
     }
 
+    // Check if we have temporary guestNames (from prepareStaysWithGuestNames)
     if (
-      stay.guestNames &&
-      Array.isArray(stay.guestNames) &&
-      stay.guestNames.length > 0
+      (stay as any).guestNames &&
+      Array.isArray((stay as any).guestNames) &&
+      (stay as any).guestNames.length > 0
     ) {
-      return stay.guestNames.join(", ");
+      return (stay as any).guestNames.join(", ");
     }
 
-    return stay.guestIds.join(", ");
+    // Fallback to guest count
+    const count = stay.guestIds.length;
+    return count === 1 ? "1 guest" : `${count} guests`;
   };
 
   // Get cost center label

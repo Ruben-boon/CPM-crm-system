@@ -176,7 +176,7 @@ export function StayModal({
     checkInDate: "",
     checkOutDate: "",
     guestIds: [],
-    guestNames: [],
+    // guestNames: [],
     hotelId: "",
     hotelName: "",
     hotelConfirmationNo: "",
@@ -372,10 +372,9 @@ export function StayModal({
       setStayData((prev) => {
         const newState = { ...prev };
         if (!newState.guestIds) newState.guestIds = [];
-        if (!newState.guestNames) newState.guestNames = [];
+        // Only add to guestIds, not guestNames
         if (!newState.guestIds.includes(contactId)) {
           newState.guestIds.push(contactId);
-          newState.guestNames.push(displayName);
         }
         return newState;
       });
@@ -388,7 +387,84 @@ export function StayModal({
     },
     []
   );
+  const updateBookingStaySummary = async (
+    bookingId: string,
+    stayId: string,
+    guestIds: string[]
+  ) => {
+    try {
+      // 1. Fetch the booking
+      const bookingResult = await searchDocuments("bookings", bookingId, "_id");
 
+      if (!Array.isArray(bookingResult) || bookingResult.length === 0) {
+        console.warn("Booking not found for stay summary update");
+        return;
+      }
+
+      const booking = bookingResult[0];
+
+      if (!booking.staySummaries || !Array.isArray(booking.staySummaries)) {
+        console.warn("Booking has no staySummaries to update");
+        return;
+      }
+
+      // 2. Load guest names from guestIds
+      let guestNames: string[] = [];
+      if (guestIds && guestIds.length > 0) {
+        for (const guestId of guestIds) {
+          try {
+            const guestResult = await searchDocuments(
+              "contacts",
+              guestId,
+              "_id"
+            );
+            if (Array.isArray(guestResult) && guestResult.length > 0) {
+              const contact = guestResult[0];
+              const firstName = contact.general?.firstName || "";
+              const lastName = contact.general?.lastName || "";
+              const fullName = `${firstName} ${lastName}`.trim();
+              if (fullName) {
+                guestNames.push(fullName);
+              }
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching guest name for ID ${guestId}:`,
+              error
+            );
+          }
+        }
+      }
+
+      // 3. Update the specific stay summary
+      const updatedStaySummaries = booking.staySummaries.map((summary) => {
+        if (summary.stayId === stayId) {
+          return {
+            ...summary,
+            guestNames: guestNames,
+          };
+        }
+        return summary;
+      });
+
+      // 4. Update the booking with new staySummaries
+      const updateResult = await updateDocument("bookings", bookingId, {
+        ...booking,
+        staySummaries: updatedStaySummaries,
+      });
+
+      if (updateResult.success) {
+        console.log("Booking stay summary updated successfully");
+      } else {
+        console.error(
+          "Failed to update booking stay summary:",
+          updateResult.error
+        );
+      }
+    } catch (error) {
+      console.error("Error updating booking stay summary:", error);
+    }
+  };
   const handleSave = async () => {
     setIsSubmitting(true);
 
@@ -430,6 +506,16 @@ export function StayModal({
           return;
         }
         toast.success(`Stay ${isCopyMode ? "copied" : "created"} successfully`);
+      }
+
+      // NEW: Update booking's staySummaries with current guest names if this stay is linked to a booking
+      if (result.data && (stayData.bookingId || bookingId)) {
+        const actualBookingId = stayData.bookingId || bookingId;
+        await updateBookingStaySummary(
+          actualBookingId,
+          result.data._id,
+          stayData.guestIds || []
+        );
       }
 
       if (onSave && result.data) {

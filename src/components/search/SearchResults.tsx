@@ -182,29 +182,16 @@ const getStatusInfo = (status: string) => {
   );
 };
 
-// Helper function to format guest names for stays
 const formatGuestNames = (stay: any): string => {
-  // Check for guest names array
-  if (
-    stay.guestNames &&
-    Array.isArray(stay.guestNames) &&
-    stay.guestNames.length > 0
-  ) {
-    return stay.guestNames.join(", ");
-  }
-
-  // Check for guest IDs count
-  if (
-    stay.guestIds &&
-    Array.isArray(stay.guestIds) &&
-    stay.guestIds.length > 0
-  ) {
+  // Only check for guest IDs count
+  if (stay.guestIds && Array.isArray(stay.guestIds) && stay.guestIds.length > 0) {
     const count = stay.guestIds.length;
     return count === 1 ? "1 guest" : `${count} guests`;
   }
 
   return "No guests";
 };
+
 
 export default function SearchResults({
   items,

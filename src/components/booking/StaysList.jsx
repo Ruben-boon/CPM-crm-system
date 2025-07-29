@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { Plus, ArrowUpDown } from "lucide-react";
 import Button from "@/components/common/Button";
 import { StayCard } from "./StayCard";
+import { searchDocuments } from "@/app/actions/crudActions";
+import { toast } from "sonner";
 
 // Simple skeletal loader for stays
 function StaySkeletonLoader({ count = 2 }) {
@@ -31,41 +33,48 @@ export function StaysList({
   onViewStay,
   onRemoveStay,
 }) {
-  const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
+  const [sortOrder, setSortOrder] = useState("asc");
 
-  // Sort stays based on hotel name and then by check-in date
-  const sortedStays = useMemo(() => {
+  const staySummaries = bookingsContext.selectedItem?.staySummaries || [];
+  const combinedStays = useMemo(() => {
     if (!stays || stays.length === 0) return [];
 
-    return [...stays].sort((a, b) => {
-      // First sort by hotel name
-      const hotelA = (a.hotelName || "").toLowerCase();
-      const hotelB = (b.hotelName || "").toLowerCase();
-
-      let comparison = 0;
-      if (sortOrder === "asc") {
-        comparison = hotelA.localeCompare(hotelB);
-      } else {
-        comparison = hotelB.localeCompare(hotelA);
-      }
-
-      // If same hotel, sort by check-in date
-      if (comparison === 0) {
-        const dateA = a.checkInDate || "";
-        const dateB = b.checkInDate || "";
-
-        if (sortOrder === "asc") {
-          return dateA.localeCompare(dateB);
-        } else {
-          return dateB.localeCompare(dateA);
+    return stays.map((stay) => {
+      const summary = staySummaries.find((summary) => summary.stayId === stay._id);
+      return {
+        stay,
+        summary: summary || {
+          stayId: stay._id,
+          hotelName: stay.hotelName,
+          checkInDate: stay.checkInDate,
+          checkOutDate: stay.checkOutDate,
+          guestNames: []
         }
-      }
+      };
+    });
+  }, [stays, staySummaries]);
 
+  const sortedData = useMemo(() => {
+    return [...combinedStays].sort((a, b) => {
+      const hotelA = (a.summary.hotelName || "").toLowerCase();
+      const hotelB = (b.summary.hotelName || "").toLowerCase();
+
+      let comparison =
+        sortOrder === "asc"
+          ? hotelA.localeCompare(hotelB)
+          : hotelB.localeCompare(hotelA);
+
+      if (comparison === 0) {
+        const dateA = a.summary.checkInDate || "";
+        const dateB = b.summary.checkInDate || "";
+        return sortOrder === "asc"
+          ? dateA.localeCompare(dateB)
+          : dateB.localeCompare(dateA);
+      }
       return comparison;
     });
-  }, [stays, sortOrder]);
+  }, [combinedStays, sortOrder]);
 
-  // Toggle sort order - make sure this doesn't trigger form updates
   const toggleSortOrder = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -90,12 +99,7 @@ export function StaysList({
             </Button>
           </div>
           {bookingsContext.isEditing && (
-            <Button
-              icon={Plus}
-              onClick={onAddStay}
-              size="sm"
-              type="button"
-            >
+            <Button icon={Plus} onClick={onAddStay} size="sm" type="button">
               Add Stay
             </Button>
           )}
@@ -103,16 +107,17 @@ export function StaysList({
 
         {isLoading ? (
           <StaySkeletonLoader count={4} />
-        ) : sortedStays.length === 0 ? (
+        ) : sortedData.length === 0 ? (
           <div className="no-stays-message">
             No stays found for this booking
           </div>
         ) : (
           <div className="stays-list">
-            {sortedStays.map((stay) => (
+            {sortedData.map((item) => (
               <StayCard
-                key={stay._id}
-                stay={stay}
+                key={item.stay._id}
+                staySummary={item.summary}
+                stay={item.stay}
                 isEditing={bookingsContext.isEditing}
                 onEditStay={onEditStay}
                 onCopyStay={onCopyStay}

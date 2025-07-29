@@ -312,67 +312,59 @@ function createDataContext(collectionName: string) {
       }
     };
 
-    const updateItem = async (item: Item) => {
-      if (!item._id) {
-        setError("Missing item ID");
-        return false;
+  const updateItem = async (item: Item) => {
+    console.log("update items is called!")
+  if (!item._id) {
+    setError("Missing item ID");
+    return false;
+  }
+
+  try {
+    setIsLoading(true);
+
+    const currentVersion = selectedItem?.version || 0;
+    const itemWithVersion = { ...item, version: currentVersion };
+
+    // REMOVE userId parameter
+    const result = await updateDocument(
+      collectionName,
+      item._id,
+      itemWithVersion
+    );
+    console.log("with this result",result);
+    if (result.success) {
+      await searchItems();
+
+      if (result.data) {
+        const updatedItem = {
+          ...result.data,
+          version: (currentVersion || 0) + 1,
+        };
+        setSelectedItem(updatedItem);
+        setOriginalItem(JSON.parse(JSON.stringify(updatedItem)));
+        setPendingChanges({});
       }
 
-      if (!isAuthenticated && userId === undefined) {
-        setError("Authentication required");
-        return false;
-      }
+      setError(null);
+      return true;
+    }
 
-      try {
-        setIsLoading(true);
+    if (result.error?.includes("modified by another user")) {
+      setError(
+        "This record was modified by another user. Please refresh and try again."
+      );
+    } else {
+      setError(result.error || "Update failed");
+    }
 
-        // Ensure we're passing the current version
-        const currentVersion = selectedItem?.version || 0;
-        const itemWithVersion = { ...item, version: currentVersion };
-
-        const result = await updateDocument(
-          collectionName,
-          item._id,
-          itemWithVersion,
-          userId
-        );
-        if (result.success) {
-          await searchItems();
-
-          // Update both selectedItem and originalItem with the updated item
-          // Include the incremented version
-          if (result.data) {
-            const updatedItem = {
-              ...result.data,
-              version: (currentVersion || 0) + 1,
-            };
-            setSelectedItem(updatedItem);
-            setOriginalItem(JSON.parse(JSON.stringify(updatedItem)));
-            setPendingChanges({});
-          }
-
-          setError(null);
-          return true;
-        }
-
-        // Special handling for version conflict errors
-        if (result.error?.includes("modified by another user")) {
-          setError(
-            "This record was modified by another user. Please refresh and try again."
-          );
-          // Could add logic here to show a diff or help resolve the conflict
-        } else {
-          setError(result.error || "Update failed");
-        }
-
-        return false;
-      } catch (error) {
-        setError(error instanceof Error ? error.message : "Update failed");
-        return false;
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    return false;
+  } catch (error) {
+    setError(error instanceof Error ? error.message : "Update failed");
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     const deleteItem = async (id: string) => {
       if (!id) {
