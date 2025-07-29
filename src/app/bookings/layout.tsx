@@ -6,7 +6,7 @@ import SearchResults from "@/components/search/SearchResults";
 import { BookingsProvider, useBookingsData } from "@/context/DataContext";
 import { Plus } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
-import { searchDocuments } from "@/app/actions/crudActions";
+import { createDocument, searchDocuments } from "@/app/actions/crudActions";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -84,11 +84,13 @@ function BookingsLayoutContent({ children }) {
     }
   };
 
+  // In src/app/bookings/layout.tsx - Replace the handleCopyBooking function
+
   const handleCopyBooking = async (booking) => {
     console.log("[DEBUG] handleCopyBooking started for booking:", booking._id);
 
     try {
-      // 1. Fetch and prepare the data FIRST.
+      // 1. Fetch the original booking data
       console.log("[DEBUG] Fetching booking data...");
       const result = await searchDocuments(
         "bookings",
@@ -101,29 +103,106 @@ function BookingsLayoutContent({ children }) {
         console.log("[DEBUG] Source booking fetched:", {
           originalId: sourceBooking._id,
           confirmationNo: sourceBooking.confirmationNo,
-          bookerName: sourceBooking.bookerName,
-          bookerId: sourceBooking.bookerId,
+          stayCount: sourceBooking.staySummaries?.length || 0,
         });
 
+        // 2. Copy all associated stays FIRST
+        let newStaySummaries = [];
+
+        if (
+          sourceBooking.staySummaries &&
+          sourceBooking.staySummaries.length > 0
+        ) {
+          console.log("[DEBUG] Copying associated stays...");
+
+          for (const staySummary of sourceBooking.staySummaries) {
+            try {
+              // Fetch the original stay
+              const stayResult = await searchDocuments(
+                "stays",
+                staySummary.stayId,
+                "_id"
+              );
+
+              if (Array.isArray(stayResult) && stayResult.length > 0) {
+                const originalStay = JSON.parse(JSON.stringify(stayResult[0]));
+
+                // Remove the ID to create a new stay
+                delete originalStay._id;
+                delete originalStay.confirmationNo;
+
+                // Update the reference to indicate it's a copy
+                if (originalStay.reference) {
+                  originalStay.reference = `${originalStay.reference} (Copy)`;
+                }
+
+                // Reset certain fields for the copied stay
+                originalStay.hotelConfirmationNo = "";
+                originalStay.purchaseInvoice = "";
+                originalStay.commissionInvoice = "";
+                originalStay.status = "unconfirmed";
+
+                // Create the new stay
+                console.log("[DEBUG] Creating copied stay...");
+                const createResult = await createDocument(
+                  "stays",
+                  originalStay
+                );
+
+                if (createResult.success && createResult.data) {
+                  // Create new stay summary with the new stay ID
+                  newStaySummaries.push({
+                    stayId: createResult.data._id,
+                    hotelName: staySummary.hotelName,
+                    checkInDate: staySummary.checkInDate,
+                    checkOutDate: staySummary.checkOutDate,
+                    guestNames: staySummary.guestNames || [],
+                  });
+
+                  console.log(
+                    "[DEBUG] Stay copied successfully:",
+                    createResult.data._id
+                  );
+                } else {
+                  console.error(
+                    "[DEBUG] Failed to create copied stay:",
+                    createResult.error
+                  );
+                  toast.error(`Failed to copy stay: ${createResult.error}`);
+                  return;
+                }
+              }
+            } catch (stayError) {
+              console.error("[DEBUG] Error copying stay:", stayError);
+              toast.error("Error occurred while copying stays.");
+              return;
+            }
+          }
+        }
+
+        // 3. Prepare the copied booking with new stay summaries
         delete sourceBooking._id;
         delete sourceBooking.confirmationNo;
         sourceBooking.status = "upcoming_no_action";
+        sourceBooking.staySummaries = newStaySummaries;
 
         console.log("[DEBUG] Prepared booking copy:", {
           confirmationNo: sourceBooking.confirmationNo,
           status: sourceBooking.status,
           hasId: !!sourceBooking._id,
-          bookerName: sourceBooking.bookerName,
-          bookerId: sourceBooking.bookerId,
+          stayCount: newStaySummaries.length,
+          newStayIds: newStaySummaries.map((s) => s.stayId),
         });
 
-        // 2. Set the state in the context BEFORE navigating
+        // 4. Set the state and navigate
         console.log("[DEBUG] Calling selectItem with prepared booking...");
         selectItem(sourceBooking, true);
 
-        // 3. Navigate immediately - the new page will preserve the data
         console.log("[DEBUG] Navigating to /bookings/new");
         router.push("/bookings/new");
+
+        // Show success message
+        toast.success(`Booking copied with ${newStaySummaries.length} stays`);
       } else {
         console.error("[DEBUG] No booking found in search result");
         toast.error("Booking not found for copying.");
