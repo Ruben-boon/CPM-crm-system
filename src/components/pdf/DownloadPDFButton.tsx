@@ -215,7 +215,11 @@ export function DownloadPDFButton({
 
     try {
       let preparedStays = await prepareStaysWithGuestNames(stays);
-      preparedStays = await fetchAndAttachHotelDetails(preparedStays); // Also fetch hotel details
+      preparedStays = await fetchAndAttachHotelDetails(preparedStays);
+
+      // ADD THIS LINE: Sort stays by check-in date
+      preparedStays = sortStaysByCheckInDate(preparedStays);
+
       onSendConfirmation(bookerData, preparedStays);
     } catch (error) {
       console.error("Error preparing confirmation data:", error);
@@ -225,6 +229,19 @@ export function DownloadPDFButton({
     }
   };
 
+  const sortStaysByCheckInDate = (stays: Stay[]): Stay[] => {
+    return [...stays].sort((a, b) => {
+      // Handle cases where checkInDate might be missing
+      if (!a.checkInDate && !b.checkInDate) return 0;
+      if (!a.checkInDate) return 1; // Put stays without dates at the end
+      if (!b.checkInDate) return -1;
+
+      // Sort by check-in date (earliest first)
+      return (
+        new Date(a.checkInDate).getTime() - new Date(b.checkInDate).getTime()
+      );
+    });
+  };
   // Helper function to format date
   const formatDate = (dateString?: string): string => {
     if (!dateString) return "-";
@@ -309,6 +326,7 @@ export function DownloadPDFButton({
       let preparedStays = await prepareStaysWithGuestNames(stays);
       preparedStays = await fetchAndAttachHotelDetails(preparedStays);
 
+      preparedStays = sortStaysByCheckInDate(preparedStays);
       // Create a new PDF document
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -390,7 +408,6 @@ export function DownloadPDFButton({
         pdf.text(entityDetails.line1, 16, 264 + lineSpacing * 3);
         // MODIFIED: Render TIDS number
         pdf.text(entityDetails.tids, 16, 264 + lineSpacing * 4);
-
 
         // Middle column for contact
         pdf.text(entityDetails.phone, 80, 268);
@@ -708,9 +725,9 @@ export function DownloadPDFButton({
             "Room Price:",
             stay.roomPrice
               ? `${stay.roomPrice} ${stay.roomCurrency || ""} per night`
-              : "-",
+              : "-"
           );
-          
+
           if (stay.paymentType) {
             y += addRow("", stay.paymentType);
           }
@@ -737,10 +754,12 @@ export function DownloadPDFButton({
           }
 
           y += addRow("Guests:", formatGuestNames(stay));
-          
+
           // MODIFIED: Use taxAmount and taxCurrency to display the tax information
           if (stay.taxAmount) {
-            const taxValue = `${stay.taxAmount} ${stay.taxCurrency || ""}`.trim();
+            const taxValue = `${stay.taxAmount} ${
+              stay.taxCurrency || ""
+            }`.trim();
             y += addRow("Total local taxes:", taxValue);
           }
 
