@@ -23,6 +23,7 @@ export function StayCard({
   onCopyStay,
   onViewStay,
   onRemoveStay,
+  onStayUpdated,
 }) {
   const [stayUpdate, setStayUpdate] = useState({
     status: stay?.status || "unconfirmed",
@@ -83,6 +84,11 @@ export function StayCard({
 
         if (result.success) {
           toast.success(`${fieldLabel} updated`);
+          // Trigger refresh of stays data to update booking status
+          if (onStayUpdated) {
+            console.log(`🔄 Stay updated, triggering refresh...`);
+            onStayUpdated();
+          }
         } else {
           toast.error(
             `Failed to update ${fieldLabel.toLowerCase()}: ${

@@ -55,6 +55,29 @@ interface DownloadPDFButtonProps {
   onSendConfirmation: (bookerData: any, preparedStays: Stay[]) => void;
 }
 
+// Helper function to sanitize text for PDF output
+const sanitizeTextForPDF = (text: string | undefined | null): string => {
+  if (!text) return "";
+  
+  return text
+    // Remove or replace problematic Unicode characters
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+    .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width characters
+    .replace(/[\u2028\u2029]/g, ' ') // Replace line/paragraph separators with spaces
+    .replace(/[\u00A0]/g, ' ') // Replace non-breaking spaces with regular spaces
+    .replace(/[\u2018\u2019]/g, "'") // Replace smart quotes with regular quotes
+    .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes with regular quotes
+    .replace(/[\u2013\u2014]/g, '-') // Replace em/en dashes with regular dashes
+    .replace(/[\u2022]/g, '•') // Replace bullet points with standard bullet
+    .replace(/[\u00B0]/g, '°') // Replace degree symbol with standard degree
+    .replace(/[\u00A9]/g, '(c)') // Replace copyright symbol with text
+    .replace(/[\u00AE]/g, '(R)') // Replace registered trademark with text
+    .replace(/[\u2122]/g, '(TM)') // Replace trademark symbol with text
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export function DownloadPDFButton({
   bookingData,
   stays,
@@ -334,6 +357,8 @@ export function DownloadPDFButton({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
+        putOnlyUsedFonts: true,
+        compress: true,
       });
 
       // Define page margins and content area
@@ -390,35 +415,35 @@ export function DownloadPDFButton({
         pdf.setDrawColor(200, 200, 200);
         pdf.line(16, 255, 190, 255);
 
-        // Add page numbers
-        pdf.text(`Page ${page} of ${totalPages}`, 190, 260, {
-          align: "right",
-        });
+              // Add page numbers
+      pdf.text(`Page ${page} of ${totalPages}`, 190, 260, {
+        align: "right",
+      });
 
-        // Add corporate information in the footer
-        // Company name - bold
-        pdf.setFont("helvetica", "bold");
-        pdf.text(entityDetails.name, 16, 264);
+      // Add corporate information in the footer
+      // Company name - bold
+      pdf.setFont("helvetica", "bold");
+      pdf.text(sanitizeTextForPDF(entityDetails.name), 16, 264);
 
-        // Rest of the information - normal
-        pdf.setFont("helvetica", "normal");
-        const lineSpacing = 4;
+      // Rest of the information - normal
+      pdf.setFont("helvetica", "normal");
+      const lineSpacing = 4;
 
-        // Left column for address
-        pdf.text(entityDetails.addressLine1, 16, 264 + lineSpacing);
-        pdf.text(entityDetails.addressLine2, 16, 264 + lineSpacing * 2);
-        pdf.text(entityDetails.line1, 16, 264 + lineSpacing * 3);
-        // MODIFIED: Render TIDS number
-        pdf.text(entityDetails.tids, 16, 264 + lineSpacing * 4);
+      // Left column for address
+      pdf.text(sanitizeTextForPDF(entityDetails.addressLine1), 16, 264 + lineSpacing);
+      pdf.text(sanitizeTextForPDF(entityDetails.addressLine2), 16, 264 + lineSpacing * 2);
+      pdf.text(sanitizeTextForPDF(entityDetails.line1), 16, 264 + lineSpacing * 3);
+      // MODIFIED: Render TIDS number
+      pdf.text(sanitizeTextForPDF(entityDetails.tids), 16, 264 + lineSpacing * 4);
 
-        // Middle column for contact
-        pdf.text(entityDetails.phone, 80, 268);
-        pdf.text("www.corporatemeetingpartner.com", 80, 268 + lineSpacing);
-        pdf.text(
-          "reservations@corporatemeetingpartner.com",
-          80,
-          268 + lineSpacing * 2
-        );
+      // Middle column for contact
+      pdf.text(sanitizeTextForPDF(entityDetails.phone), 80, 268);
+      pdf.text("www.corporatemeetingpartner.com", 80, 268 + lineSpacing);
+      pdf.text(
+        "reservations@corporatemeetingpartner.com",
+        80,
+        268 + lineSpacing * 2
+      );
       };
 
       // Function to check if we need a new page
@@ -475,14 +500,14 @@ export function DownloadPDFButton({
 
         if (companyData.name) {
           pdf.setFont("helvetica", "bold");
-          pdf.text(companyData.name, rightMargin, companyY, { align: "right" });
+          pdf.text(sanitizeTextForPDF(companyData.name), rightMargin, companyY, { align: "right" });
           companyY += 5;
         }
 
         pdf.setFont("helvetica", "normal");
 
         if (companyData.address) {
-          pdf.text(companyData.address, rightMargin, companyY, {
+          pdf.text(sanitizeTextForPDF(companyData.address), rightMargin, companyY, {
             align: "right",
           });
           companyY += 4;
@@ -492,12 +517,12 @@ export function DownloadPDFButton({
           .filter(Boolean)
           .join(" ");
         if (cityLine) {
-          pdf.text(cityLine, rightMargin, companyY, { align: "right" });
+          pdf.text(sanitizeTextForPDF(cityLine), rightMargin, companyY, { align: "right" });
           companyY += 4;
         }
 
         if (companyData.country) {
-          pdf.text(companyData.country, rightMargin, companyY, {
+          pdf.text(sanitizeTextForPDF(companyData.country), rightMargin, companyY, {
             align: "right",
           });
         }
@@ -511,7 +536,7 @@ export function DownloadPDFButton({
       pdf.setFont("helvetica", "bold");
       pdf.text("Confirmation ", pageMargins.left, y);
       const confirmationTextWidth = pdf.getTextWidth("Confirmation ");
-      pdf.text(confirmationNumber, pageMargins.left + confirmationTextWidth, y);
+      pdf.text(sanitizeTextForPDF(confirmationNumber), pageMargins.left + confirmationTextWidth, y);
 
       y += 8;
 
@@ -528,8 +553,11 @@ export function DownloadPDFButton({
         const valueStartX = 75;
         const maxValueWidth = 190 - valueStartX;
 
+        // Sanitize the value before processing
+        const sanitizedValue = sanitizeTextForPDF(value);
+
         pdf.setFont("helvetica", "normal");
-        const splitValue = pdf.splitTextToSize(value, maxValueWidth);
+        const splitValue = pdf.splitTextToSize(sanitizedValue, maxValueWidth);
         const lineCount = splitValue.length;
         const rowHeight = 6 * lineCount;
 
@@ -538,19 +566,19 @@ export function DownloadPDFButton({
         }
 
         pdf.setFont("helvetica", "bold");
-        pdf.text(key, pageMargins.left + indent, y);
+        pdf.text(sanitizeTextForPDF(key), pageMargins.left + indent, y);
 
         pdf.setFont("helvetica", "normal");
 
         if (isLink) {
           pdf.setTextColor(0, 0, 0);
           if (lineCount === 1) {
-            pdf.textWithLink(value, valueStartX, y, { url: url });
+            pdf.textWithLink(sanitizedValue, valueStartX, y, { url: url });
             pdf.setDrawColor(0, 0, 0);
             pdf.line(
               valueStartX,
               y + 1,
-              valueStartX + pdf.getTextWidth(value),
+              valueStartX + pdf.getTextWidth(sanitizedValue),
               y + 1
             );
           } else {
@@ -569,7 +597,7 @@ export function DownloadPDFButton({
           }
         } else {
           if (lineCount === 1) {
-            pdf.text(value, valueStartX, y);
+            pdf.text(sanitizedValue, valueStartX, y);
           } else {
             splitValue.forEach((line: string, index: number) => {
               pdf.text(line, valueStartX, y + index * 6);
@@ -623,7 +651,8 @@ export function DownloadPDFButton({
           ): number => {
             if (!text) return 0;
             pdf.setFontSize(10);
-            const lines = pdf.splitTextToSize(text, maxWidth);
+            const sanitizedText = sanitizeTextForPDF(text);
+            const lines = pdf.splitTextToSize(sanitizedText, maxWidth);
             return lines.length * 6;
           };
 
@@ -649,13 +678,14 @@ export function DownloadPDFButton({
           const fullTitle = `Stay: ${guestNamesForTitle} - ${nightsText}`;
 
           const maxTitleWidth = 130;
+          const sanitizedFullTitle = sanitizeTextForPDF(fullTitle);
           const truncatedTitle = pdf.splitTextToSize(
-            fullTitle,
+            sanitizedFullTitle,
             maxTitleWidth
           )[0];
 
           const displayTitle =
-            truncatedTitle.length < fullTitle.length
+            truncatedTitle.length < sanitizedFullTitle.length
               ? truncatedTitle + "..."
               : truncatedTitle;
 
@@ -674,7 +704,7 @@ export function DownloadPDFButton({
           pdf.text("Check-in: ", 30, y + 4);
           const checkInTextWidth = pdf.getTextWidth("Check-in: ");
           pdf.setFont("helvetica", "bold");
-          pdf.text(formatDate(stay.checkInDate), 30 + checkInTextWidth, y + 4);
+          pdf.text(sanitizeTextForPDF(formatDate(stay.checkInDate)), 30 + checkInTextWidth, y + 4);
 
           pdf.setDrawColor(220, 220, 220);
           pdf.line(105, y - 2, 105, y + 8);
@@ -685,7 +715,7 @@ export function DownloadPDFButton({
           const checkOutTextWidth = pdf.getTextWidth("Check-out: ");
           pdf.setFont("helvetica", "bold");
           pdf.text(
-            formatDate(stay.checkOutDate),
+            sanitizeTextForPDF(formatDate(stay.checkOutDate)),
             120 + checkOutTextWidth,
             y + 4
           );
@@ -737,8 +767,9 @@ export function DownloadPDFButton({
           if (stay.roomPrice) {
             const disclaimerText =
               "Quoted rates reflect average nightly prices and may vary with changes in stay duration or room type";
+            const sanitizedDisclaimerText = sanitizeTextForPDF(disclaimerText);
             const disclaimerLines = pdf.splitTextToSize(
-              disclaimerText,
+              sanitizedDisclaimerText,
               190 - 75
             );
 
@@ -790,17 +821,17 @@ export function DownloadPDFButton({
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
         pdf.text(
-          "Thank you for booking with us, we hope you and/or your guest(s) have a pleasant stay!",
+          sanitizeTextForPDF("Thank you for booking with us, we hope you and/or your guest(s) have a pleasant stay!"),
           pageMargins.left,
           y
         );
 
         y += 8;
-        pdf.text("With best regards,", pageMargins.left, y);
+        pdf.text(sanitizeTextForPDF("With best regards,"), pageMargins.left, y);
 
         y += 8;
         const userName = session?.user?.name || "CMP Team";
-        pdf.text(userName, pageMargins.left, y);
+        pdf.text(sanitizeTextForPDF(userName), pageMargins.left, y);
 
         y += 10;
       }

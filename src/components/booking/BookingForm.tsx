@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useBookingsData } from "@/context/DataContext";
 import { CommonForm } from "../common/CommonForm";
 import { BookingDetails } from "./BookingDetails";
@@ -181,6 +181,17 @@ useEffect(() => {
     setIsCopyMode(false);
     setIsModalOpen(true);
   };
+
+  // Function to refresh stays data
+  const refreshStays = useCallback(async () => {
+    console.log('🔄 Refreshing stays data...');
+    if (bookingsContext.selectedItem?._id) {
+      await loadRelatedStays(bookingsContext.selectedItem._id);
+    } else if (bookingsContext.selectedItem?.staySummaries?.length > 0) {
+      await loadRelatedStaysFromSummaries(bookingsContext.selectedItem.staySummaries);
+    }
+    console.log('✅ Stays data refreshed');
+  }, [bookingsContext.selectedItem?._id, bookingsContext.selectedItem?.staySummaries, loadRelatedStays, loadRelatedStaysFromSummaries]);
 
   const handleCopyStay = (stay) => {
     const stayCopy = JSON.parse(JSON.stringify(stay));
@@ -404,7 +415,10 @@ useEffect(() => {
         basePath="bookings"
         displayName={getDisplayName}
       >
-        <BookingDetails bookingsContext={bookingsContext} stays={stays} />
+        <BookingDetails 
+          bookingsContext={bookingsContext} 
+          stays={stays} 
+        />
         <div className="col-full">
           <StaysList
             bookingsContext={bookingsContext}
@@ -415,6 +429,7 @@ useEffect(() => {
             onCopyStay={handleCopyStay}
             onViewStay={handleViewStay}
             onRemoveStay={handleRemoveStay}
+            onStayUpdated={refreshStays}
           />
         </div>
       </CommonForm>

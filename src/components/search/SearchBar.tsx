@@ -1,6 +1,6 @@
 "use client";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface SearchBarProps {
   onSearch: (searchTerm: string, searchField: string) => void;
@@ -83,15 +83,24 @@ export default function SearchBar({
 
   const [searchField, setSearchField] = useState(searchableFields[0].value);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Use a ref to track if initial search has been performed
+  const hasInitialSearchRef = useRef(false);
 
   useEffect(() => {
-    // Perform an initial search when the component mounts
-    onSearch("", searchField);
+    // Only perform initial search if it hasn't been done yet
+    if (!hasInitialSearchRef.current) {
+      onSearch("", searchField);
+      hasInitialSearchRef.current = true;
+    }
   }, []);
 
   // Reset search field when the entity type changes
   useEffect(() => {
-    setSearchField(getSearchableFields()[0].value);
+    const newSearchField = getSearchableFields()[0].value;
+    setSearchField(newSearchField);
+    // Trigger a search with the new field when type changes
+    onSearch("", newSearchField);
   }, [type]);
 
   const handleSearch = () => {

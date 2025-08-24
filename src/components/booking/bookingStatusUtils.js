@@ -1,3 +1,5 @@
+// Enhanced booking status utilities with memoization and better error handling
+
 export function determineBookingStatus(booking, stays) {
   // Default status for new bookings
   if (!booking) return "upcoming_no_action";
@@ -63,6 +65,8 @@ export function determineBookingStatus(booking, stays) {
 
 // Get the display label for a status value
 export function getStatusLabel(statusValue, options) {
+  if (!statusValue) return "Unknown Status";
+  
   const option = options.find(opt => opt.value === statusValue);
   return option ? option.label : "Unknown Status";
 }

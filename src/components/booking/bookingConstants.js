@@ -81,6 +81,9 @@ export const getGuestCountText = (guestIds) => {
   return count === 1 ? "1 guest" : `${count} guests`;
 };
 
+// Note: getStatusLabel is now imported from bookingStatusUtils.js
+// This function is kept for backward compatibility but should be removed
+// in favor of the enhanced version in bookingStatusUtils.js
 export const getStatusLabel = (status) => {
   if (!status) return "-";
   return status
