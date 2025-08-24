@@ -51,7 +51,7 @@
     display: flex;
     align-items: center;
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 0; // Remove margin to allow overlap
     padding: 16px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -60,6 +60,11 @@
     opacity: 0;
     transform: translateY(16px);
     animation: sonner-toast-enter 0.2s ease forwards;
+    
+    // Add overlap effect - each subsequent toast is positioned slightly higher
+    &:not(:first-child) {
+      margin-top: -8px; // Creates overlap effect
+    }
     
     &[data-removed="true"] {
       animation: sonner-toast-exit 0.2s ease forwards;

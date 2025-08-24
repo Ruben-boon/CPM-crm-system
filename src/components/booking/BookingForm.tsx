@@ -183,15 +183,29 @@ useEffect(() => {
   };
 
   // Function to refresh stays data
-  const refreshStays = useCallback(async () => {
-    console.log('🔄 Refreshing stays data...');
-    if (bookingsContext.selectedItem?._id) {
-      await loadRelatedStays(bookingsContext.selectedItem._id);
-    } else if (bookingsContext.selectedItem?.staySummaries?.length > 0) {
-      await loadRelatedStaysFromSummaries(bookingsContext.selectedItem.staySummaries);
+  const refreshStays = useCallback(async (minimalRefresh = false) => {
+    console.log('🔄 Refreshing stays data...', minimalRefresh ? '(minimal)' : '(full)');
+    
+    if (minimalRefresh) {
+      // For minimal refresh, just update the booking status without reloading stays
+      if (bookingsContext.selectedItem?._id) {
+        // Update the booking status based on current stays data
+        const updatedBooking = {
+          ...bookingsContext.selectedItem,
+          // The status will be recalculated by the booking status utilities
+        };
+        await bookingsContext.updateItemWithoutRefresh(updatedBooking);
+      }
+    } else {
+      // Full refresh - reload all stays data
+      if (bookingsContext.selectedItem?._id) {
+        await loadRelatedStays(bookingsContext.selectedItem._id);
+      } else if (bookingsContext.selectedItem?.staySummaries?.length > 0) {
+        await loadRelatedStaysFromSummaries(bookingsContext.selectedItem.staySummaries);
+      }
     }
     console.log('✅ Stays data refreshed');
-  }, [bookingsContext.selectedItem?._id, bookingsContext.selectedItem?.staySummaries, loadRelatedStays, loadRelatedStaysFromSummaries]);
+  }, [bookingsContext.selectedItem?._id, bookingsContext.selectedItem?.staySummaries, loadRelatedStays, loadRelatedStaysFromSummaries, bookingsContext]);
 
   const handleCopyStay = (stay) => {
     const stayCopy = JSON.parse(JSON.stringify(stay));
@@ -430,6 +444,7 @@ useEffect(() => {
             onViewStay={handleViewStay}
             onRemoveStay={handleRemoveStay}
             onStayUpdated={refreshStays}
+            onStaysUpdate={setStays}
           />
         </div>
       </CommonForm>

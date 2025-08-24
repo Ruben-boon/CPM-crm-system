@@ -25,9 +25,10 @@ export default function RootLayout({
             {children}
             <Toaster
               position="bottom-right"
-              expand={false}
+              expand={true}
               richColors
               closeButton
+              maxToasts={5}
             />
           </SessionProvider>
       </body>

@@ -33,6 +33,7 @@ export function StaysList({
   onViewStay,
   onRemoveStay,
   onStayUpdated,
+  onStaysUpdate,
 }) {
   const [sortOrder, setSortOrder] = useState("asc");
 
@@ -119,12 +120,14 @@ export function StaysList({
                 key={item.stay._id}
                 staySummary={item.summary}
                 stay={item.stay}
+                stays={stays}
                 isEditing={bookingsContext.isEditing}
                 onEditStay={onEditStay}
                 onCopyStay={onCopyStay}
                 onViewStay={onViewStay}
                 onRemoveStay={onRemoveStay}
                 onStayUpdated={onStayUpdated}
+                onStaysUpdate={onStaysUpdate}
               />
             ))}
           </div>

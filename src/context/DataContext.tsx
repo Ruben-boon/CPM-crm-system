@@ -35,6 +35,7 @@ interface DataContextType {
   selectItem: (item: Partial<Item> | null, startEditing?: boolean) => void;
   createItem: (item: Item) => Promise<boolean>;
   updateItem: (item: Item) => Promise<boolean>;
+  updateItemWithoutRefresh: (item: Item) => Promise<boolean>;
   deleteItem: (id: string) => Promise<boolean>;
   setIsEditing: (isEditing: boolean) => void;
   updateField: (field: string, value: any) => void;
@@ -366,6 +367,60 @@ function createDataContext(collectionName: string) {
   }
 };
 
+  const updateItemWithoutRefresh = async (item: Item) => {
+    console.log("updateItemWithoutRefresh called!")
+    if (!item._id) {
+      setError("Missing item ID");
+      return false;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const currentVersion = selectedItem?.version || 0;
+      const itemWithVersion = { ...item, version: currentVersion };
+
+      const result = await updateDocument(
+        collectionName,
+        item._id,
+        itemWithVersion
+      );
+      console.log("updateItemWithoutRefresh result:", result);
+      
+      if (result.success) {
+        // Don't call searchItems() - this prevents search area refresh
+
+        if (result.data) {
+          const updatedItem = {
+            ...result.data,
+            version: (currentVersion || 0) + 1,
+          };
+          setSelectedItem(updatedItem);
+          setOriginalItem(JSON.parse(JSON.stringify(updatedItem)));
+          setPendingChanges({});
+        }
+
+        setError(null);
+        return true;
+      }
+
+      if (result.error?.includes("modified by another user")) {
+        setError(
+          "This record was modified by another user. Please refresh and try again."
+        );
+      } else {
+        setError(result.error || "Update failed");
+      }
+
+      return false;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Update failed");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
     const deleteItem = async (id: string) => {
       if (!id) {
         setError("Missing item ID");
@@ -418,6 +473,7 @@ function createDataContext(collectionName: string) {
           selectItem,
           createItem,
           updateItem,
+          updateItemWithoutRefresh,
           deleteItem,
           setIsEditing,
           updateField,

@@ -34,17 +34,17 @@ export function BookingDetails({ bookingsContext, stays }) {
       console.log(`💾 Saving status to database: ${newStatus}`);
       
       try {
-        // Save to database first
+        // Save to database first without triggering search refresh
         const updatedItem = {
           ...bookingsContext.selectedItem,
           status: newStatus,
         };
-        const success = await bookingsContext.updateItem(updatedItem);
+        const success = await bookingsContext.updateItemWithoutRefresh(updatedItem);
         
         if (success) {
           // Only update local state after successful database save
           bookingsContext.updateField("status", newStatus);
-          console.log(`💾 Status saved to database successfully`);
+          console.log(`💾 Status saved to database successfully (no search refresh)`);
         } else {
           console.log(`💾 Failed to save status to database`);
         }
@@ -170,10 +170,11 @@ export function BookingDetails({ bookingsContext, stays }) {
       
       if (calculatedStatus !== currentStatus) {
         console.log(`🔄 Manual status update: ${currentStatus} → ${calculatedStatus}`);
-        updateStatus(calculatedStatus);
+        // Update the status locally without saving to database to avoid search refresh
+        bookingsContext.updateField("status", calculatedStatus);
       }
     }
-  }, [stays, bookingsContext.selectedItem, updateStatus]);
+  }, [stays, bookingsContext.selectedItem]);
 
   // Show status error if any
   useEffect(() => {
@@ -418,17 +419,7 @@ export function BookingDetails({ bookingsContext, stays }) {
           isEditing={bookingsContext.isEditing}
           isChanged={isFieldChanged("salesInvoice")}
         />
-        <TextField
-          label="Notes"
-          fieldPath="notes"
-          value={bookingsContext.selectedItem?.notes || ""}
-          onChange={handleFieldChange}
-          isEditing={bookingsContext.isEditing}
-          multiline={true}
-          rows={4}
-          isChanged={isFieldChanged("notes")}
-        />
-        <DropdownField
+         <DropdownField
           label="Confirmation entity"
           fieldPath="confirmationEntity"
           value={
@@ -440,6 +431,17 @@ export function BookingDetails({ bookingsContext, stays }) {
           isEditing={bookingsContext.isEditing}
           isChanged={isFieldChanged("confirmationEntity")}
         />
+        <TextField
+          label="Admin Bookings Notes (does NOT appear on confirmation)"
+          fieldPath="notes"
+          value={bookingsContext.selectedItem?.notes || ""}
+          onChange={handleFieldChange}
+          isEditing={bookingsContext.isEditing}
+          multiline={true}
+          rows={4}
+          isChanged={isFieldChanged("notes")}
+        />
+       
         <DownloadPDFButton
           bookingData={bookingsContext.selectedItem}
           stays={stays}
