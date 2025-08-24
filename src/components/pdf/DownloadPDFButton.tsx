@@ -4,6 +4,7 @@ import { FileDown, Mail } from "lucide-react";
 import Button from "@/components/common/Button";
 import { jsPDF } from "jspdf";
 import { searchDocuments } from "@/app/actions/crudActions";
+import { StaySelectionModal } from "./StaySelectionModal";
 
 // MODIFIED: Updated Stay interface to match the correct data structure
 interface Stay {
@@ -89,6 +90,7 @@ export function DownloadPDFButton({
   const [isSending, setIsSending] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
   const [bookerData, setBookerData] = useState<any>(null);
+  const [showStaySelectionModal, setShowStaySelectionModal] = useState(false);
 
   // Fetch company data when booking data changes
   useEffect(() => {
@@ -161,7 +163,7 @@ export function DownloadPDFButton({
           try {
             const result = await searchDocuments("contacts", guestId, "_id");
             if (Array.isArray(result) && result.length > 0) {
-              const contact = result[0];
+              const contact = result[0] as any;
               const firstName = contact.general?.firstName || "";
               const lastName = contact.general?.lastName || "";
               const fullName = `${firstName} ${lastName}`.trim();
@@ -203,7 +205,7 @@ export function DownloadPDFButton({
       const hotelsMap = new Map<string, any>();
       hotelResults.forEach((result) => {
         if (Array.isArray(result) && result.length > 0) {
-          const hotel = result[0];
+          const hotel = result[0] as any;
           hotelsMap.set(hotel._id, hotel);
         }
       });
@@ -345,10 +347,15 @@ export function DownloadPDFButton({
   };
 
   const handleDownloadPDF = async () => {
+    setShowStaySelectionModal(true);
+  };
+
+  const handleGeneratePDFWithSelectedStays = async (selectedStays: Stay[]) => {
     setIsGenerating(true);
+    setShowStaySelectionModal(false);
 
     try {
-      let preparedStays = await prepareStaysWithGuestNames(stays);
+      let preparedStays = await prepareStaysWithGuestNames(selectedStays);
       preparedStays = await fetchAndAttachHotelDetails(preparedStays);
 
       preparedStays = sortStaysByCheckInDate(preparedStays);
@@ -860,7 +867,7 @@ export function DownloadPDFButton({
         <Button
           icon={FileDown}
           onClick={handleDownloadPDF}
-          size="md"
+          variant="md"
           intent="primary"
           disabled={isGenerating || isSending || disabled}
           type="button"
@@ -882,6 +889,14 @@ export function DownloadPDFButton({
           Save or discard changes before downloading
         </div>
       )}
+      
+      <StaySelectionModal
+        isOpen={showStaySelectionModal}
+        onClose={() => setShowStaySelectionModal(false)}
+        stays={stays}
+        onGeneratePDF={handleGeneratePDFWithSelectedStays}
+        isGenerating={isGenerating}
+      />
     </>
   );
 }
