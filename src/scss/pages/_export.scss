@@ -1,0 +1,137 @@
+.export-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #f6f6f8;
+  min-height: 100vh;
+
+  .export-container {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #f1f1f1;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .export-header {
+    padding: 2rem;
+    background: #f1f1f1;
+    color: var(--title-color);
+
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--title-color);
+    }
+
+    .export-description {
+      margin: 0;
+      opacity: 0.8;
+      font-size: 1.1rem;
+      color: var(--paragraph-color);
+    }
+  }
+
+  .export-sections {
+    padding: 2rem;
+  }
+
+  .export-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .export-section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  .export-section-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 8px;
+  }
+
+  .export-section-info {
+    h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: var(--title-color);
+    }
+
+    p {
+      margin: 0;
+      color: var(--paragraph-color);
+      font-size: 0.95rem;
+    }
+  }
+
+  .export-section-actions {
+    margin-left: 1rem;
+  }
+
+  .export-button-disabled {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #e2e8f0;
+    color: #94a3b8;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 300;
+    cursor: not-allowed;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #e2e8f0;
+      color: #94a3b8;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    .export-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .export-section-actions {
+      margin-left: 0;
+      width: 100%;
+
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}

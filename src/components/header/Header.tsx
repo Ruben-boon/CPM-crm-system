@@ -9,6 +9,7 @@ import {
   Hotel,
   LogOut,
   LogIn,
+  Download,
 } from "lucide-react";
 import { ThemeControls } from "./ThemeControls";
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -25,8 +26,8 @@ export default function Header() {
           <MenuLink title="Stays" url="/stays" icon={Bed} />
           <MenuLink title="Hotels" url="/hotels" icon={Hotel} />
           <MenuLink title="Companies" url="/companies" icon={Briefcase} />
-
           <MenuLink title="Contacts" url="/contacts" icon={Users} />
+          <MenuLink title="Export" url="/export" icon={Download} />
 
 
           <div className="user-section">
