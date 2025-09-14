@@ -130,6 +130,7 @@ function BookingsLayoutContent({ children }) {
                 // Remove the ID to create a new stay
                 delete originalStay._id;
                 delete originalStay.confirmationNo;
+                delete originalStay.bookingId;
 
                 // Update the reference to indicate it's a copy
                 if (originalStay.reference) {

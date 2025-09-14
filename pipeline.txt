@@ -1,0 +1,163 @@
+[
+  // Stage 1: Project to exclude unwanted fields (but keep _id and guestIds for lookups)
+  {
+    $project: {
+      roomType: 0,
+      status: 0,
+      cancellations: 0,
+      confirmationNo: 0,
+      bookingId: 0,
+      reference: 0,
+      createdBy: 0,
+      updatedBy: 0,
+      updatedAt: 0,
+      paymentType: 0,
+      roomNumber: 0,
+      summaryGuestNames: 0,  // Remove the entire summaryGuestNames array
+      taxAmount: 0,
+      version: 0,
+      guestNames: 0,  // Remove guestNames completely
+      hotelId: 0
+      // Keep _id and guestIds for lookups
+    }
+  },
+  
+  // Stage 2: Lookup guest information from contacts collection
+  {
+    $lookup: {
+      from: "contacts",
+      let: { guestIds: "$guestIds" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $in: ["$_id", { $map: { input: "$$guestIds", as: "id", in: { $toObjectId: "$$id" } } }]
+            }
+          }
+        },
+        {
+          $project: {
+            firstName: "$general.firstName",
+            lastName: "$general.lastName",
+            fullName: { $concat: ["$general.firstName", " ", "$general.lastName"] }
+          }
+        }
+      ],
+      as: "guestDetails"
+    }
+  },
+  
+  // Stage 3: Lookup booking information to get confirmation number and other booking details
+  {
+    $lookup: {
+      from: "bookings",
+      let: { stayIdString: { $toString: "$_id" } },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $in: ["$$stayIdString", "$staySummaries.stayId"]
+            }
+          }
+        },
+        {
+          $project: {
+            confirmationNo: 1,
+            salesInvoice: 1,
+            bookerName: 1,
+            costCentre: 1
+          }
+        }
+      ],
+      as: "bookingInfo"
+    }
+  },
+  
+  // Stage 4: Add computed fields and clean up the structure
+  {
+    $addFields: {
+      // Extract booking details from booking lookup
+      bookingConfirmationNo: {
+        $cond: {
+          if: { $gt: [{ $size: "$bookingInfo" }, 0] },
+          then: { $arrayElemAt: ["$bookingInfo.confirmationNo", 0] },
+          else: null
+        }
+      },
+      
+      bookingSalesInvoice: {
+        $cond: {
+          if: { $gt: [{ $size: "$bookingInfo" }, 0] },
+          then: { $arrayElemAt: ["$bookingInfo.salesInvoice", 0] },
+          else: null
+        }
+      },
+      
+      bookingBookerName: {
+        $cond: {
+          if: { $gt: [{ $size: "$bookingInfo" }, 0] },
+          then: { $arrayElemAt: ["$bookingInfo.bookerName", 0] },
+          else: null
+        }
+      },
+      
+      bookingCostCentre: {
+        $cond: {
+          if: { $gt: [{ $size: "$bookingInfo" }, 0] },
+          then: { $arrayElemAt: ["$bookingInfo.costCentre", 0] },
+          else: null
+        }
+      },
+      
+      // Create a clean guest names array from the lookup
+      guestNamesFromContacts: {
+        $map: {
+          input: "$guestDetails",
+          as: "guest",
+          in: "$$guest.fullName"
+        }
+      }
+    }
+  },
+  
+  // Stage 5: Final projection with ordered fields
+  {
+    $project: {
+      // Stay basic info
+      checkInDate: 1,
+      checkOutDate: 1,
+      hotelName: 1,
+      hotelConfirmationNo: 1,
+      
+      // Guest information
+      guestNamesFromContacts: 1,
+      
+      // Pricing information
+      roomPrice: 1,
+      roomCurrency: 1,
+      taxCurrency: 1,
+      
+      // Payment details
+      prepaid: 1,
+      prepaidDetails: 1,
+      purchaseInvoice: 1,
+      commissionInvoice: 1,
+      
+      // Booking information
+      bookingConfirmationNo: 1,
+      bookingSalesInvoice: 1,
+      bookingBookerName: 1,
+      bookingCostCentre: 1,
+      
+      // Administrative
+      adminRemarks: 1,
+      paymentInstructions: 1,
+      
+      // Remove temporary fields
+      bookingInfo: 0,
+      guestDetails: 0,
+      guestIds: 0,
+      _id: 0
+    }
+  }
+]

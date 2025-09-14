@@ -38,6 +38,7 @@ function StaysLayoutContent({ children }) {
         
         // Remove the _id to create a new stay
         delete sourceStay._id;
+        delete sourceStay.bookingId;
         
         // Update the name/identifier to indicate it's a copy
         if (sourceStay.reference) {

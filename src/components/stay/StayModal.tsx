@@ -71,7 +71,6 @@ export function StayModal({
     adminRemarks: "",
     specialRequests: "",
     confirmationNo: "",
-    bookingId: bookingId || stay.bookingId || "",
     // MODIFIED: Set default values for these fields to the first option
     paymentType: PAYMENT_TYPE_OPTIONS[0].value,
     paymentInstructions: PAYMENT_INSTRUCTION_OPTIONS[0].value,
@@ -95,8 +94,6 @@ export function StayModal({
     hotelId: false,
     guestIds: false,
   });
-  const [bookingInfo, setBookingInfo] = useState(null);
-  const [isLoadingBooking, setIsLoadingBooking] = useState(false);
 
   useEffect(() => {
     if (isCopyMode && stayData._id) {
@@ -110,33 +107,7 @@ export function StayModal({
     }
   }, [isCopyMode]);
 
-  useEffect(() => {
-    if (stayData.bookingId) {
-      loadBookingInfo(stayData.bookingId);
-    }
-  }, [stayData.bookingId]);
 
-  const loadBookingInfo = async (bookingId) => {
-    try {
-      setIsLoadingBooking(true);
-      const result = await searchDocuments("bookings", bookingId, "_id");
-
-      if (Array.isArray(result) && result.length > 0) {
-        setBookingInfo(result[0]);
-
-        if (result[0].confirmationNo) {
-          setStayData((prev) => ({
-            ...prev,
-            confirmationNo: result[0].confirmationNo,
-          }));
-        }
-      }
-    } catch (error) {
-      console.error("Error loading booking details:", error);
-    } finally {
-      setIsLoadingBooking(false);
-    }
-  };
 
   useEffect(() => {
     if (stayData.hotelId) {
@@ -371,10 +342,6 @@ export function StayModal({
         stayData.reference = `Stay ${new Date().toISOString().slice(0, 10)}`;
       }
 
-      if (bookingId && !stayData.bookingId) {
-        stayData.bookingId = bookingId;
-      }
-
       let result;
       if (!isCopyMode && stayData._id) {
         result = await updateDocument("stays", stayData._id, stayData);
@@ -401,10 +368,9 @@ export function StayModal({
       }
 
       // NEW: Update booking's staySummaries with current guest names if this stay is linked to a booking
-      if (result.data && (stayData.bookingId || bookingId)) {
-        const actualBookingId = stayData.bookingId || bookingId;
+      if (result.data && bookingId) {
         await updateBookingStaySummary(
-          actualBookingId,
+          bookingId,
           result.data._id,
           stayData.guestIds || []
         );
@@ -422,7 +388,6 @@ export function StayModal({
     }
   };
 
-  const isLinkedToBooking = !!stayData.bookingId || !!bookingConfirmationNo;
 
   const isStandardPaymentInstruction =
     stayData?.paymentInstructions &&

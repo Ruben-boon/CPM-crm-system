@@ -210,6 +210,7 @@ useEffect(() => {
   const handleCopyStay = (stay) => {
     const stayCopy = JSON.parse(JSON.stringify(stay));
     delete stayCopy._id;
+    delete stayCopy.bookingId;
 
     if (stayCopy.reference) {
       stayCopy.reference = `${stayCopy.reference} (Copy)`;
