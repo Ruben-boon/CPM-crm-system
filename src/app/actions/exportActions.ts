@@ -257,7 +257,7 @@ function convertToCSV(data: any[]): string {
   const headers = [...orderedKeys, ...remainingKeys];
 
   // Create CSV header
-  const csvHeaders = headers.map(header => escapeCSVField(header)).join(',');
+  const csvHeaders = headers.map(header => escapeCSVField(header)).join(';');
   
   // Create CSV rows
   const csvRows = data.map(item => {
@@ -266,7 +266,7 @@ function convertToCSV(data: any[]): string {
       
       // Handle arrays (like guestNamesFromContacts)
       if (Array.isArray(value)) {
-        return escapeCSVField(value.join('; '));
+        return escapeCSVField(value.join(', '));
       }
       
       // Handle null/undefined values
@@ -276,16 +276,17 @@ function convertToCSV(data: any[]): string {
       
       // Convert to string and escape
       return escapeCSVField(String(value));
-    }).join(',');
+    }).join(';');
   });
 
-  // Combine header and rows
-  return [csvHeaders, ...csvRows].join('\n');
+  // Combine header and rows with UTF-8 BOM for Excel compatibility
+  const csvContent = [csvHeaders, ...csvRows].join('\n');
+  return '\uFEFF' + csvContent;
 }
 
 function escapeCSVField(field: string): string {
-  // If field contains comma, newline, or quote, wrap in quotes and escape internal quotes
-  if (field.includes(',') || field.includes('\n') || field.includes('\r') || field.includes('"')) {
+  // If field contains semicolon, newline, or quote, wrap in quotes and escape internal quotes
+  if (field.includes(';') || field.includes('\n') || field.includes('\r') || field.includes('"')) {
     return `"${field.replace(/"/g, '""')}"`;
   }
   return field;
